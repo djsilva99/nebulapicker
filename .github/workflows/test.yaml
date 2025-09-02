@@ -8,6 +8,7 @@ on:
 
 jobs:
   test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -15,21 +16,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version-file: '.python-version'
-          cache: poetry
-
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
           version: 1.7.1
+      - uses: actions/setup-python@v4
+        with:
+          cache: 'poetry'
 
       - name: Install dependencies
         run: make install
 
-      - name: Lint
+      - name: Check lint
         run: make lint
 
       - name: Run tests
