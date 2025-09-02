@@ -1,0 +1,13 @@
+*.pyc
+__pycache__
+.vscode
+.venv
+~*
+*~
+#*
+*#
+.ruff_cache
+.pytest_cache
+README.html
+.coverage
+.idea

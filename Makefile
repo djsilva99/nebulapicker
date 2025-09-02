@@ -1,0 +1,29 @@
+include .env.local
+PYTHON_VERSION := $(shell cat .python-version)
+
+.SILENT:
+
+
+.PHONY: install
+install: ## Install dependencies
+	@poetry env use python
+	@poetry install --no-root
+
+.PHONY: test
+test: ## Run tests
+	@poetry run coverage run -m pytest && poetry run coverage report -m
+
+.PHONY: lint
+lint: ## Check lint
+	@echo "Running ruff"
+	@poetry run ruff check src/ tests/
+
+.PHONY: apply-lint
+apply-lint: ## Apply lint
+	@echo "Apply ruff"
+	@poetry run ruff check --fix src/ tests/
+
+.PHONY: local-deployment
+local-deployment: ## Deploy app locally
+	@echo "Local deployment"
+	@poetry run uvicorn src.main:app --env-file .env.local --port=8080 --reload
