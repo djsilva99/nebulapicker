@@ -1,0 +1,36 @@
+name: Test
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version-file: '.python-version'
+
+      - name: Install Poetry
+        run: |
+          pip install poetry
+          poetry env use $(which python)
+
+      - name: Install dependencies
+        run: make install
+
+      - name: Check lint
+        run: make lint
+
+      - name: Run tests
+        run: make test

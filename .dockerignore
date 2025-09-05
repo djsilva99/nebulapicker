@@ -1,0 +1,39 @@
+# Project development related configuration
+
+# Coverage
+.coverage
+.coveragerc
+
+# Git ignore file
+.gitignore
+
+# Project local infrastructure
+docker-compose.yml
+Dockerfile
+
+# Tests directory
+tests/
+test-results/
+.pytest_cache/
+.ruff_cache/
+
+# Kubernetes project deployment directory
+kubernetes/
+
+# Env local variables
+.env.local
+
+# Venv folder
+.venv
+
+# Emacs
+*~
+\#*
+
+# Markdown and Make files
+README.md
+README.html
+Makefile
+
+# Scripts folder
+scripts/
