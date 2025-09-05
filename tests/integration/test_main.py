@@ -14,3 +14,4 @@ def test_welcome(caplog):
     # THEN
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"message": "Welcome to NebulaPicker"}
+    assert False
