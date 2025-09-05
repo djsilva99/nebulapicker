@@ -24,6 +24,9 @@ jobs:
       - name: Install Poetry
         run: pip install poetry
 
+      - name: Tell Poetry to use correct Python version
+        run: poetry env use $(which python)
+
       - name: Install dependencies
         run: make install
 
