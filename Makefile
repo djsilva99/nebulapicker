@@ -6,8 +6,8 @@ PYTHON_VERSION := $(shell cat .python-version)
 
 .PHONY: install
 install: ## Install dependencies
-	@poetry env use python$(PYTHON_VERSION)
-	@poetry install --no-root
+    @poetry env use python
+    @poetry install --no-root
 
 .PHONY: test
 test: ## Run tests
