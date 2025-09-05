@@ -16,14 +16,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version-file: '.python-version'
+          cache: 'poetry'
+
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
-          version: 1.7.1
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version-file: .python-version
+          version: 1.5.1
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
 
       - name: Install dependencies
         run: make install
