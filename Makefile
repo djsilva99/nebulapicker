@@ -27,3 +27,11 @@ apply-lint: ## Apply lint
 local-deployment: ## Deploy app locally
 	@echo "Local deployment"
 	@poetry run uvicorn src.main:app --env-file .env.local --port=8080 --reload
+
+.PHONY: apply-migrations
+apply-migrations: ## Apply migrations
+	@alembic upgrade head
+
+.PHONY: downgrade-migrations
+downgrade-migrations: ## Downgrade migrations
+	@alembic downgrade -1
