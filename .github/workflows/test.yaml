@@ -26,6 +26,9 @@ jobs:
           pip install poetry
           poetry env use $(which python)
 
+      - name: Start PostgreSQL
+        run: docker compose up -d
+
       - name: Install dependencies
         run: make install
 
