@@ -5,9 +5,6 @@ from pydantic import BaseModel
 
 
 class Source(BaseModel):
-    """
-    Pydantic model for the Source entity.
-    """
     id: int
     external_id: UUID
     url: str
