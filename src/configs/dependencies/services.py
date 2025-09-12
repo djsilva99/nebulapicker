@@ -8,9 +8,6 @@ from src.domain.services.source_service import SourceService
 def get_source_service(
     repository: SourcesRepository = Depends(get_sources_repository) # noqa: B008
 ) -> SourceService:
-    """
-    Provides the SourceService by injecting the SourceRepository.
-    """
     return SourceService(source_port=repository)
 
 

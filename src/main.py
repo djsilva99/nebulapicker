@@ -9,7 +9,7 @@ from src.adapters.entrypoints.v1.models.source import (
     map_source_list_to_get_all_sources_response,
 )
 from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
-from src.adapters.repositories.job_repository import JobRepository
+from src.adapters.repositories.jobs_repository import JobRepository
 from src.adapters.scheduler import Scheduler
 from src.configs.database import get_db
 from src.configs.dependencies.services import get_job_service, get_source_service

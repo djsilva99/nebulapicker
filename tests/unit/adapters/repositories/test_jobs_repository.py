@@ -2,7 +2,7 @@ import psycopg
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from src.adapters.repositories.job_repository import JobRepository
+from src.adapters.repositories.jobs_repository import JobRepository
 from src.domain.models.job import Job, JobRequest
 
 TEST_DB_URL = "postgresql://postgres:postgres@localhost:5433/"

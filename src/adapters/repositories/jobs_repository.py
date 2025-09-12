@@ -3,7 +3,7 @@ import json
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from src.domain.models.job import Job, JobRequest
-from src.domain.ports.job_port import JobPort
+from src.domain.ports.jobs_port import JobPort
 
 
 class JobRepository(JobPort):

@@ -19,9 +19,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade():
-    """
-    Create the 'source' table using a raw SQL block.
-    """
     op.execute(
         """
         CREATE TABLE sources (
@@ -44,9 +41,6 @@ def upgrade():
 
 
 def downgrade():
-    """
-    Drop the 'source' table using a raw SQL block.
-    """
     op.execute(
         """
         DROP TABLE sources;

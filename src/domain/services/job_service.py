@@ -1,5 +1,5 @@
 from src.domain.models.job import JobRequest
-from src.domain.ports.job_port import JobPort
+from src.domain.ports.jobs_port import JobPort
 from src.domain.ports.scheduler_port import SchedulerPort
 
 
