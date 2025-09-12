@@ -2,6 +2,7 @@ import logging
 import os
 from pathlib import Path
 from uuid import uuid4
+from unittest.mock import MagicMock, patch
 
 import psycopg
 import pytest
@@ -13,6 +14,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 from src.configs.dependencies.repositories import get_db
 from src.main import app
+from src.domain.models.job import JobRequest
 
 TEST_DB_URL = "postgresql://postgres:postgres@localhost:5433/"
 TEST_DB_NAME = "test_nebula"
@@ -34,7 +36,7 @@ def test_db_manager():
             cur.execute(f'DROP DATABASE IF EXISTS "{TEST_DB_NAME}" WITH (FORCE)')
             cur.execute(f'CREATE DATABASE "{TEST_DB_NAME}"')
 
-    # Now run migrations on the newly created database
+    # Run migrations on the newly created database
     test_db_url = f"{TEST_DB_URL}{TEST_DB_NAME}"
     alembic_cfg = Config(os.path.join(TEST_ALEMBIC_INI, "alembic.ini"))
     alembic_cfg.set_main_option("script_location", TEST_DB_MIGRATIONS_DIR)
@@ -109,7 +111,7 @@ def test_read_sources_with_data(client: TestClient, db_session: Session):
     # GIVEN
     new_uuid = str(uuid4())
     db_session.execute(text(
-        "INSERT INTO source (external_id, url, name) VALUES (:external_id, :url, :name);"
+        "INSERT INTO sources (external_id, url, name) VALUES (:external_id, :url, :name);"
     ), {"external_id": new_uuid, "url": "https://example.com", "name": "Example Source"})
     db_session.commit()
 
@@ -123,3 +125,37 @@ def test_read_sources_with_data(client: TestClient, db_session: Session):
     assert data["sources"][0]["url"] == "https://example.com"
     assert data["sources"][0]["name"] == "Example Source"
     assert "external_id" in data["sources"][0]
+
+
+def test_add_cronjob_success(db_session: Session):
+    """
+    Test case to verify that the add_cronjob endpoint successfully
+    calls the job_service with the correct arguments.
+    """
+    # GIVEN
+    job_payload = {
+        "func_name": "process_feed",
+        "schedule": "*/5 * * * *",
+        "args": ["https://example.com/feed.xml"],
+    }
+
+    mock_job_service = MagicMock()
+
+    # WHEN
+    # Patch the JobService class itself to return our mock instance
+    # during the startup process.
+    with patch("src.main.JobService", return_value=mock_job_service):
+        with TestClient(app) as client:
+            response = client.post("/v1/feeds/", json=job_payload)
+
+    # THEN
+    assert response.status_code == 201
+    assert response.json() == {'msg': 'Job created'}
+
+    expected_job_request = JobRequest(
+        func_name="process_feed",
+        schedule="*/5 * * * *",
+        args=["https://example.com/feed.xml"],
+    )
+
+    mock_job_service.add_cronjob.assert_called_once_with(expected_job_request)

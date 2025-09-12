@@ -5,7 +5,7 @@ import psycopg
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from src.adapters.repositories.source_repository import SourceRepository
+from src.adapters.repositories.sources_repository import SourcesRepository
 from src.domain.models.source import Source
 
 # Define PostgreSQL connection constants
@@ -45,7 +45,7 @@ def db_session(setup_test_db):
     # Manually create the schema for the test
     with engine.begin() as conn:
         conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS source (
+            CREATE TABLE IF NOT EXISTS sources (
                 id SERIAL PRIMARY KEY,
                 external_id TEXT UNIQUE NOT NULL,
                 url TEXT NOT NULL,
@@ -57,7 +57,7 @@ def db_session(setup_test_db):
     session = testing_session_local()
 
     # Clear all data from the table before each test to ensure a clean state
-    session.execute(text("TRUNCATE TABLE source RESTART IDENTITY CASCADE;"))
+    session.execute(text("TRUNCATE TABLE sources RESTART IDENTITY CASCADE;"))
     session.commit()
 
     try:
@@ -68,7 +68,7 @@ def db_session(setup_test_db):
 
 @pytest.fixture
 def repo(db_session):
-    return SourceRepository(db_session)
+    return SourcesRepository(db_session)
 
 
 def test_get_by_id_returns_source(repo, db_session):
@@ -76,7 +76,7 @@ def test_get_by_id_returns_source(repo, db_session):
     external_id = str(uuid4())
     db_session.execute(
         text("""
-            INSERT INTO source (external_id, url, name, created_at)
+            INSERT INTO sources (external_id, url, name, created_at)
             VALUES (:external_id, :url, :name, :created_at)
         """),
         {
@@ -87,7 +87,7 @@ def test_get_by_id_returns_source(repo, db_session):
         }
     )
     db_session.commit()
-    inserted_id = db_session.execute(text("SELECT id FROM source")).scalar_one()
+    inserted_id = db_session.execute(text("SELECT id FROM sources")).scalar_one()
 
     # WHEN
     source = repo.get_by_id(inserted_id)
@@ -104,7 +104,7 @@ def test_get_all_returns_sources(repo, db_session):
     # GIVEN
     db_session.execute(
         text("""
-            INSERT INTO source (external_id, url, name, created_at)
+            INSERT INTO sources (external_id, url, name, created_at)
             VALUES (:external_id, :url, :name, :created_at)
         """),
         {
@@ -116,7 +116,7 @@ def test_get_all_returns_sources(repo, db_session):
     )
     db_session.execute(
         text("""
-            INSERT INTO source (external_id, url, name, created_at)
+            INSERT INTO sources (external_id, url, name, created_at)
             VALUES (:external_id, :url, :name, :created_at)
         """),
         {

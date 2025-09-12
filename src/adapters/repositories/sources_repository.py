@@ -4,7 +4,7 @@ from src.domain.models.source import Source
 from src.domain.ports.source_port import SourcePort
 
 
-class SourceRepository(SourcePort):
+class SourcesRepository(SourcePort):
     """
     Implementation of the Source repository port.
     This class handles the database logic using raw SQL.
@@ -20,7 +20,7 @@ class SourceRepository(SourcePort):
         """
         Retrieves a source by its ID.
         """
-        sql = text("SELECT id, external_id, url, name, created_at FROM source WHERE id = :id")
+        sql = text("SELECT id, external_id, url, name, created_at FROM sources WHERE id = :id")
         result = self.db.execute(sql, {"id": source_id}).first()
 
         if result:
@@ -31,7 +31,7 @@ class SourceRepository(SourcePort):
         """
         Retrieves all sources.
         """
-        sql = text("SELECT id, external_id, url, name, created_at FROM source")
+        sql = text("SELECT id, external_id, url, name, created_at FROM sources")
         result = self.db.execute(sql)
 
         if result:

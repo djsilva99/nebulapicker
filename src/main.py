@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, status
 
 from src.adapters.entrypoints.v1.models.logs import APILog
 from src.adapters.entrypoints.v1.models.source import (
@@ -8,9 +8,15 @@ from src.adapters.entrypoints.v1.models.source import (
     map_source_list_to_get_all_sources_response,
 )
 from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
-from src.configs.dependencies.services import get_source_service
+from src.adapters.repositories.job_repository import JobRepository
+from src.configs.database import get_db
+from src.configs.dependencies.services import get_source_service, get_job_service
 from src.configs.settings import Settings
 from src.domain.services.source_service import SourceService
+from src.adapters.scheduler import Scheduler
+from src.domain.services.job_service import JobService
+from src.adapters.entrypoints.v1.models.job import CreateJobRequest, CreateJobResponse
+from src.domain.models.job import JobRequest
 
 # CONSTANTS
 settings: Settings = Settings()
@@ -26,6 +32,22 @@ logger = logging.getLogger(__name__)
 # API
 app = FastAPI()
 
+# SCHEDULER
+scheduler_adapter = Scheduler()
+
+
+@app.on_event("startup")
+def startup():
+    db_session = next(get_db())
+    job_repository = JobRepository(db_session)
+    job_service = JobService(job_port=job_repository, scheduler=scheduler_adapter)
+    app.state.job_service = job_service
+    scheduler_adapter.start()
+    job_service.load_all()
+
+@app.on_event("shutdown")
+def shutdown():
+    scheduler_adapter.shutdown()
 
 @app.get("/v1")
 def welcome():
@@ -45,3 +67,16 @@ def list_sources(
             source_list=source_list
         )
     )
+
+@app.post("/v1/feeds/", status_code=status.HTTP_201_CREATED)
+def add_cronjob(
+    job_request: CreateJobRequest,
+    job_service: JobService = Depends(get_job_service)
+):
+    cronjob = JobRequest(
+        func_name=job_request.func_name,
+        schedule=job_request.schedule,
+        args=job_request.args,
+    )
+    job_service.add_cronjob(cronjob)
+    return CreateJobResponse()
