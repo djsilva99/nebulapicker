@@ -2,23 +2,15 @@ import psycopg
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-
 from src.adapters.repositories.job_repository import JobRepository
-from src.domain.models.job import JobRequest
-from src.domain.models.job import Job
+from src.domain.models.job import Job, JobRequest
 
-# Define PostgreSQL connection constants
-# This URL should point to your running local PostgreSQL instance
 TEST_DB_URL = "postgresql://postgres:postgres@localhost:5433/"
 TEST_DB_NAME = "test_nebula_repo"
 
 
 @pytest.fixture(scope="session")
 def setup_test_db():
-    """
-    Manages the creation and dropping of the test database for the session.
-    """
-    # Connect to the default postgres database to create/drop the test database
     with psycopg.connect(TEST_DB_URL, autocommit=True) as conn:
         with conn.cursor() as cur:
             cur.execute(f'DROP DATABASE IF EXISTS "{TEST_DB_NAME}" WITH (FORCE)')
@@ -35,13 +27,9 @@ def setup_test_db():
 
 @pytest.fixture
 def db_session(setup_test_db):
-    """
-    Provides a clean, transactional database session for each test.
-    """
     engine = create_engine(setup_test_db)
     testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-    # Manually create the schema for the test
     with engine.begin() as conn:
         conn.execute(text("DROP TABLE IF EXISTS jobs CASCADE;"))
         conn.execute(text("""
@@ -56,7 +44,6 @@ def db_session(setup_test_db):
 
     session = testing_session_local()
 
-    # Clear all data from the table before each test to ensure a clean state
     session.execute(text("TRUNCATE TABLE jobs RESTART IDENTITY CASCADE;"))
     session.commit()
 
@@ -84,7 +71,7 @@ def test_create_job_successfully(repo, db_session):
 
     # THEN
     assert job is not None
-    assert type(job.id) == int
+    assert type(job.id) is int
     assert job.func_name == "fake_func_name"
     assert job.args == ["arg_1", "arg_2"]
     assert job.schedule == "1,31 * * * *"

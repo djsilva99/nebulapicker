@@ -2,6 +2,7 @@ import logging
 
 from fastapi import Depends, FastAPI, status
 
+from src.adapters.entrypoints.v1.models.job import CreateJobRequest, CreateJobResponse
 from src.adapters.entrypoints.v1.models.logs import APILog
 from src.adapters.entrypoints.v1.models.source import (
     GetAllSourcesResponse,
@@ -9,14 +10,13 @@ from src.adapters.entrypoints.v1.models.source import (
 )
 from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
 from src.adapters.repositories.job_repository import JobRepository
-from src.configs.database import get_db
-from src.configs.dependencies.services import get_source_service, get_job_service
-from src.configs.settings import Settings
-from src.domain.services.source_service import SourceService
 from src.adapters.scheduler import Scheduler
-from src.domain.services.job_service import JobService
-from src.adapters.entrypoints.v1.models.job import CreateJobRequest, CreateJobResponse
+from src.configs.database import get_db
+from src.configs.dependencies.services import get_job_service, get_source_service
+from src.configs.settings import Settings
 from src.domain.models.job import JobRequest
+from src.domain.services.job_service import JobService
+from src.domain.services.source_service import SourceService
 
 # CONSTANTS
 settings: Settings = Settings()
@@ -71,7 +71,7 @@ def list_sources(
 @app.post("/v1/feeds/", status_code=status.HTTP_201_CREATED)
 def add_cronjob(
     job_request: CreateJobRequest,
-    job_service: JobService = Depends(get_job_service)
+    job_service: JobService = Depends(get_job_service) # noqa: B008
 ):
     cronjob = JobRequest(
         func_name=job_request.func_name,

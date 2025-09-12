@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+
 from src.domain.models.job import Job
+
 
 class SchedulerPort(ABC):
     @abstractmethod

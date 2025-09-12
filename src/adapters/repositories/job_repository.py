@@ -1,8 +1,9 @@
+import json
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from src.domain.models.job import Job, JobRequest
 from src.domain.ports.job_port import JobPort
-import json
 
 
 class JobRepository(JobPort):
@@ -12,7 +13,9 @@ class JobRepository(JobPort):
 
     def create(self, job: JobRequest) -> Job:
         sql = text(
-            "INSERT INTO jobs (func_name, args, schedule) VALUES (:func_name, :args, :schedule) RETURNING id, func_name, args, schedule, created_at"
+            "INSERT INTO jobs (func_name, args, schedule)"
+            "VALUES (:func_name, :args, :schedule)"
+            "RETURNING id, func_name, args, schedule, created_at"
         )
         result = self.db.execute(
             sql,

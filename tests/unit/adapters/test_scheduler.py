@@ -1,17 +1,16 @@
-import pytest
-from unittest.mock import MagicMock, patch
 from datetime import datetime
+from unittest.mock import MagicMock, patch
 
-from src.domain.models.job import Job
+import pytest
 from src.adapters.scheduler import Scheduler
+from src.domain.models.job import Job
 
 
 @pytest.fixture
 def mock_scheduler():
-    # Patch the BackgroundScheduler symbol inside scheduler.py
-    with patch("src.adapters.scheduler.BackgroundScheduler") as MockScheduler:
+    with patch("src.adapters.scheduler.BackgroundScheduler") as mock_scheduler:
         mock_instance = MagicMock()
-        MockScheduler.return_value = mock_instance
+        mock_scheduler.return_value = mock_instance
         yield mock_instance
 
 
@@ -39,7 +38,7 @@ def test_add_job_calls_scheduler_add_job(scheduler, mock_scheduler):
         schedule="* * * * *",
         created_at=datetime(2025, 1, 1, 13, 0, 0)
     )
-    # Patch FUNCTIONS to include our fake function
+
     with patch("src.adapters.scheduler.FUNCTIONS", {"test_func": MagicMock()}) as mock_funcs:
         # WHEN
         scheduler.add_job(job)

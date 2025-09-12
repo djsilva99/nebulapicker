@@ -1,8 +1,8 @@
-import pytest
-from unittest.mock import MagicMock
 from datetime import datetime
+from unittest.mock import MagicMock
 
-from src.domain.models.job import JobRequest, Job
+import pytest
+from src.domain.models.job import Job, JobRequest
 from src.domain.services.job_service import JobService  # adjust import if needed
 
 

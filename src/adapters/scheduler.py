@@ -1,9 +1,10 @@
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from src.domain.functions import FUNCTIONS
 from src.domain.models.job import Job
 from src.domain.ports.scheduler_port import SchedulerPort
-from src.domain.functions import FUNCTIONS
-import json
+
 
 class Scheduler(SchedulerPort):
     def __init__(self):
