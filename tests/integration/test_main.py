@@ -170,18 +170,14 @@ def test_list_feeds_with_data(client: TestClient, db_session: Session):
     assert "external_id" in data["feeds"][0]
 
 
-def test_create_feed(db_session: Session):
+def test_create_feed(client: TestClient, db_session: Session):
     # GIVEN
     feed_payload = {
         "name": "fake_feed_name",
     }
 
-    mock_feed_service = MagicMock()
-
     # WHEN
-    with patch("src.main.FeedService", return_value=mock_feed_service):
-        with TestClient(app) as client:
-            response = client.post("/v1/feeds/", json=feed_payload)
+    response = client.post("/v1/feeds/", json=feed_payload)
 
     # THEN
     assert response.status_code == 201
