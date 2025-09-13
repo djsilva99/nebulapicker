@@ -127,7 +127,7 @@ def test_add_cronjob_success(db_session: Session):
     # WHEN
     with patch("src.main.JobService", return_value=mock_job_service):
         with TestClient(app) as client:
-            response = client.post("/v1/feeds/", json=job_payload)
+            response = client.post("/v1/pickers/", json=job_payload)
 
     # THEN
     assert response.status_code == 201
@@ -140,3 +140,51 @@ def test_add_cronjob_success(db_session: Session):
     )
 
     mock_job_service.add_cronjob.assert_called_once_with(expected_job_request)
+
+
+def test_list_feeds_empty(client: TestClient, db_session: Session):
+    # WHEN
+    response = client.get("/v1/feeds/")
+
+    # THEN
+    assert response.status_code == 200
+    assert response.json() == {'feeds': []}
+
+
+def test_list_feeds_with_data(client: TestClient, db_session: Session):
+    # GIVEN
+    new_uuid = str(uuid4())
+    db_session.execute(text(
+        "INSERT INTO feeds (external_id, name) VALUES (:external_id, :name);"
+    ), {"external_id": new_uuid, "name": "fake_name"})
+    db_session.commit()
+
+    # WHEN
+    response = client.get("/v1/feeds/")
+
+    # THEN
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["feeds"]) == 1
+    assert data["feeds"][0]["name"] == "fake_name"
+    assert "external_id" in data["feeds"][0]
+
+
+def test_create_feed(db_session: Session):
+    # GIVEN
+    feed_payload = {
+        "name": "fake_feed_name",
+    }
+
+    mock_feed_service = MagicMock()
+
+    # WHEN
+    with patch("src.main.FeedService", return_value=mock_feed_service):
+        with TestClient(app) as client:
+            response = client.post("/v1/feeds/", json=feed_payload)
+
+    # THEN
+    assert response.status_code == 201
+    assert response.json()["name"] == "fake_feed_name"
+    assert "external_id" in response.json()
+    assert "created_at" in response.json()
