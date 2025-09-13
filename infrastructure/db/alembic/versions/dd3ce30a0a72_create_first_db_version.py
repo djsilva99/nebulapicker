@@ -29,6 +29,13 @@ def upgrade():
             created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
         
+        CREATE TABLE feeds (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            external_id UUID NOT NULL DEFAULT gen_random_uuid(),
+            created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+        
         CREATE TABLE jobs (
             id SERIAL PRIMARY KEY,
             func_name TEXT NOT NULL,
@@ -44,6 +51,7 @@ def downgrade():
     op.execute(
         """
         DROP TABLE sources;
+        DROP TABLE feeds;
         DROP TABLE jobs;
         """
     )
