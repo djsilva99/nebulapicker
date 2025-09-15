@@ -14,3 +14,6 @@ class FeedService:
 
     def get_feed_by_external_id(self, external_id) -> Feed | None:
         return self.feeds_port.get_by_external_id(external_id)
+
+    def get_feed_by_id(self, id: int) -> Feed | None:
+        return self.feeds_port.get_by_id(id)

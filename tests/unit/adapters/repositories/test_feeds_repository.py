@@ -1,5 +1,5 @@
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import psycopg
 import pytest
@@ -113,3 +113,59 @@ def test_get_all_feeds_empty(repo, db_session):
 
     # THEN
     assert len(feeds) == 0
+
+
+def test_get_by_external_id_returns_source(repo, db_session):
+    # GIVEN
+    external_id = str(uuid4())
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (external_id, name, created_at)
+            VALUES (:external_id, :name, :created_at)
+        """),
+        {
+            "external_id": external_id,
+            "name": "Example",
+            "created_at": datetime(2025, 1, 1, 12, 0, 0),
+        }
+    )
+    db_session.commit()
+    inserted_id = db_session.execute(text("SELECT id FROM feeds")).scalar_one()
+
+    # WHEN
+    feed = repo.get_by_external_id(UUID(external_id))
+
+    # THEN
+    assert feed is not None
+    assert feed.id == inserted_id
+    assert str(feed.external_id) == external_id
+    assert feed.name == "Example"
+
+
+def test_get_by_id_returns_source(repo, db_session):
+    # GIVEN
+    external_id = str(uuid4())
+    feed_id = 99
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (id, external_id, name, created_at)
+            VALUES (:feed_id, :external_id, :name, :created_at)
+        """),
+        {
+            "feed_id": feed_id,
+            "external_id": external_id,
+            "name": "Example",
+            "created_at": datetime(2025, 1, 1, 12, 0, 0),
+        }
+    )
+    db_session.commit()
+    inserted_id = db_session.execute(text("SELECT id FROM feeds")).scalar_one()
+
+    # WHEN
+    feed = repo.get_by_id(feed_id)
+
+    # THEN
+    assert feed is not None
+    assert feed.id == inserted_id
+    assert str(feed.external_id) == external_id
+    assert feed.name == "Example"

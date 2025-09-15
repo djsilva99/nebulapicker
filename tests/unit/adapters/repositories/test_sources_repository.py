@@ -89,6 +89,36 @@ def test_get_by_external_id_returns_source(repo, db_session):
     assert source.name == "Example"
 
 
+def test_get_by_id_returns_source(repo, db_session):
+    # GIVEN
+    source_id = 1
+    external_id = str(uuid4())
+    db_session.execute(
+        text("""
+            INSERT INTO sources (id, external_id, url, name, created_at)
+            VALUES (:source_id, :external_id, :url, :name, :created_at)
+        """),
+        {
+            "source_id": source_id,
+            "external_id": external_id,
+            "url": "https://example.com",
+            "name": "Example",
+            "created_at": datetime(2025, 1, 1, 12, 0, 0),
+        }
+    )
+    db_session.commit()
+    inserted_id = db_session.execute(text("SELECT id FROM sources")).scalar_one()
+
+    # WHEN
+    source = repo.get_by_id(source_id)
+
+    # THEN
+    assert source is not None
+    assert source.id == inserted_id
+    assert source.url == "https://example.com"
+    assert source.name == "Example"
+
+
 def test_get_by_url_returns_source(repo, db_session):
     # GIVEN
     url = "www.test.com/feed"

@@ -17,5 +17,8 @@ class SourceService:
     def get_source_by_external_id(self, external_id: UUID):
         return self.source_port.get_by_external_id(external_id)
 
+    def get_source_by_id(self, id: int):
+        return self.source_port.get_by_id(id)
+
     def get_source_by_url(self, url: str):
         return self.source_port.get_by_url(url)

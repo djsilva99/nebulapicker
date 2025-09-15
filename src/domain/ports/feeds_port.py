@@ -17,3 +17,7 @@ class FeedsPort(ABC):
     @abstractmethod
     def get_by_external_id(self, external_id: UUID) -> Feed | None:
         pass
+
+    @abstractmethod
+    def get_by_id(self, id: int) -> Feed | None:
+        pass
