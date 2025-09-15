@@ -1,7 +1,7 @@
 import logging
-
-from fastapi import Depends, FastAPI, status, HTTPException
 from uuid import UUID
+
+from fastapi import Depends, FastAPI, HTTPException, status
 
 from src.adapters.entrypoints.v1.models.feeds import (
     CreateFeedRequest,
@@ -191,7 +191,7 @@ def add_picker(
     )
 
 @app.get("/v1/pickers/{picker_external_id}", status_code=status.HTTP_200_OK)
-def add_picker(
+def get_picker(
     picker_external_id: UUID,
     filter_service: FilterService = Depends(get_filter_service), # noqa: B008
     picker_service: PickerService = Depends(get_picker_service), # noqa: B008

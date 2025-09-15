@@ -242,7 +242,12 @@ def test_get_picker_success(client: TestClient, db_session: Session):
     db_session.execute(
         text("INSERT INTO sources (id, external_id, url, name) "
              "VALUES (:id, :external_id, :url, :name)"),
-        {"id": 1, "external_id": str(uuid4()), "url": "https://example.com/source", "name": "picker_source"}
+        {
+            "id": 1,
+            "external_id": str(uuid4()),
+            "url": "https://example.com/source",
+            "name": "picker_source"
+        }
     )
 
     # GIVEN: create feed
@@ -258,7 +263,13 @@ def test_get_picker_success(client: TestClient, db_session: Session):
     db_session.execute(
         text("INSERT INTO pickers (id, external_id, source_id, feed_id, cronjob, created_at) "
              "VALUES (:id, :external_id, :source_id, :feed_id, :cronjob, NOW())"),
-        {"id": 1, "external_id": picker_external_id, "source_id": 1, "feed_id": 1, "cronjob": "*/5 * * * *"}
+        {
+            "id": 1,
+            "external_id": picker_external_id,
+            "source_id": 1,
+            "feed_id": 1,
+            "cronjob": "*/5 * * * *"
+        }
     )
 
     # GIVEN: create filters
