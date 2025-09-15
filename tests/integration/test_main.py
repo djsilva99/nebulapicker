@@ -235,3 +235,60 @@ def test_create_picker_invalid_source_or_feed(client: TestClient, db_session: Se
 
     # THEN
     assert response.status_code == 400 or response.status_code == 422
+
+
+def test_get_picker_success(client: TestClient, db_session: Session):
+    # GIVEN: create source
+    db_session.execute(
+        text("INSERT INTO sources (id, external_id, url, name) "
+             "VALUES (:id, :external_id, :url, :name)"),
+        {"id": 1, "external_id": str(uuid4()), "url": "https://example.com/source", "name": "picker_source"}
+    )
+
+    # GIVEN: create feed
+    feed_external_id = str(uuid4())
+    db_session.execute(
+        text("INSERT INTO feeds (id, external_id, name) "
+             "VALUES (:id, :external_id, :name)"),
+        {"id": 1, "external_id": feed_external_id, "name": "feed_name"}
+    )
+
+    # GIVEN: create picker
+    picker_external_id = str(uuid4())
+    db_session.execute(
+        text("INSERT INTO pickers (id, external_id, source_id, feed_id, cronjob, created_at) "
+             "VALUES (:id, :external_id, :source_id, :feed_id, :cronjob, NOW())"),
+        {"id": 1, "external_id": picker_external_id, "source_id": 1, "feed_id": 1, "cronjob": "*/5 * * * *"}
+    )
+
+    # GIVEN: create filters
+    db_session.execute(
+        text("INSERT INTO filters (id, picker_id, operation, args, created_at) "
+             "VALUES (:id, :picker_id, :operation, :args, NOW())"),
+        {"id": 1, "picker_id": 1, "operation": "identity", "args": "[a]"}
+    )
+    db_session.commit()
+
+    # WHEN
+    response = client.get(f"/v1/pickers/{picker_external_id}")
+
+    # THEN
+    assert response.status_code == 200
+    data = response.json()
+    assert data["external_id"] == picker_external_id
+    assert data["source_url"] == "https://example.com/source"
+    assert data["feed_external_id"] == feed_external_id
+    assert data["cronjob"] == "*/5 * * * *"
+    assert isinstance(data["filters"], list)
+    assert len(data["filters"]) == 1
+    assert data["filters"][0]["operation"] == "identity"
+    assert data["filters"][0]["args"] == "[a]"
+
+
+def test_get_picker_not_found(client: TestClient):
+    # WHEN
+    response = client.get(f"/v1/pickers/{uuid4()}")
+
+    # THEN
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Picker not found"

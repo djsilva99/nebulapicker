@@ -1,6 +1,7 @@
 import logging
 
-from fastapi import Depends, FastAPI, status
+from fastapi import Depends, FastAPI, status, HTTPException
+from uuid import UUID
 
 from src.adapters.entrypoints.v1.models.feeds import (
     CreateFeedRequest,
@@ -16,7 +17,7 @@ from src.adapters.entrypoints.v1.models.job import CreateJobRequest, CreateJobRe
 from src.adapters.entrypoints.v1.models.logs import APILog
 from src.adapters.entrypoints.v1.models.picker import (
     CreateFullPickerRequest,
-    CreateFullPickerResponse,
+    FullPickerResponse,
 )
 from src.adapters.entrypoints.v1.models.source import (
     GetAllSourcesResponse,
@@ -123,7 +124,7 @@ def add_picker(
     picker_service: PickerService = Depends(get_picker_service), # noqa: B008
     source_service: SourceService = Depends(get_source_service), # noqa: B008
     feed_service: FeedService = Depends(get_feed_service), # noqa: B008
-) -> CreateFullPickerResponse:
+) -> FullPickerResponse:
 
     feed_name = None
     if create_full_picker_request.feed_name:
@@ -180,13 +181,58 @@ def add_picker(
         )
 
     # return response
-    return CreateFullPickerResponse(
+    return FullPickerResponse(
         external_id=created_picker.external_id,
         cronjob=created_picker.cronjob,
         source_url=source.url,
         feed_external_id=feed.external_id,
         created_at=created_picker.created_at,
         filters=filters_response
+    )
+
+@app.get("/v1/pickers/{picker_external_id}", status_code=status.HTTP_200_OK)
+def add_picker(
+    picker_external_id: UUID,
+    filter_service: FilterService = Depends(get_filter_service), # noqa: B008
+    picker_service: PickerService = Depends(get_picker_service), # noqa: B008
+    feed_service: FeedService = Depends(get_feed_service), # noqa: B008
+    source_service: SourceService = Depends(get_source_service), # noqa: B008
+) -> FullPickerResponse | None:
+    # picker
+    picker = picker_service.get_picker_by_external_id(
+        external_id=picker_external_id
+    )
+    if not picker:
+        raise HTTPException(status_code=404, detail="Picker not found")
+
+    # source
+    source = source_service.get_source_by_id(
+        picker.source_id
+    )
+
+    # feed
+    feed = feed_service.get_feed_by_id(
+        picker.feed_id
+    )
+
+    # filters
+    filters = filter_service.get_filters_by_picker_id(
+        picker_id=picker.id
+    )
+    filter_items = [
+        map_filter_to_filter_item(
+            filter
+        )
+        for filter in filters
+    ]
+
+    return FullPickerResponse(
+        external_id=picker.external_id,
+        cronjob=picker.cronjob,
+        source_url=source.url,
+        feed_external_id=feed.external_id,
+        created_at=picker.created_at,
+        filters=filter_items
     )
 
 

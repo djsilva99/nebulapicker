@@ -73,3 +73,14 @@ class SourcesRepository(SourcePort):
             name=result["name"],
             created_at=result["created_at"],
         )
+
+    def get_by_id(self, id: int) -> Source | None:
+        sql = text(
+            "SELECT id, external_id, url, name, created_at "
+            "FROM sources WHERE id = :id;"
+        )
+        result = self.db.execute(sql, {"id": str(id)}).mappings().first()
+
+        if result:
+            return Source(**result)
+        return None

@@ -20,7 +20,7 @@ class CreateFullPickerRequest(BaseModel):
         return self
 
 
-class CreateFullPickerResponse(BaseModel):
+class FullPickerResponse(BaseModel):
     cronjob: str
     source_url: str
     filters: list[FilterItem]

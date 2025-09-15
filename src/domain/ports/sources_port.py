@@ -21,3 +21,7 @@ class SourcePort(ABC):
     @abstractmethod
     def get_by_url(self, url: str) -> Source | None:
         pass
+
+    @abstractmethod
+    def get_by_id(self, id: int) -> Source | None:
+        pass
