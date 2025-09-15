@@ -173,3 +173,49 @@ def test_get_by_external_id_returns_none(db_session, pickers_repo):
 
     # THEN
     assert results is None
+
+
+def test_delete_existing_picker(db_session):
+    # GIVEN
+    db_session.execute(
+        text(
+            "INSERT INTO feeds (id, name)"
+            "VALUES (1, 'feed_fake_name')"
+        )
+    )
+    db_session.execute(
+        text(
+            "INSERT INTO sources (id, url)"
+            "VALUES (1, 'www.fake_source.com/feed')"
+        )
+    )
+    db_session.execute(text(
+        "INSERT INTO pickers (source_id, feed_id, cronjob, external_id) "
+        "VALUES (:source_id, :feed_id, :cronjob, gen_random_uuid())"
+    ), {"source_id": 1, "feed_id": 1, "cronjob": "*/5 * * * *"})
+    db_session.commit()
+
+    picker_id = db_session.execute(text("SELECT id FROM pickers LIMIT 1")).scalar_one()
+
+    repo = PickersRepository(db_session)
+
+    # WHEN
+    deleted = repo.delete(picker_id)
+
+    # THEN
+    assert deleted is True
+    result = db_session.execute(
+        text("SELECT * FROM pickers WHERE id = :id"),
+        {"id": picker_id}
+    ).first()
+    assert result is None
+
+
+def test_delete_non_existing_picker(db_session):
+    repo = PickersRepository(db_session)
+
+    # WHEN
+    deleted = repo.delete(99999)
+
+    # THEN
+    assert deleted is False

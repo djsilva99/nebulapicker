@@ -82,3 +82,27 @@ def test_get_filters_by_picker_id_returns_empty(filter_service, filters_port_moc
     # THEN
     filters_port_mock.get_by_picker_id.assert_called_once()
     assert all_filters == filters
+
+
+def test_delete_filter_success(filter_service, filters_port_mock):
+    # GIVEN
+    filters_port_mock.delete.return_value = True
+
+    # WHEN
+    result = filter_service.delete_filter(123)
+
+    # THEN
+    filters_port_mock.delete.assert_called_once_with(123)
+    assert result is True
+
+
+def test_delete_filter_not_found(filter_service, filters_port_mock):
+    # GIVEN
+    filters_port_mock.delete.return_value = False
+
+    # WHEN
+    result = filter_service.delete_filter(999)
+
+    # THEN
+    filters_port_mock.delete.assert_called_once_with(999)
+    assert result is False

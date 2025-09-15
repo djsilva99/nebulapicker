@@ -78,3 +78,27 @@ def test_get_filters_by_picker_id_returns_none(picker_service, pickers_port_mock
     # THEN
     pickers_port_mock.get_by_external_id.assert_called_once()
     assert picker_response is None
+
+
+def test_delete_picker_success(picker_service, pickers_port_mock):
+    # GIVEN
+    pickers_port_mock.delete.return_value = True
+
+    # WHEN
+    result = picker_service.delete_picker(123)
+
+    # THEN
+    pickers_port_mock.delete.assert_called_once_with(123)
+    assert result is True
+
+
+def test_delete_filter_not_found(picker_service, pickers_port_mock):
+    # GIVEN
+    pickers_port_mock.delete.return_value = False
+
+    # WHEN
+    result = picker_service.delete_picker(999)
+
+    # THEN
+    pickers_port_mock.delete.assert_called_once_with(999)
+    assert result is False

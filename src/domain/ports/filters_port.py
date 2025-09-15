@@ -10,5 +10,9 @@ class FiltersPort(ABC):
         pass
 
     @abstractmethod
+    def delete(self, filter_id: int) -> bool:
+        pass
+
+    @abstractmethod
     def get_by_picker_id(self, picker_id: int) -> list[Filter]:
         pass
