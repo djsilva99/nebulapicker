@@ -7,8 +7,17 @@ from src.adapters.entrypoints.v1.models.feeds import (
     map_feed_to_create_feed_response,
     map_feeds_list_to_list_feeds_response,
 )
+from src.adapters.entrypoints.v1.models.filter import (
+    map_create_filter_request_to_filter_request,
+    map_filter_item_to_create_filter_request,
+    map_filter_to_filter_item,
+)
 from src.adapters.entrypoints.v1.models.job import CreateJobRequest, CreateJobResponse
 from src.adapters.entrypoints.v1.models.logs import APILog
+from src.adapters.entrypoints.v1.models.picker import (
+    CreateFullPickerRequest,
+    CreateFullPickerResponse,
+)
 from src.adapters.entrypoints.v1.models.source import (
     GetAllSourcesResponse,
     map_source_list_to_get_all_sources_response,
@@ -17,12 +26,22 @@ from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
 from src.adapters.repositories.jobs_repository import JobRepository
 from src.adapters.scheduler import Scheduler
 from src.configs.database import get_db
-from src.configs.dependencies.services import get_feed_service, get_job_service, get_source_service
+from src.configs.dependencies.services import (
+    get_feed_service,
+    get_filter_service,
+    get_job_service,
+    get_picker_service,
+    get_source_service,
+)
 from src.configs.settings import Settings
 from src.domain.models.feed import FeedRequest
 from src.domain.models.job import JobRequest
+from src.domain.models.picker import PickerRequest
+from src.domain.models.source import SourceRequest
 from src.domain.services.feed_service import FeedService
+from src.domain.services.filter_service import FilterService
 from src.domain.services.job_service import JobService
+from src.domain.services.picker_service import PickerService
 from src.domain.services.source_service import SourceService
 
 # CONSTANTS
@@ -98,6 +117,80 @@ def list_feeds(
     )
 
 @app.post("/v1/pickers/", status_code=status.HTTP_201_CREATED)
+def add_picker(
+    create_full_picker_request: CreateFullPickerRequest,
+    filter_service: FilterService = Depends(get_filter_service), # noqa: B008
+    picker_service: PickerService = Depends(get_picker_service), # noqa: B008
+    source_service: SourceService = Depends(get_source_service), # noqa: B008
+    feed_service: FeedService = Depends(get_feed_service), # noqa: B008
+) -> CreateFullPickerResponse:
+
+    feed_name = None
+    if create_full_picker_request.feed_name:
+        feed_name = create_full_picker_request.feed_name
+
+    # get or create feed
+    feed = None
+    if create_full_picker_request.feed_external_id:
+        feed = feed_service.get_feed_by_external_id(
+            create_full_picker_request.feed_external_id
+        )
+    else:
+        feed = feed_service.create_feed(
+            FeedRequest(
+                name=feed_name
+            )
+        )
+
+    # get or create source
+    source = source_service.get_source_by_url(
+        create_full_picker_request.source_url
+    )
+    if not source:
+        source = source_service.create_source(
+            SourceRequest(
+                url=create_full_picker_request.source_url
+            )
+        )
+
+    # create picker
+    created_picker = picker_service.create_picker(
+        PickerRequest(
+            cronjob=create_full_picker_request.cronjob,
+            source_id=source.id,
+            feed_id=feed.id
+        )
+    )
+
+    # create filters
+    filters = create_full_picker_request.filters
+    filters_response = []
+    for filter_item in filters:
+        filters_response.append(
+            map_filter_to_filter_item(
+                filter_service.create_filter(
+                    map_create_filter_request_to_filter_request(
+                        map_filter_item_to_create_filter_request(
+                            filter_item,
+                            created_picker.id
+                        )
+                    )
+                )
+            )
+        )
+
+    # return response
+    return CreateFullPickerResponse(
+        external_id=created_picker.external_id,
+        cronjob=created_picker.cronjob,
+        source_url=source.url,
+        feed_external_id=feed.external_id,
+        created_at=created_picker.created_at,
+        filters=filters_response
+    )
+
+
+@app.post("/v1/job/", status_code=status.HTTP_201_CREATED)
 def add_cronjob(
     job_request: CreateJobRequest,
     job_service: JobService = Depends(get_job_service) # noqa: B008

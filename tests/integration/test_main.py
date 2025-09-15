@@ -127,7 +127,7 @@ def test_add_cronjob_success(db_session: Session):
     # WHEN
     with patch("src.main.JobService", return_value=mock_job_service):
         with TestClient(app) as client:
-            response = client.post("/v1/pickers/", json=job_payload)
+            response = client.post("/v1/job/", json=job_payload)
 
     # THEN
     assert response.status_code == 201
@@ -184,3 +184,54 @@ def test_create_feed(client: TestClient, db_session: Session):
     assert response.json()["name"] == "fake_feed_name"
     assert "external_id" in response.json()
     assert "created_at" in response.json()
+
+
+def test_create_picker_success(client: TestClient, db_session: Session):
+    # GIVEN
+    db_session.execute(
+        text("INSERT INTO sources (id, url, name) VALUES (:id, :url, :name)"),
+        {"id": 1, "url": "https://example.com/source", "name": "picker_source"}
+    )
+    db_session.commit()
+
+    picker_payload = {
+        "source_url": "https://example.com/source",
+        #"feed_id": feed_id,
+        "cronjob": "*/10 * * * *",
+        "filters": [
+            {
+                "operation": "identity",
+                "args": "[a]"
+            },
+            {
+                "operation": "identity",
+                "args": "[b]"
+            }
+        ]
+    }
+
+    # WHEN
+    response = client.post("/v1/pickers/", json=picker_payload)
+
+    # THEN
+    assert response.status_code == 201
+    data = response.json()
+    assert data["source_url"] == "https://example.com/source"
+    assert data["cronjob"] == "*/10 * * * *"
+    assert "external_id" in data
+    assert "created_at" in data
+
+
+def test_create_picker_invalid_source_or_feed(client: TestClient, db_session: Session):
+    # GIVEN
+    picker_payload = {
+        "source_url": 9999,
+        "feed_external_id": 8888,
+        "cronjob": "*/15 * * * *",
+    }
+
+    # WHEN
+    response = client.post("/v1/pickers/", json=picker_payload)
+
+    # THEN
+    assert response.status_code == 400 or response.status_code == 422

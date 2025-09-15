@@ -11,3 +11,6 @@ class FeedService:
 
     def get_all_feeds(self) -> list[Feed]:
         return self.feeds_port.get_all()
+
+    def get_feed_by_external_id(self, external_id) -> Feed | None:
+        return self.feeds_port.get_by_external_id(external_id)

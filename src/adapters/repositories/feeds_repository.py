@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from src.domain.models.feed import Feed, FeedRequest
@@ -39,3 +41,14 @@ class FeedsRepository(FeedsPort):
                 Feed(**item._mapping) for item in result
             ]
         return []
+
+    def get_by_external_id(self, external_id: UUID) -> Feed | None:
+        sql = text(
+            "SELECT id, name, external_id, created_at"
+            "FROM feeds WHERE external_id = :external_id;"
+        )
+        result = self.db.execute(sql, {"external_id": external_id})
+
+        if result:
+            return Feed(**result._mapping)
+        return None

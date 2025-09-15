@@ -1,5 +1,5 @@
 from datetime import datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import psycopg
 import pytest
@@ -60,7 +60,7 @@ def repo(db_session):
     return SourcesRepository(db_session)
 
 
-def test_get_by_id_returns_source(repo, db_session):
+def test_get_by_external_id_returns_source(repo, db_session):
     # GIVEN
     external_id = str(uuid4())
     db_session.execute(
@@ -79,13 +79,43 @@ def test_get_by_id_returns_source(repo, db_session):
     inserted_id = db_session.execute(text("SELECT id FROM sources")).scalar_one()
 
     # WHEN
-    source = repo.get_by_id(inserted_id)
+    source = repo.get_by_external_id(UUID(external_id))
 
     # THEN
     assert source is not None
     assert source.id == inserted_id
     assert str(source.external_id) == external_id
     assert source.url == "https://example.com"
+    assert source.name == "Example"
+
+
+def test_get_by_url_returns_source(repo, db_session):
+    # GIVEN
+    url = "www.test.com/feed"
+    external_id = str(uuid4())
+    db_session.execute(
+        text("""
+            INSERT INTO sources (external_id, url, name, created_at)
+            VALUES (:external_id, :url, :name, :created_at)
+        """),
+        {
+            "external_id": external_id,
+            "url": url,
+            "name": "Example",
+            "created_at": datetime(2025, 1, 1, 12, 0, 0),
+        }
+    )
+    db_session.commit()
+    inserted_id = db_session.execute(text("SELECT id FROM sources")).scalar_one()
+
+    # WHEN
+    source = repo.get_by_url(url)
+
+    # THEN
+    assert source is not None
+    assert source.id == inserted_id
+    assert str(source.external_id) == external_id
+    assert source.url == url
     assert source.name == "Example"
 
 
@@ -133,9 +163,17 @@ def test_get_all_returns_empty(repo, db_session):
     assert len(sources) == 0
 
 
-def test_get_by_id_returns_none_when_not_found(repo, db_session):
+def test_get_by_external_id_returns_none_when_not_found(repo, db_session):
     # WHEN
-    source = repo.get_by_id(999)
+    source = repo.get_by_external_id(uuid4())
+
+    # THEN
+    assert source is None
+
+
+def test_get_by_url_returns_none_when_not_found(repo, db_session):
+    # WHEN
+    source = repo.get_by_url("www.test.com/feed")
 
     # THEN
     assert source is None
