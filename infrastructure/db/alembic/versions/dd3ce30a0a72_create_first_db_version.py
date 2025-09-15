@@ -25,14 +25,33 @@ def upgrade():
             id SERIAL PRIMARY KEY,
             url TEXT NOT NULL,
             external_id UUID NOT NULL DEFAULT gen_random_uuid(),
-            name TEXT NOT NULL,
+            name TEXT,
             created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
         
         CREATE TABLE feeds (
             id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL,
+            name TEXT,
             external_id UUID NOT NULL DEFAULT gen_random_uuid(),
+            created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TABLE pickers (
+            id SERIAL PRIMARY KEY,
+            external_id UUID NOT NULL DEFAULT gen_random_uuid(),
+            source_id INT NOT NULL REFERENCES sources(id),
+            feed_id INT NOT NULL REFERENCES feeds(id),
+            cronjob TEXT,
+            created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TYPE operation AS ENUM ('identity');
+        
+        CREATE TABLE filters (
+            id SERIAL PRIMARY KEY,
+            picker_id INT NOT NULL REFERENCES pickers(id),
+            operation operation NOT NULL,
+            args TEXT,
             created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
         
@@ -50,8 +69,11 @@ def upgrade():
 def downgrade():
     op.execute(
         """
+        DROP TABLE filters;
+        DROP TABLE pickers;
         DROP TABLE sources;
         DROP TABLE feeds;
         DROP TABLE jobs;
+        DROP TYPE operation;
         """
     )

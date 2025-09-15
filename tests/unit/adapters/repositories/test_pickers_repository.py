@@ -1,0 +1,175 @@
+from datetime import datetime
+from uuid import uuid4
+
+import psycopg
+import pytest
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+from src.adapters.repositories.pickers_repository import PickersRepository
+from src.domain.models.picker import PickerRequest
+
+TEST_DB_URL = "postgresql://postgres:postgres@localhost:5433/"
+TEST_DB_NAME = "test_nebula_repo"
+
+
+@pytest.fixture(scope="session")
+def setup_test_db():
+    """Create and drop the test database (once per session)."""
+    with psycopg.connect(TEST_DB_URL, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            cur.execute(f'DROP DATABASE IF EXISTS "{TEST_DB_NAME}" WITH (FORCE)')
+            cur.execute(f'CREATE DATABASE "{TEST_DB_NAME}"')
+
+    test_db_url = f"{TEST_DB_URL}{TEST_DB_NAME}"
+
+    # Setup schema once
+    engine = create_engine(test_db_url)
+    with engine.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS sources (
+                id SERIAL PRIMARY KEY,
+                url TEXT NOT NULL,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid(),
+                name TEXT,
+                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS feeds (
+                id SERIAL PRIMARY KEY,
+                name TEXT,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid(),
+                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS pickers (
+                id SERIAL PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid(),
+                source_id INT NOT NULL REFERENCES sources(id),
+                feed_id INT NOT NULL REFERENCES feeds(id),
+                cronjob TEXT,
+                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        """))
+
+    yield test_db_url
+
+    # Drop the test database after the session
+    with psycopg.connect(TEST_DB_URL, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            cur.execute(f'DROP DATABASE IF EXISTS "{TEST_DB_NAME}" WITH (FORCE)')
+
+
+@pytest.fixture
+def db_session(setup_test_db):
+    """Provide a clean database session for each test."""
+    engine = create_engine(setup_test_db)
+    testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    session = testing_session_local()
+
+    # Truncate all tables to reset state
+    session.execute(text("TRUNCATE TABLE pickers, feeds, sources RESTART IDENTITY CASCADE;"))
+    session.commit()
+
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+@pytest.fixture
+def pickers_repo(db_session):
+    return PickersRepository(db_session)
+
+
+
+def test_create_inserts_picker_and_returns_model(db_session, pickers_repo):
+    # GIVEN
+    picker_request = PickerRequest(
+        feed_id=1,
+        source_id=1,
+        cronjob="1,31 * * * *"
+    )
+
+    # Insert a dummy picker so FK works (if pickers table exists in schema)
+    db_session.execute(
+        text(
+            "INSERT INTO feeds (id, name)"
+            "VALUES (1, 'feed_fake_name')"
+        )
+    )
+    db_session.execute(
+        text(
+            "INSERT INTO sources (id, url)"
+            "VALUES (1, 'www.fake_source.com/feed')"
+        )
+    )
+    db_session.commit()
+
+    # WHEN
+    created = pickers_repo.create(picker_request)
+
+    # THEN
+    assert created.source_id == 1
+    assert created.feed_id == 1
+    assert created.cronjob == "1,31 * * * *"
+    assert isinstance(created.created_at, datetime)
+    row = db_session.execute(
+        text(
+            "SELECT * FROM pickers WHERE id = :id"
+        ),
+        {
+            "id": created.id
+        }
+    ).first()
+    assert row is not None
+
+
+def test_get_by_external_id_success(db_session, pickers_repo):
+    # GIVEN
+    external_id = uuid4()
+    db_session.execute(
+        text(
+            "INSERT INTO feeds (id, name)"
+            "VALUES (1, 'feed_fake_name')"
+        )
+    )
+    db_session.execute(
+        text(
+            "INSERT INTO sources (id, url)"
+            "VALUES (1, 'www.fake_source.com/feed')"
+        )
+    )
+    db_session.execute(
+        text("""
+            INSERT INTO pickers (id, feed_id, source_id, cronjob, external_id, created_at)
+            VALUES (:id, :feed_id, :source_id, :cronjob, :external_id, :created_at)
+        """),
+        {
+            "id": 1,
+            "feed_id": 1,
+            "source_id": 1,
+            "cronjob": "* * * * *",
+            "external_id": str(external_id),
+            "created_at": datetime(2025, 1, 1, 12, 0, 0),
+        }
+    )
+    db_session.commit()
+
+    # WHEN
+    result = pickers_repo.get_by_external_id(external_id)
+
+    # THEN
+    assert result is not None
+    assert result.id == 1
+    assert result.feed_id == 1
+    assert result.source_id == 1
+    assert result.cronjob == "* * * * *"
+    assert result.external_id == external_id
+
+
+def test_get_by_external_id_returns_none(db_session, pickers_repo):
+    # WHEN
+    results = pickers_repo.get_by_external_id(uuid4())
+
+    # THEN
+    assert results is None
