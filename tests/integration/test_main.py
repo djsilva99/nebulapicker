@@ -303,3 +303,65 @@ def test_get_picker_not_found(client: TestClient):
     # THEN
     assert response.status_code == 404
     assert response.json()["detail"] == "Picker not found"
+
+
+def test_delete_picker_success(client, db_session):
+    # GIVEN a source
+    db_session.execute(
+        text("INSERT INTO sources (id, url, name) VALUES (1, 'https://example.com', 'src1');")
+    )
+    db_session.commit()
+
+    # GIVEN a feed
+    feed_external_id = str(uuid4())
+    db_session.execute(
+        text("INSERT INTO feeds (id, external_id, name) VALUES (1, :external_id, 'feed1');"),
+        {"external_id": feed_external_id},
+    )
+    db_session.commit()
+
+    # GIVEN a picker
+    picker_external_id = str(uuid4())
+    db_session.execute(
+        text(
+            "INSERT INTO pickers (id, external_id, source_id, feed_id, cronjob) "
+            "VALUES (1, :external_id, 1, 1, '*/5 * * * *');"
+        ),
+        {"external_id": picker_external_id},
+    )
+    db_session.commit()
+
+    # GIVEN filters attached to that picker
+    db_session.execute(
+        text(
+            "INSERT INTO filters (id, picker_id, operation, args) "
+            "VALUES (1, 1, 'identity', '[a]'), (2, 1, 'identity', '[b]');"
+        )
+    )
+    db_session.commit()
+
+    # WHEN
+    response = client.delete(f"/v1/pickers/{picker_external_id}")
+
+    # THEN
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    # picker should be gone
+    picker = db_session.execute(text("SELECT * FROM pickers WHERE id = 1")).first()
+    assert picker is None
+
+    # filters should be gone
+    filters = db_session.execute(text("SELECT * FROM filters WHERE picker_id = 1")).all()
+    assert filters == []
+
+
+def test_delete_picker_not_found(client, db_session):
+    # GIVEN a random external_id
+    missing_external_id = str(uuid4())
+
+    # WHEN
+    response = client.delete(f"/v1/pickers/{missing_external_id}")
+
+    # THEN
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json() == {"detail": "Picker not found"}

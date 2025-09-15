@@ -235,6 +235,29 @@ def get_picker(
         filters=filter_items
     )
 
+@app.delete(
+    "/v1/pickers/{picker_external_id}",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_picker(
+    picker_external_id: UUID,
+    filter_service: FilterService = Depends(get_filter_service), # noqa: B008
+    picker_service: PickerService = Depends(get_picker_service), # noqa: B008
+):
+    picker = picker_service.get_picker_by_external_id(external_id=picker_external_id)
+    if not picker:
+        raise HTTPException(status_code=404, detail="Picker not found")
+
+    # delete filters
+    filters = filter_service.get_filters_by_picker_id(picker_id=picker.id)
+    for filter in filters:
+        filter_service.delete_filter(filter.id)
+
+    # delete picker
+    picker_service.delete_picker(picker_id=picker.id)
+
+    return None
+
 
 @app.post("/v1/job/", status_code=status.HTTP_201_CREATED)
 def add_cronjob(

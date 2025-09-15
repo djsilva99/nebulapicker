@@ -35,6 +35,12 @@ class FiltersRepository(FiltersPort):
             created_at=data["created_at"],
         )
 
+    def delete(self, filter_id: int) -> bool:
+        sql = text("DELETE FROM filters WHERE id = :id RETURNING id")
+        result = self.db.execute(sql, {"id": filter_id}).first()
+        self.db.commit()
+        return result is not None
+
     def get_by_picker_id(self, picker_id: int) -> list[Filter]:
         sql = text(
             "SELECT id, picker_id, operation, args, created_at "

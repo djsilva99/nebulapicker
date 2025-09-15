@@ -11,5 +11,8 @@ class PickerService:
     def create_picker(self, picker_request: PickerRequest) -> Picker:
         return self.pickers_port.create(picker_request)
 
+    def delete_picker(self, picker_id: int) -> bool:
+        return self.pickers_port.delete(picker_id)
+
     def get_picker_by_external_id(self, external_id: UUID) -> Picker:
         return self.pickers_port.get_by_external_id(external_id)

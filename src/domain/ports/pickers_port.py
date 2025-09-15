@@ -11,5 +11,9 @@ class PickersPort(ABC):
         pass
 
     @abstractmethod
+    def delete(self, picker_id: int) -> bool:
+        pass
+
+    @abstractmethod
     def get_by_external_id(self, external_id: UUID) -> Picker | None:
         pass

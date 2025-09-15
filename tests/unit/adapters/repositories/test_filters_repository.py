@@ -242,3 +242,55 @@ def test_get_by_picker_id_returns_none(db_session, filters_repo):
 
     # THEN
     assert results == []
+
+
+def test_delete_existing_filter(db_session):
+    # GIVEN
+    db_session.execute(
+        text(
+            "INSERT INTO feeds (id, name)"
+            "VALUES (1, 'feed_fake_name')"
+        )
+    )
+    db_session.execute(
+        text(
+            "INSERT INTO sources (id, url)"
+            "VALUES (1, 'www.fake_source.com/feed')"
+        )
+    )
+    db_session.execute(
+        text(
+            "INSERT INTO pickers (source_id, feed_id, cronjob)"
+            "VALUES (1, 1, 'teste')"
+        )
+    )
+    db_session.execute(text(
+        "INSERT INTO filters (picker_id, operation, args) "
+        "VALUES (:picker_id, :operation, :args)"
+    ), {"picker_id": 1, "operation": "identity", "args": "[a]"})
+    db_session.commit()
+
+    filter_id = db_session.execute(text("SELECT id FROM filters LIMIT 1")).scalar_one()
+
+    repo = FiltersRepository(db_session)
+
+    # WHEN
+    deleted = repo.delete(filter_id)
+
+    # THEN
+    assert deleted is True
+    result = (db_session.execute(
+        text("SELECT * FROM filters WHERE id = :id"),
+        {"id": filter_id}
+    ).first())
+    assert result is None
+
+
+def test_delete_non_existing_filter(db_session):
+    repo = FiltersRepository(db_session)
+
+    # WHEN: deleting a non-existing filter
+    deleted = repo.delete(99999)  # some ID that won’t exist
+
+    # THEN: it should return False
+    assert deleted is False
