@@ -36,6 +36,16 @@ def upgrade():
             created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
         
+        CREATE TABLE feed_items (
+            id SERIAL PRIMARY KEY,
+            title TEXT,
+            description TEXT,
+            link TEXT,
+            feed_id INT NOT NULL REFERENCES feeds(id),
+            external_id UUID NOT NULL DEFAULT gen_random_uuid(),
+            created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+        
         CREATE TABLE pickers (
             id SERIAL PRIMARY KEY,
             external_id UUID NOT NULL DEFAULT gen_random_uuid(),
@@ -73,6 +83,7 @@ def downgrade():
         DROP TABLE pickers;
         DROP TABLE sources;
         DROP TABLE feeds;
+        DROP TABLE feed_items;
         DROP TABLE jobs;
         DROP TYPE operation;
         """

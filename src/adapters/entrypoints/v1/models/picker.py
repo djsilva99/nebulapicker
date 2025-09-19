@@ -27,3 +27,11 @@ class FullPickerResponse(BaseModel):
     feed_external_id: UUID
     external_id: UUID
     created_at: datetime
+
+
+class FullFeedPickerResponse(BaseModel):
+    cronjob: str
+    source_url: str
+    filters: list[FilterItem]
+    external_id: UUID
+    created_at: datetime

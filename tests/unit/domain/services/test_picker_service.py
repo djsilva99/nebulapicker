@@ -102,3 +102,48 @@ def test_delete_filter_not_found(picker_service, pickers_port_mock):
     # THEN
     pickers_port_mock.delete.assert_called_once_with(999)
     assert result is False
+
+
+def test_get_pickers_by_feed_id_returns_list(picker_service, pickers_port_mock):
+    # GIVEN
+    feed_id = 42
+    pickers = [
+        Picker(
+            id=1,
+            external_id=uuid4(),
+            source_id=101,
+            feed_id=feed_id,
+            cronjob="0 * * * *",
+            created_at=datetime(2025, 1, 1, 12, 0, 0),
+        ),
+        Picker(
+            id=2,
+            external_id=uuid4(),
+            source_id=102,
+            feed_id=feed_id,
+            cronjob="30 * * * *",
+            created_at=datetime(2025, 1, 1, 13, 0, 0),
+        ),
+    ]
+    pickers_port_mock.get_pickers_by_feed_id.return_value = pickers
+
+    # WHEN
+    result = picker_service.get_pickers_by_feed_id(feed_id)
+
+    # THEN
+    pickers_port_mock.get_pickers_by_feed_id.assert_called_once_with(feed_id)
+    assert result == pickers
+    assert all(isinstance(p, Picker) for p in result)
+    assert all(p.feed_id == feed_id for p in result)
+
+
+def test_get_pickers_by_feed_id_returns_empty(picker_service, pickers_port_mock):
+    # GIVEN
+    pickers_port_mock.get_pickers_by_feed_id.return_value = []
+
+    # WHEN
+    result = picker_service.get_pickers_by_feed_id(123)
+
+    # THEN
+    pickers_port_mock.get_pickers_by_feed_id.assert_called_once_with(123)
+    assert result == []

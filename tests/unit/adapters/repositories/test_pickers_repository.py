@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from src.adapters.repositories.pickers_repository import PickersRepository
-from src.domain.models.picker import PickerRequest
+from src.domain.models.picker import Picker, PickerRequest
 
 TEST_DB_URL = "postgresql://postgres:postgres@localhost:5433/"
 TEST_DB_NAME = "test_nebula_repo"
@@ -219,3 +219,130 @@ def test_delete_non_existing_picker(db_session):
 
     # THEN
     assert deleted is False
+
+
+def test_get_pickers_by_feed_id(pickers_repo, db_session):
+    # GIVEN
+    now = datetime(2025, 1, 1, 12, 0, 0)
+    feed_id = db_session.execute(
+        text("""
+            INSERT INTO feeds (
+                name,
+                external_id,
+                created_at
+            )
+            VALUES (
+                :name,
+                :external_id,
+                :created_at
+            )
+            RETURNING id
+        """),
+        {
+            "name": "Test Feed",
+            "external_id": uuid4(),
+            "created_at": now,
+        },
+    ).scalar_one()
+
+    other_feed_id = db_session.execute(
+        text("""
+            INSERT INTO feeds (
+                name,
+                external_id,
+                created_at
+            )
+            VALUES (
+                :name,
+                :external_id,
+                :created_at
+            )
+            RETURNING id
+        """),
+        {
+            "name": "Other Feed",
+            "external_id": uuid4(),
+            "created_at": now,
+        },
+    ).scalar_one()
+
+    source_id1 = db_session.execute(
+        text("""
+            INSERT INTO sources (
+                name,
+                external_id,
+                url,
+                created_at
+            )
+            VALUES (
+                :name,
+                :external_id,
+                :url,
+                :created_at
+            )
+            RETURNING id
+        """),
+        {
+            "name": "Source A",
+            "external_id": uuid4(),
+            "url": "www.example2.com/feed",
+            "created_at": now,
+        },
+    ).scalar_one()
+
+    source_id2 = db_session.execute(
+        text("""
+            INSERT INTO sources (
+                name,
+                external_id,
+                url,
+                created_at
+            )
+            VALUES (
+                :name,
+                :external_id,
+                :url,
+                :created_at
+            )
+            RETURNING id
+        """),
+        {
+            "name": "Source B",
+            "external_id": uuid4(),
+            "url": "www.example.com/feed",
+            "created_at": now,
+        },
+    ).scalar_one()
+
+    db_session.execute(
+        text("""
+            INSERT INTO pickers (id, external_id, source_id, feed_id, cronjob, created_at)
+            VALUES
+                (1, :ext1, :source1, :feed_id, '0 * * * *', :created_at),
+                (2, :ext2, :source2, :feed_id, '30 * * * *', :created_at),
+                (3, :ext3, :source3, :other_feed_id, '15 * * * *', :created_at)
+        """),
+        {
+            "ext1": uuid4(),
+            "ext2": uuid4(),
+            "ext3": uuid4(),
+            "source1": source_id1,
+            "source2": source_id2,
+            "source3": source_id1,
+            "feed_id": feed_id,
+            "other_feed_id": other_feed_id,
+            "created_at": now,
+        },
+    )
+    db_session.commit()
+
+    # WHEN
+    pickers = pickers_repo.get_pickers_by_feed_id(feed_id)
+
+    # THEN
+    assert len(pickers) == 2
+    assert all(isinstance(p, Picker) for p in pickers)
+    assert all(p.feed_id == feed_id for p in pickers)
+    cronjobs = [p.cronjob for p in pickers]
+    assert "0 * * * *" in cronjobs
+    assert "30 * * * *" in cronjobs

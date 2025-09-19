@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from src.domain.models.feed import Feed, FeedRequest
+from src.domain.models.feed import Feed, FeedItem, FeedRequest
 
 
 class FeedsPort(ABC):
@@ -20,4 +20,8 @@ class FeedsPort(ABC):
 
     @abstractmethod
     def get_by_id(self, id: int) -> Feed | None:
+        pass
+
+    @abstractmethod
+    def get_feed_items(self, feed_id: int) -> list[FeedItem]:
         pass

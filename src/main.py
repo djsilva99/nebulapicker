@@ -1,10 +1,12 @@
 import logging
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Response, status
 
 from src.adapters.entrypoints.v1.models.feeds import (
     CreateFeedRequest,
+    FullCompleteFeed,
+    map_feed_item_to_external_feed_item,
     map_feed_to_create_feed_response,
     map_feeds_list_to_list_feeds_response,
 )
@@ -17,6 +19,7 @@ from src.adapters.entrypoints.v1.models.job import CreateJobRequest, CreateJobRe
 from src.adapters.entrypoints.v1.models.logs import APILog
 from src.adapters.entrypoints.v1.models.picker import (
     CreateFullPickerRequest,
+    FullFeedPickerResponse,
     FullPickerResponse,
 )
 from src.adapters.entrypoints.v1.models.source import (
@@ -116,6 +119,77 @@ def list_feeds(
     return map_feeds_list_to_list_feeds_response(
         feeds_list
     )
+
+
+@app.get("/v1/feeds/{external_id}.xml")
+def get_feed_rss(
+    external_id: UUID,
+    feed_service: FeedService = Depends(get_feed_service) # noqa: B008
+):
+    feeds_rss = feed_service.get_rss(external_id)
+
+    return Response(
+        content=feeds_rss,
+        media_type="application/rss+xml",
+        headers={
+            "Content-Disposition": f'inline; filename="{external_id}.xml"'
+        }
+    )
+
+
+@app.get("/v1/feeds/{external_id}")
+def get_feed(
+    external_id: UUID,
+    feed_service: FeedService = Depends(get_feed_service), # noqa: B008
+    filter_service: FilterService = Depends(get_filter_service), # noqa: B008
+    picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
+    source_service: SourceService = Depends(get_source_service), # noqa: B008
+):
+    # get feeds
+    feed = feed_service.get_feed_by_external_id(external_id)
+
+    # get picker
+    pickers = picker_service.get_pickers_by_feed_id(feed.id)
+    picker_items = []
+
+    for picker in pickers:
+        # get source
+        source_url = source_service.get_source_by_id(picker.source_id).url
+        # get filters
+        filters = filter_service.get_filters_by_picker_id(picker.id)
+        filter_items = []
+        for filter in filters:
+            filter_items.append(
+                map_filter_to_filter_item(filter)
+            )
+        picker_items.append(
+            FullFeedPickerResponse(
+                cronjob=picker.cronjob,
+                source_url=source_url,
+                filters=filter_items,
+                external_id=picker.external_id,
+                created_at=picker.created_at
+            )
+        )
+
+    # get feed_items
+    feed_items = feed_service.get_feed_items(feed.id)
+    external_feed_items = []
+    for feed_item in feed_items:
+        external_feed_items.append(
+            map_feed_item_to_external_feed_item(
+                feed_item
+            )
+        )
+
+    return FullCompleteFeed(
+        name=feed.name,
+        external_id=feed.external_id,
+        created_at=feed.created_at,
+        pickers=picker_items,
+        feed_items=external_feed_items
+    )
+
 
 @app.post("/v1/pickers/", status_code=status.HTTP_201_CREATED)
 def add_picker(

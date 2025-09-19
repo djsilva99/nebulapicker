@@ -17,3 +17,7 @@ class PickersPort(ABC):
     @abstractmethod
     def get_by_external_id(self, external_id: UUID) -> Picker | None:
         pass
+
+    @abstractmethod
+    def get_pickers_by_feed_id(self, feed_id: int) -> list[Picker]:
+        pass

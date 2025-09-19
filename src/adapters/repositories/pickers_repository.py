@@ -54,3 +54,15 @@ class PickersRepository(PickersPort):
         if result:
             return Picker(**result)
         return None
+
+    def get_pickers_by_feed_id(
+        self,
+        feed_id: int
+    ) -> list[Picker]:
+        sql = text(
+            "SELECT id, external_id, source_id, feed_id, cronjob, created_at "
+            "FROM pickers WHERE feed_id = :feed_id;"
+        )
+        result = self.db.execute(sql, {"feed_id": feed_id}).mappings()
+
+        return [Picker(**picker) for picker in result]

@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from src.adapters.repositories.feeds_repository import FeedsRepository
-from src.domain.models.feed import Feed, FeedRequest
+from src.domain.models.feed import Feed, FeedItem, FeedRequest
 
 TEST_DB_URL = "postgresql://postgres:postgres@localhost:5433/"
 TEST_DB_NAME = "test_nebula_repo"
@@ -34,6 +34,7 @@ def db_session(setup_test_db):
     testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     with engine.begin() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS feed_items CASCADE;"))
         conn.execute(text("DROP TABLE IF EXISTS feeds CASCADE;"))
         conn.execute(text("""
             CREATE TABLE feeds (
@@ -42,11 +43,25 @@ def db_session(setup_test_db):
                 external_id UUID NOT NULL DEFAULT gen_random_uuid(),
                 created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE feed_items (
+                id SERIAL PRIMARY KEY,
+                title TEXT,
+                description TEXT,
+                link TEXT,
+                feed_id INT NOT NULL REFERENCES feeds(id),
+                external_id UUID NOT NULL DEFAULT gen_random_uuid(),
+                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
         """))
 
     session = testing_session_local()
 
-    session.execute(text("TRUNCATE TABLE feeds RESTART IDENTITY CASCADE;"))
+    session.execute(
+        text(
+            "TRUNCATE TABLE feeds, feed_items "
+            "RESTART IDENTITY CASCADE;"
+        )
+    )
     session.commit()
 
     try:
@@ -169,3 +184,85 @@ def test_get_by_id_returns_source(repo, db_session):
     assert feed.id == inserted_id
     assert str(feed.external_id) == external_id
     assert feed.name == "Example"
+
+
+def test_get_feed_items(repo, db_session):
+    # GIVEN
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (id, external_id, name, created_at)
+            VALUES (:feed_id, :external_id, :name, :created_at)
+        """),
+        {
+            "feed_id": 1,
+            "external_id": uuid4(),
+            "name": "Example",
+            "created_at": datetime(2025, 1, 1, 12, 0, 0),
+        }
+    )
+    db_session.commit()
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (id, external_id, name, created_at)
+            VALUES (:feed_id, :external_id, :name, :created_at)
+        """),
+        {
+            "feed_id": 2,
+            "external_id": uuid4(),
+            "name": "Example 2",
+            "created_at": datetime(2025, 1, 1, 12, 0, 0),
+        }
+    )
+    db_session.commit()
+    db_session.execute(
+        text("""
+            INSERT INTO feed_items (
+                id,
+                feed_id,
+                external_id,
+                link,
+                title,
+                description,
+                created_at
+            )
+            VALUES
+                (
+                    1,
+                    1,
+                    '52c523d6-946b-42e7-9e1f-57e615da9c8b',
+                    'https://example.com/1',
+                    'Title 1',
+                    'Desc 1',
+                    '2025-09-16T10:00:00'
+                ),
+                (
+                    2,
+                    2,
+                    '4add5cc7-e3da-4d1a-a26a-b3dcd76ec0d5',
+                    'https://example.com/3',
+                    'Title 3',
+                    'Desc 3',
+                    '2025-09-16T11:00:00'
+                ),
+                (
+                    3,
+                    1,
+                    'a37d6bc8-f558-411c-9d47-f5f1e92daadb',
+                    'https://example.com/2',
+                    'Title 2',
+                    'Desc 2',
+                    '2025-09-16T12:00:00'
+                )
+        """)
+    )
+    db_session.commit()
+
+    # WHEN
+    items = repo.get_feed_items(feed_id=1)
+
+    # THEN
+    assert len(items) == 2
+    assert isinstance(items[0], FeedItem)
+    assert items[0].title == "Title 1"
+    assert items[1].external_id == UUID("a37d6bc8-f558-411c-9d47-f5f1e92daadb")
+    assert 2 not in [item.id for item in items]
