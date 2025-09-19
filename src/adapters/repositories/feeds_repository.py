@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from src.domain.models.feed import Feed, FeedRequest
+from src.domain.models.feed import Feed, FeedItem, FeedRequest
 from src.domain.ports.feeds_port import FeedsPort
 
 
@@ -61,3 +61,15 @@ class FeedsRepository(FeedsPort):
         if result:
             return Feed(**result)
         return None
+
+    def get_feed_items(self, feed_id: int) -> list[FeedItem]:
+        sql = text(
+            "SELECT id, feed_id, external_id, link, title, description, created_at "
+            "FROM feed_items WHERE feed_id = :feed_id;"
+        )
+        result = self.db.execute(
+            sql,
+            {"feed_id": feed_id}
+        ).mappings()
+
+        return [FeedItem(**feed_item) for feed_item in result]

@@ -365,3 +365,85 @@ def test_delete_picker_not_found(client, db_session):
     # THEN
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "Picker not found"}
+
+
+def test_get_feed_rss_success(client: TestClient, db_session: Session):
+    # GIVEN
+    feed_external_id = str(uuid4())
+    db_session.execute(
+        text("INSERT INTO feeds (id, external_id, name, created_at) "
+             "VALUES (1, :external_id, 'rss_feed', NOW())"),
+        {"external_id": feed_external_id}
+    )
+    db_session.execute(
+        text("INSERT INTO feed_items (id, feed_id, title, link, description, created_at) "
+             "VALUES (1, 1, 'item_title', 'http://example.com/item1', "
+             "'item_description', NOW())")
+    )
+    db_session.commit()
+
+    # WHEN
+    response = client.get(f"/v1/feeds/{feed_external_id}.xml")
+
+    # THEN
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/rss+xml")
+    assert f"{feed_external_id}.xml" in response.headers["content-disposition"]
+    assert "<rss" in response.text
+    assert "<title>item_title</title>" in response.text
+
+
+def test_get_feed_success(client: TestClient, db_session: Session):
+    # GIVEN
+    db_session.execute(
+        text("INSERT INTO sources (id, external_id, url, name) "
+             "VALUES (1, :external_id, 'https://example.com/source', 'src1')"),
+        {"external_id": str(uuid4())}
+    )
+    feed_external_id = str(uuid4())
+    db_session.execute(
+        text("INSERT INTO feeds (id, external_id, name, created_at) "
+             "VALUES (1, :external_id, 'feed1', NOW())"),
+        {"external_id": feed_external_id}
+    )
+    picker_external_id = str(uuid4())
+    db_session.execute(
+        text("INSERT INTO pickers (id, external_id, source_id, feed_id, cronjob, created_at) "
+             "VALUES (1, :external_id, 1, 1, '*/5 * * * *', NOW())"),
+        {"external_id": picker_external_id}
+    )
+    db_session.execute(
+        text("INSERT INTO filters (id, picker_id, operation, args, created_at) "
+             "VALUES (1, 1, 'identity', '[a]', NOW())")
+    )
+    db_session.execute(
+        text("INSERT INTO feed_items (id, feed_id, title, link, description, created_at) "
+             "VALUES (1, 1, 'feed_item_title', 'http://example.com/item1', "
+             "'feed_item_description', NOW())")
+    )
+    db_session.commit()
+
+    # WHEN
+    response = client.get(f"/v1/feeds/{feed_external_id}")
+
+    # THEN
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "feed1"
+    assert data["external_id"] == feed_external_id
+    assert "created_at" in data
+
+    # check pickers
+    assert len(data["pickers"]) == 1
+    picker = data["pickers"][0]
+    assert picker["cronjob"] == "*/5 * * * *"
+    assert picker["source_url"] == "https://example.com/source"
+    assert picker["external_id"] == picker_external_id
+    assert isinstance(picker["filters"], list)
+    assert picker["filters"][0]["operation"] == "identity"
+    assert picker["filters"][0]["args"] == "[a]"
+
+    # check feed_items
+    assert len(data["feed_items"]) == 1
+    assert data["feed_items"][0]["title"] == "feed_item_title"
+    assert data["feed_items"][0]["link"] == "http://example.com/item1"

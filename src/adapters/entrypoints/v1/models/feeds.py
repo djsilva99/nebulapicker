@@ -2,7 +2,8 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
-from src.domain.models.feed import Feed, FeedRequest
+from src.adapters.entrypoints.v1.models.picker import FullFeedPickerResponse
+from src.domain.models.feed import Feed, FeedItem, FeedRequest
 
 
 class CreateFeedRequest(BaseModel):
@@ -23,6 +24,22 @@ class ExternalFeeds(BaseModel):
 
 class ListFeedsResponse(BaseModel):
     feeds: list[ExternalFeeds]
+
+
+class ExternalFeedItem(BaseModel):
+    external_id: UUID
+    link: str
+    title: str
+    created_at: datetime
+
+
+class FullCompleteFeed(BaseModel):
+    name: str
+    external_id: UUID
+    created_at: datetime
+    pickers: list[FullFeedPickerResponse]
+    feed_items: list[ExternalFeedItem]
+
 
 
 def map_create_feed_request_to_feed_request(
@@ -55,4 +72,15 @@ def map_feeds_list_to_list_feeds_response(
             )
             for feed in feeds_list
         ]
+    )
+
+
+def map_feed_item_to_external_feed_item(
+    feed_item: FeedItem
+):
+    return ExternalFeedItem(
+        external_id=feed_item.external_id,
+        link=feed_item.link,
+        title=feed_item.title,
+        created_at=feed_item.created_at
     )

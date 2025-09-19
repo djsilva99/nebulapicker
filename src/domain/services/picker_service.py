@@ -16,3 +16,6 @@ class PickerService:
 
     def get_picker_by_external_id(self, external_id: UUID) -> Picker:
         return self.pickers_port.get_by_external_id(external_id)
+
+    def get_pickers_by_feed_id(self, feed_id: int) -> list[Picker]:
+        return self.pickers_port.get_pickers_by_feed_id(feed_id)
