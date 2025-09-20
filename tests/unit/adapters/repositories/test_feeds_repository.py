@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from src.adapters.repositories.feeds_repository import FeedsRepository
-from src.domain.models.feed import Feed, FeedItem, FeedRequest
+from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest
 
 TEST_DB_URL = "postgresql://postgres:postgres@localhost:5433/"
 TEST_DB_NAME = "test_nebula_repo"
@@ -266,3 +266,50 @@ def test_get_feed_items(repo, db_session):
     assert items[0].title == "Title 1"
     assert items[1].external_id == UUID("a37d6bc8-f558-411c-9d47-f5f1e92daadb")
     assert 2 not in [item.id for item in items]
+
+
+def test_create_feed_item_successfully(repo, db_session):
+    # GIVEN: a feed in the DB
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (id, external_id, name, created_at)
+            VALUES (:id, :external_id, :name, :created_at)
+        """),
+        {
+            "id": 1,
+            "external_id": uuid4(),
+            "name": "Parent Feed",
+            "created_at": datetime(2025, 1, 1, 12, 0, 0),
+        }
+    )
+    db_session.commit()
+
+    feed_item_request = FeedItemRequest(
+        feed_id=1,
+        link="https://example.com/new-item",
+        title="New Item Title",
+        description="New Item Description",
+    )
+
+    # WHEN
+    feed_item = repo.create_feed_item(feed_item_request)
+
+    # THEN: returned object
+    assert isinstance(feed_item, FeedItem)
+    assert feed_item.feed_id == 1
+    assert feed_item.link == "https://example.com/new-item"
+    assert feed_item.title == "New Item Title"
+    assert feed_item.description == "New Item Description"
+    assert isinstance(feed_item.id, int)
+    assert isinstance(feed_item.external_id, UUID)
+    assert isinstance(feed_item.created_at, datetime)
+
+    # AND: verify persisted in DB
+    row = db_session.execute(
+        text("SELECT title, link, description FROM feed_items WHERE id = :id"),
+        {"id": feed_item.id},
+    ).first()
+    assert row is not None
+    assert row.title == "New Item Title"
+    assert row.link == "https://example.com/new-item"
+    assert row.description == "New Item Description"

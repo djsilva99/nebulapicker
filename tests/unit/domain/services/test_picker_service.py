@@ -147,3 +147,55 @@ def test_get_pickers_by_feed_id_returns_empty(picker_service, pickers_port_mock)
     # THEN
     pickers_port_mock.get_pickers_by_feed_id.assert_called_once_with(123)
     assert result == []
+
+
+def test_get_picker_by_id_delegates(picker_service, pickers_port_mock):
+    # GIVEN
+    picker_id = 42
+    expected_picker = Picker(
+        id=picker_id,
+        external_id=uuid4(),
+        source_id=1,
+        feed_id=1,
+        cronjob="0 * * * *",
+        created_at=datetime(2025, 1, 1, 12, 0, 0),
+    )
+    pickers_port_mock.get_picker_by_id.return_value = expected_picker
+
+    # WHEN
+    result = picker_service.get_picker_by_id(picker_id)
+
+    # THEN
+    pickers_port_mock.get_picker_by_id.assert_called_once_with(picker_id)
+    assert result == expected_picker
+
+
+def test_get_all_pickers_delegates(picker_service, pickers_port_mock):
+    # GIVEN
+    pickers_list = [
+        Picker(
+            id=1,
+            external_id=uuid4(),
+            source_id=101,
+            feed_id=201,
+            cronjob="0 * * * *",
+            created_at=datetime(2025, 1, 1, 12, 0, 0),
+        ),
+        Picker(
+            id=2,
+            external_id=uuid4(),
+            source_id=102,
+            feed_id=202,
+            cronjob="30 * * * *",
+            created_at=datetime(2025, 1, 1, 13, 0, 0),
+        ),
+    ]
+    pickers_port_mock.get_all_pickers.return_value = pickers_list
+
+    # WHEN
+    result = picker_service.get_all_pickers()
+
+    # THEN
+    pickers_port_mock.get_all_pickers.assert_called_once()
+    assert result == pickers_list
+    assert all(isinstance(p, Picker) for p in result)

@@ -23,3 +23,10 @@ class FeedItem(BaseModel):
     description: str
     created_at: datetime
     feed_id: int
+
+
+class FeedItemRequest(BaseModel):
+    link: str
+    title: str
+    description: str
+    feed_id: int

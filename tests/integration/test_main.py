@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 import psycopg
@@ -12,8 +12,9 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
+from src.adapters.scheduler import Scheduler
 from src.configs.dependencies.repositories import get_db
-from src.domain.models.job import JobRequest
+from src.domain.services.job_service import JobService
 from src.main import app
 
 TEST_DB_URL = "postgresql://postgres:postgres@localhost:5433/"
@@ -22,6 +23,35 @@ TEST_DB_MIGRATIONS_DIR = str(
     Path(__file__).resolve().parents[2] / "infrastructure" / "db" / "alembic"
 )
 TEST_ALEMBIC_INI = str(Path(__file__).resolve().parents[2])
+
+
+@pytest.fixture
+def mock_services():
+    return {
+        "scheduler": MagicMock(),
+        "picker_service": MagicMock(),
+        "filter_service": MagicMock(),
+        "source_service": MagicMock(),
+        "feed_service": MagicMock(),
+    }
+
+
+@pytest.fixture(autouse=True)
+def setup_job_service(mock_services):
+    scheduler = Scheduler()
+    picker_service = mock_services["picker_service"]
+    filter_service = mock_services["filter_service"]
+    source_service = mock_services["source_service"]
+    feed_service = mock_services["feed_service"]
+
+    app.state.job_service = JobService(
+        scheduler=scheduler,
+        picker_service=picker_service,
+        filter_service=filter_service,
+        source_service=source_service,
+        feed_service=feed_service,
+    )
+    return
 
 
 @pytest.fixture(scope="session")
@@ -112,34 +142,6 @@ def test_read_sources_with_data(client: TestClient, db_session: Session):
     assert data["sources"][0]["url"] == "https://example.com"
     assert data["sources"][0]["name"] == "Example Source"
     assert "external_id" in data["sources"][0]
-
-
-def test_add_cronjob_success(db_session: Session):
-    # GIVEN
-    job_payload = {
-        "func_name": "process_feed",
-        "schedule": "*/5 * * * *",
-        "args": ["https://example.com/feed.xml"],
-    }
-
-    mock_job_service = MagicMock()
-
-    # WHEN
-    with patch("src.main.JobService", return_value=mock_job_service):
-        with TestClient(app) as client:
-            response = client.post("/v1/job/", json=job_payload)
-
-    # THEN
-    assert response.status_code == 201
-    assert response.json() == {'msg': 'Job created'}
-
-    expected_job_request = JobRequest(
-        func_name="process_feed",
-        schedule="*/5 * * * *",
-        args=["https://example.com/feed.xml"],
-    )
-
-    mock_job_service.add_cronjob.assert_called_once_with(expected_job_request)
 
 
 def test_list_feeds_empty(client: TestClient, db_session: Session):

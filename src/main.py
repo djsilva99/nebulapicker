@@ -15,7 +15,6 @@ from src.adapters.entrypoints.v1.models.filter import (
     map_filter_item_to_create_filter_request,
     map_filter_to_filter_item,
 )
-from src.adapters.entrypoints.v1.models.job import CreateJobRequest, CreateJobResponse
 from src.adapters.entrypoints.v1.models.logs import APILog
 from src.adapters.entrypoints.v1.models.picker import (
     CreateFullPickerRequest,
@@ -27,7 +26,10 @@ from src.adapters.entrypoints.v1.models.source import (
     map_source_list_to_get_all_sources_response,
 )
 from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
-from src.adapters.repositories.jobs_repository import JobRepository
+from src.adapters.repositories.feeds_repository import FeedsRepository
+from src.adapters.repositories.filters_repository import FiltersRepository
+from src.adapters.repositories.pickers_repository import PickersRepository
+from src.adapters.repositories.sources_repository import SourcesRepository
 from src.adapters.scheduler import Scheduler
 from src.configs.database import get_db
 from src.configs.dependencies.services import (
@@ -39,7 +41,6 @@ from src.configs.dependencies.services import (
 )
 from src.configs.settings import Settings
 from src.domain.models.feed import FeedRequest
-from src.domain.models.job import JobRequest
 from src.domain.models.picker import PickerRequest
 from src.domain.models.source import SourceRequest
 from src.domain.services.feed_service import FeedService
@@ -69,8 +70,21 @@ scheduler_adapter = Scheduler()
 @app.on_event("startup")
 def startup():
     db_session = next(get_db())
-    job_repository = JobRepository(db_session)
-    job_service = JobService(job_port=job_repository, scheduler=scheduler_adapter)
+    feed_repository = FeedsRepository(db_session)
+    source_repository = SourcesRepository(db_session)
+    picker_repository = PickersRepository(db_session)
+    filter_repository = FiltersRepository(db_session)
+    feed_service = FeedService(feeds_port=feed_repository)
+    source_service = SourceService(source_port=source_repository)
+    picker_service = PickerService(pickers_port=picker_repository)
+    filter_service = FilterService(filters_port=filter_repository)
+    job_service = JobService(
+        feed_service=feed_service,
+        source_service=source_service,
+        picker_service=picker_service,
+        filter_service=filter_service,
+        scheduler=scheduler_adapter
+    )
     app.state.job_service = job_service
     scheduler_adapter.start()
     job_service.load_all()
@@ -198,6 +212,7 @@ def add_picker(
     picker_service: PickerService = Depends(get_picker_service), # noqa: B008
     source_service: SourceService = Depends(get_source_service), # noqa: B008
     feed_service: FeedService = Depends(get_feed_service), # noqa: B008
+    job_service: JobService = Depends(get_job_service) # noqa: B008
 ) -> FullPickerResponse:
 
     feed_name = None
@@ -253,6 +268,9 @@ def add_picker(
                 )
             )
         )
+
+    # create cronjob
+    job_service.add_cronjob(created_picker)
 
     # return response
     return FullPickerResponse(
@@ -331,17 +349,3 @@ def delete_picker(
     picker_service.delete_picker(picker_id=picker.id)
 
     return None
-
-
-@app.post("/v1/job/", status_code=status.HTTP_201_CREATED)
-def add_cronjob(
-    job_request: CreateJobRequest,
-    job_service: JobService = Depends(get_job_service) # noqa: B008
-):
-    cronjob = JobRequest(
-        func_name=job_request.func_name,
-        schedule=job_request.schedule,
-        args=job_request.args,
-    )
-    job_service.add_cronjob(cronjob)
-    return CreateJobResponse()

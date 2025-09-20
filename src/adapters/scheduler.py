@@ -1,7 +1,7 @@
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from src.domain.functions import FUNCTIONS
+from src.domain.handlers import HANDLERS
 from src.domain.models.job import Job
 from src.domain.ports.scheduler_port import SchedulerPort
 
@@ -17,7 +17,7 @@ class Scheduler(SchedulerPort):
         self.scheduler.shutdown()
 
     def add_job(self, job: Job) -> None:
-        func = FUNCTIONS.get(job.func_name)
+        func = HANDLERS.get(job.func_name)
         if not func:
             print(f"Function {job.func_name} not found")
             return

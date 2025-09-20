@@ -137,3 +137,17 @@ def test_get_feed_by_external_id_delegates(feed_service, feeds_port_mock):
     # THEN
     feeds_port_mock.get_by_external_id.assert_called_once_with(external_id)
     assert result == feed
+
+
+def test_create_feed_item_delegates_to_port(feed_service, feeds_port_mock):
+    # GIVEN
+    feed_item_request = MagicMock()
+    expected_feed_item = MagicMock(spec=FeedItem)
+    feeds_port_mock.create_feed_item.return_value = expected_feed_item
+
+    # WHEN
+    result = feed_service.create_feed_item(feed_item_request)
+
+    # THEN
+    feeds_port_mock.create_feed_item.assert_called_once_with(feed_item_request)
+    assert result == expected_feed_item
