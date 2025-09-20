@@ -346,3 +346,90 @@ def test_get_pickers_by_feed_id(pickers_repo, db_session):
     cronjobs = [p.cronjob for p in pickers]
     assert "0 * * * *" in cronjobs
     assert "30 * * * *" in cronjobs
+
+
+def test_get_picker_by_id_returns_picker(pickers_repo, db_session):
+    # GIVEN
+    now = datetime(2025, 1, 1, 12, 0, 0)
+    db_session.execute(text("INSERT INTO feeds (id, name) VALUES (1, 'Feed A')"))
+    db_session.execute(text("INSERT INTO sources (id, url) VALUES (1, 'https://example.com/feed')"))
+    db_session.execute(
+        text("""
+            INSERT INTO pickers (id, external_id, source_id, feed_id, cronjob, created_at)
+            VALUES (:id, :external_id, :source_id, :feed_id, :cronjob, :created_at)
+        """),
+        {
+            "id": 1,
+            "external_id": str(uuid4()),
+            "source_id": 1,
+            "feed_id": 1,
+            "cronjob": "0 * * * *",
+            "created_at": now,
+        },
+    )
+    db_session.commit()
+
+    # WHEN
+    picker = pickers_repo.get_picker_by_id(1)
+
+    # THEN
+    assert picker is not None
+    assert isinstance(picker, Picker)
+    assert picker.id == 1
+    assert picker.feed_id == 1
+    assert picker.source_id == 1
+    assert picker.cronjob == "0 * * * *"
+    assert picker.created_at == now
+
+
+def test_get_picker_by_id_returns_none_if_not_found(pickers_repo):
+    # WHEN
+    picker = pickers_repo.get_picker_by_id(999)
+
+    # THEN
+    assert picker is None
+
+
+def test_get_all_pickers_returns_multiple(pickers_repo, db_session):
+    # GIVEN
+    now = datetime(2025, 1, 1, 12, 0, 0)
+    db_session.execute(text("INSERT INTO feeds (id, name) VALUES (1, 'Feed A'), (2, 'Feed B')"))
+    db_session.execute(
+        text(
+            "INSERT INTO sources (id, url) VALUES (1, 'https://example.com/a'), "
+            "(2, 'https://example.com/b')"
+        )
+    )
+    db_session.execute(
+        text("""
+            INSERT INTO pickers (id, external_id, source_id, feed_id, cronjob, created_at)
+            VALUES
+                (1, :ext1, 1, 1, '0 * * * *', :created_at),
+                (2, :ext2, 2, 2, '30 * * * *', :created_at)
+        """),
+        {
+            "ext1": uuid4(),
+            "ext2": uuid4(),
+            "created_at": now,
+        },
+    )
+    db_session.commit()
+
+    # WHEN
+    pickers = pickers_repo.get_all_pickers()
+
+    # THEN
+    assert isinstance(pickers, list)
+    assert len(pickers) == 2
+    assert all(isinstance(p, Picker) for p in pickers)
+    assert {p.id for p in pickers} == {1, 2}
+    assert {p.cronjob for p in pickers} == {"0 * * * *", "30 * * * *"}
+
+
+def test_get_all_pickers_empty_returns_empty_list(pickers_repo):
+    # WHEN
+    pickers = pickers_repo.get_all_pickers()
+
+    # THEN
+    assert isinstance(pickers, list)
+    assert pickers == []

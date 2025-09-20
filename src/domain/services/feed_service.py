@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from feedgenerator import Rss201rev2Feed
-from src.domain.models.feed import Feed, FeedItem, FeedRequest
+from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest
 from src.domain.ports.feeds_port import FeedsPort
 
 
@@ -23,6 +23,9 @@ class FeedService:
 
     def get_feed_items(self, feed_id: int) -> list[FeedItem]:
         return self.feeds_port.get_feed_items(feed_id)
+
+    def create_feed_item(self, feed_item_request: FeedItemRequest):
+        return self.feeds_port.create_feed_item(feed_item_request)
 
     def get_rss(self, feed_external_id: UUID) -> str:
         feed = self.feeds_port.get_by_external_id(feed_external_id)

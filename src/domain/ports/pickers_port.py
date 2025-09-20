@@ -19,5 +19,13 @@ class PickersPort(ABC):
         pass
 
     @abstractmethod
+    def get_picker_by_id(self, picker_id: int) -> Picker | None:
+        pass
+
+    @abstractmethod
+    def get_all_pickers(self) -> list[Picker]:
+        pass
+
+    @abstractmethod
     def get_pickers_by_feed_id(self, feed_id: int) -> list[Picker]:
         pass

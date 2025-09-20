@@ -64,14 +64,6 @@ def upgrade():
             args TEXT,
             created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
-        
-        CREATE TABLE jobs (
-            id SERIAL PRIMARY KEY,
-            func_name TEXT NOT NULL,
-            args TEXT NOT NULL,
-            schedule TEXT NOT NULL,
-            created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
         """
     )
 
@@ -82,9 +74,8 @@ def downgrade():
         DROP TABLE filters;
         DROP TABLE pickers;
         DROP TABLE sources;
-        DROP TABLE feeds;
         DROP TABLE feed_items;
-        DROP TABLE jobs;
+        DROP TABLE feeds;
         DROP TYPE operation;
         """
     )

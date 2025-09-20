@@ -55,6 +55,17 @@ class PickersRepository(PickersPort):
             return Picker(**result)
         return None
 
+    def get_picker_by_id(self, picker_id: int) -> Picker | None:
+        sql = text(
+            "SELECT id, external_id, source_id, feed_id, cronjob, created_at "
+            "FROM pickers WHERE id = :picker_id;"
+        )
+        result = self.db.execute(sql, {"picker_id": picker_id}).mappings().first()
+
+        if result:
+            return Picker(**result)
+        return None
+
     def get_pickers_by_feed_id(
         self,
         feed_id: int
@@ -64,5 +75,14 @@ class PickersRepository(PickersPort):
             "FROM pickers WHERE feed_id = :feed_id;"
         )
         result = self.db.execute(sql, {"feed_id": feed_id}).mappings()
+
+        return [Picker(**picker) for picker in result]
+
+    def get_all_pickers(self) -> list[Picker]:
+        sql = text(
+            "SELECT id, external_id, source_id, feed_id, cronjob, created_at "
+            "FROM pickers;"
+        )
+        result = self.db.execute(sql).mappings()
 
         return [Picker(**picker) for picker in result]

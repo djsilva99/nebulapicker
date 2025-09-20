@@ -39,7 +39,7 @@ def test_add_job_calls_scheduler_add_job(scheduler, mock_scheduler):
         created_at=datetime(2025, 1, 1, 13, 0, 0)
     )
 
-    with patch("src.adapters.scheduler.FUNCTIONS", {"test_func": MagicMock()}) as mock_funcs:
+    with patch("src.adapters.scheduler.HANDLERS", {"test_func": MagicMock()}) as mock_funcs:
         # WHEN
         scheduler.add_job(job)
 

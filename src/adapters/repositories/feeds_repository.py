@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from src.domain.models.feed import Feed, FeedItem, FeedRequest
+from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest
 from src.domain.ports.feeds_port import FeedsPort
 
 
@@ -73,3 +73,32 @@ class FeedsRepository(FeedsPort):
         ).mappings()
 
         return [FeedItem(**feed_item) for feed_item in result]
+
+    def create_feed_item(self, feed_item_request: FeedItemRequest) -> FeedItem:
+        sql = text(
+            "INSERT INTO feed_items (feed_id, link, title, description) "
+            "VALUES (:feed_id, :link, :title, :description) "
+            "RETURNING id, feed_id, external_id, link, title, description, created_at"
+        )
+        result = self.db.execute(
+            sql,
+            {
+                "feed_id": feed_item_request.feed_id,
+                "link": feed_item_request.link,
+                "title": feed_item_request.title,
+                "description": feed_item_request.description
+            }
+        ).first()
+
+        self.db.commit()
+
+        data = result._mapping
+        return FeedItem(
+            id=data["id"],
+            feed_id=data["feed_id"],
+            external_id=data["external_id"],
+            link=data["link"],
+            title=data["title"],
+            description=data["description"],
+            created_at=data["created_at"],
+        )
