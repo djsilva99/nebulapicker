@@ -55,8 +55,14 @@ def upgrade():
             created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
         
-        CREATE TYPE operation AS ENUM ('identity');
-        
+        CREATE TYPE operation AS ENUM (
+            'identity', 
+            'title_contains', 
+            'description_contains',
+            'title_does_not_contain',
+            'description_does_not_contain'
+        );
+
         CREATE TABLE filters (
             id SERIAL PRIMARY KEY,
             picker_id INT NOT NULL REFERENCES pickers(id),
