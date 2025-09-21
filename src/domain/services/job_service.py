@@ -1,5 +1,13 @@
+import ast
+
 import feedparser
-from src.domain.handlers.operations import identity
+from src.domain.handlers.operations import (
+    description_contains,
+    description_does_not_contain,
+    identity,
+    title_contains,
+    title_does_not_contain,
+)
 from src.domain.models.feed import FeedItemRequest
 from src.domain.models.filter import Operation
 from src.domain.models.job import Job
@@ -61,10 +69,47 @@ class JobService:
         for entry in new_entries:
             to_add = True
             for filter in filters:
+                args = ast.literal_eval(filter.args)
 
                 # identity operation
                 if filter.operation is Operation.identity:
                     to_add = identity(to_add)
+
+                # title_contains operation
+                if filter.operation is Operation.title_contains:
+                    to_add = title_contains(
+                        to_add,
+                        entry.title,
+                        args[0],
+                        int(args[1])
+                    )
+
+                # description_contains operation
+                if filter.operation is Operation.description_contains:
+                    to_add = description_contains(
+                        to_add,
+                        entry.description,
+                        args[0],
+                        int(args[1])
+                    )
+
+                # title_does_not_contain operation
+                if filter.operation is Operation.title_does_not_contain:
+                    to_add = title_does_not_contain(
+                        to_add,
+                        entry.description,
+                        args[0],
+                        int(args[1])
+                    )
+
+                # description_does_not_contain operation
+                if filter.operation is Operation.description_does_not_contain:
+                    to_add = description_does_not_contain(
+                        to_add,
+                        entry.description,
+                        args[0],
+                        int(args[1])
+                    )
 
             if to_add:
                 feed_item_request = FeedItemRequest(

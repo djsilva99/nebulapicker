@@ -6,6 +6,10 @@ from pydantic import BaseModel
 
 class Operation(str, Enum):
     identity = "identity"
+    title_contains = "title_contains"
+    description_contains = "description_contains"
+    title_does_not_contain = "title_does_not_contain"
+    description_does_not_contain = "description_does_not_contain"
 
 
 class Filter(BaseModel):
