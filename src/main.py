@@ -5,7 +5,9 @@ from fastapi import Depends, FastAPI, HTTPException, Response, status
 
 from src.adapters.entrypoints.v1.models.feeds import (
     CreateFeedRequest,
+    CreateFeedResponse,
     FullCompleteFeed,
+    ListFeedsResponse,
     map_feed_item_to_external_feed_item,
     map_feed_to_create_feed_response,
     map_feeds_list_to_list_feeds_response,
@@ -61,7 +63,14 @@ logger = logging.getLogger(__name__)
 
 
 # API
-app = FastAPI()
+app = FastAPI(
+    title="NebulaPicker",
+    description="API for NebulaPicker — manage sources, feeds, pickers and scheduled jobs.",
+    version="0.1.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+)
 
 # SCHEDULER
 scheduler_adapter = Scheduler()
@@ -93,126 +102,225 @@ def startup():
 def shutdown():
     scheduler_adapter.shutdown()
 
-@app.get("/v1")
+@app.get(
+    "/v1",
+    summary="Welcome",
+    description="Return a welcome message for the API.",
+    response_model=WelcomeResponse,
+    tags=["General"]
+)
 def welcome():
+    """
+    Welcome endpoint. Returns a short welcome message.
+    """
     message_collection = WelcomeResponse()
-    logger.info(
-        APILog.WELCOME_SUCCESS,
-    )
+    logger.info(APILog.WELCOME_SUCCESS)
     return message_collection
 
-@app.get("/v1/sources")
+
+@app.get(
+    "/v1/sources",
+    summary="List Sources",
+    description="Return all configured sources.",
+    response_model=GetAllSourcesResponse,
+    tags=["Sources"],
+    responses={
+        200: {
+            "description": "List of sources",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/GetAllSourcesResponse"
+                    }
+                }
+            }
+        }
+    }
+)
 def list_sources(
-    source_service: SourceService = Depends(get_source_service) # noqa: B008
-):
+    source_service: SourceService = Depends(get_source_service)  # noqa: B008
+) -> GetAllSourcesResponse:
     source_list = source_service.get_all_sources()
     return GetAllSourcesResponse(
-        sources=map_source_list_to_get_all_sources_response(
-            source_list=source_list
-        )
+        sources=map_source_list_to_get_all_sources_response(source_list=source_list)
     )
 
-@app.post("/v1/feeds/", status_code=status.HTTP_201_CREATED)
+
+@app.post(
+    "/v1/feeds/",
+    status_code=status.HTTP_201_CREATED,
+    summary="Create Feed",
+    description="Create a new feed with the given name.",
+    tags=["Feeds"],
+    responses={
+        201: {
+            "description": "Feed created",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/CreateFeedResponse"
+                    }
+                }
+            }
+        },
+        422: {"description": "Validation error"}
+    }
+)
 def create_feed(
     create_feed_request: CreateFeedRequest,
-    feed_service: FeedService = Depends(get_feed_service) # noqa: B008
-):
-    feed_request = FeedRequest(
-        name=create_feed_request.name,
-    )
+    feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
+) -> CreateFeedResponse:
+    feed_request = FeedRequest(name=create_feed_request.name)
     created_feed = feed_service.create_feed(feed_request)
-    return map_feed_to_create_feed_response(
-        created_feed
-    )
+    return map_feed_to_create_feed_response(created_feed)
 
-@app.get("/v1/feeds/")
+
+@app.get(
+    "/v1/feeds/",
+    summary="List Feeds",
+    description="Return all feeds.",
+    tags=["Feeds"],
+    responses={
+        200: {
+            "description": "List feeds",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/ListFeedResponse"
+                    }
+                }
+            }
+        }
+    }
+)
 def list_feeds(
-    feed_service: FeedService = Depends(get_feed_service) # noqa: B008
-):
+    feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
+) -> ListFeedsResponse:
     feeds_list = feed_service.get_all_feeds()
-    return map_feeds_list_to_list_feeds_response(
-        feeds_list
-    )
+    return map_feeds_list_to_list_feeds_response(feeds_list)
 
 
-@app.get("/v1/feeds/{external_id}.xml")
+@app.get(
+    "/v1/feeds/{external_id}.xml",
+    summary="Get RSS for feed",
+    description="Return the RSS XML for the feed identified by external_id.",
+    tags=["Feeds"],
+    responses={
+        200: {
+            "description": "RSS XML (application/rss+xml)",
+            "content": {
+                "application/rss+xml": {
+                    "example": "<?xml version='1.0' encoding='utf-8'?><rss>...</rss>"
+                }
+            }
+        },
+        404: {"description": "Feed not found"}
+    }
+)
 def get_feed_rss(
     external_id: UUID,
-    feed_service: FeedService = Depends(get_feed_service) # noqa: B008
+    feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
 ):
+    """
+    Returns raw RSS XML for the requested feed.
+    The response content type is `application/rss+xml`.
+    """
     feeds_rss = feed_service.get_rss(external_id)
-
     return Response(
         content=feeds_rss,
         media_type="application/rss+xml",
-        headers={
-            "Content-Disposition": f'inline; filename="{external_id}.xml"'
-        }
+        headers={"Content-Disposition": f'inline; filename="{external_id}.xml"'}
     )
 
 
-@app.get("/v1/feeds/{external_id}")
+@app.get(
+    "/v1/feeds/{external_id}",
+    summary="Get full feed data",
+    description="Return feed metadata, pickers, filters and feed items for the given feed.",
+    response_model=FullCompleteFeed,
+    tags=["Feeds"],
+    responses={
+        200: {
+            "description": "Full feed details",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/FullCompleteFeed"
+                    }
+                }
+            }
+        },
+        404: {"description": "Feed not found"}
+    }
+)
 def get_feed(
     external_id: UUID,
-    feed_service: FeedService = Depends(get_feed_service), # noqa: B008
-    filter_service: FilterService = Depends(get_filter_service), # noqa: B008
+    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
+    filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
     picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
-    source_service: SourceService = Depends(get_source_service), # noqa: B008
-):
-    # get feeds
+    source_service: SourceService = Depends(get_source_service),  # noqa: B008
+) -> FullCompleteFeed:
     feed = feed_service.get_feed_by_external_id(external_id)
+    if not feed:
+        raise HTTPException(status_code=404, detail="Feed not found")
 
-    # get picker
+    # build pickers list
     pickers = picker_service.get_pickers_by_feed_id(feed.id)
     picker_items = []
-
     for picker in pickers:
-        # get source
         source_url = source_service.get_source_by_id(picker.source_id).url
-        # get filters
         filters = filter_service.get_filters_by_picker_id(picker.id)
-        filter_items = []
-        for filter in filters:
-            filter_items.append(
-                map_filter_to_filter_item(filter)
-            )
+        filter_items = [map_filter_to_filter_item(f) for f in filters]
         picker_items.append(
             FullFeedPickerResponse(
                 cronjob=picker.cronjob,
                 source_url=source_url,
                 filters=filter_items,
                 external_id=picker.external_id,
-                created_at=picker.created_at
+                created_at=picker.created_at,
             )
         )
 
-    # get feed_items
     feed_items = feed_service.get_feed_items(feed.id)
-    external_feed_items = []
-    for feed_item in feed_items:
-        external_feed_items.append(
-            map_feed_item_to_external_feed_item(
-                feed_item
-            )
-        )
+    external_feed_items = [map_feed_item_to_external_feed_item(fi) for fi in feed_items]
 
     return FullCompleteFeed(
         name=feed.name,
         external_id=feed.external_id,
         created_at=feed.created_at,
         pickers=picker_items,
-        feed_items=external_feed_items
+        feed_items=external_feed_items,
     )
 
 
-@app.post("/v1/pickers/", status_code=status.HTTP_201_CREATED)
+@app.post(
+    "/v1/pickers/",
+    status_code=status.HTTP_201_CREATED,
+    summary="Create picker (full)",
+    description="Create a picker, optionally creating a feed and source, and attach filters.",
+    response_model=FullPickerResponse,
+    tags=["Pickers"],
+    responses={
+        201: {
+            "description": "Picker created",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/FullPickerResponse"
+                    }
+                }
+            }
+        },
+        400: {"description": "Bad request / validation error"}
+    }
+)
 def add_picker(
     create_full_picker_request: CreateFullPickerRequest,
-    filter_service: FilterService = Depends(get_filter_service), # noqa: B008
-    picker_service: PickerService = Depends(get_picker_service), # noqa: B008
-    source_service: SourceService = Depends(get_source_service), # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service), # noqa: B008
-    job_service: JobService = Depends(get_job_service) # noqa: B008
+    filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
+    picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
+    source_service: SourceService = Depends(get_source_service),  # noqa: B008
+    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
+    job_service: JobService = Depends(get_job_service),  # noqa: B008
 ) -> FullPickerResponse:
 
     feed_name = None
@@ -272,7 +380,6 @@ def add_picker(
     # create cronjob
     job_service.add_cronjob(created_picker)
 
-    # return response
     return FullPickerResponse(
         external_id=created_picker.external_id,
         cronjob=created_picker.cronjob,
@@ -282,41 +389,48 @@ def add_picker(
         filters=filters_response
     )
 
-@app.get("/v1/pickers/{picker_external_id}", status_code=status.HTTP_200_OK)
+
+@app.get(
+    "/v1/pickers/{picker_external_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Get picker",
+    description="Return a picker and its filters by external id.",
+    response_model=FullPickerResponse,
+    tags=["Pickers"],
+    responses={
+        200: {
+            "description": "Picker details",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/FullPickerResponse"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Picker not found"
+        }
+    }
+)
 def get_picker(
     picker_external_id: UUID,
-    filter_service: FilterService = Depends(get_filter_service), # noqa: B008
-    picker_service: PickerService = Depends(get_picker_service), # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service), # noqa: B008
-    source_service: SourceService = Depends(get_source_service), # noqa: B008
+    filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
+    picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
+    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
+    source_service: SourceService = Depends(get_source_service),  # noqa: B008
 ) -> FullPickerResponse | None:
-    # picker
-    picker = picker_service.get_picker_by_external_id(
-        external_id=picker_external_id
-    )
+    """
+    Get picker details by external id.
+    """
+    picker = picker_service.get_picker_by_external_id(external_id=picker_external_id)
     if not picker:
         raise HTTPException(status_code=404, detail="Picker not found")
 
-    # source
-    source = source_service.get_source_by_id(
-        picker.source_id
-    )
-
-    # feed
-    feed = feed_service.get_feed_by_id(
-        picker.feed_id
-    )
-
-    # filters
-    filters = filter_service.get_filters_by_picker_id(
-        picker_id=picker.id
-    )
-    filter_items = [
-        map_filter_to_filter_item(
-            filter
-        )
-        for filter in filters
-    ]
+    source = source_service.get_source_by_id(picker.source_id)
+    feed = feed_service.get_feed_by_id(picker.feed_id)
+    filters = filter_service.get_filters_by_picker_id(picker.id)
+    filter_items = [map_filter_to_filter_item(f) for f in filters]
 
     return FullPickerResponse(
         external_id=picker.external_id,
@@ -324,28 +438,29 @@ def get_picker(
         source_url=source.url,
         feed_external_id=feed.external_id,
         created_at=picker.created_at,
-        filters=filter_items
+        filters=filter_items,
     )
+
 
 @app.delete(
     "/v1/pickers/{picker_external_id}",
-    status_code=status.HTTP_204_NO_CONTENT
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete picker",
+    description="Delete a picker by external id (and cascade delete its filters).",
+    tags=["Pickers"],
+    responses={204: {"description": "Deleted"}, 404: {"description": "Picker not found"}}
 )
 def delete_picker(
     picker_external_id: UUID,
-    filter_service: FilterService = Depends(get_filter_service), # noqa: B008
-    picker_service: PickerService = Depends(get_picker_service), # noqa: B008
+    filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
+    picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
 ):
     picker = picker_service.get_picker_by_external_id(external_id=picker_external_id)
     if not picker:
         raise HTTPException(status_code=404, detail="Picker not found")
 
-    # delete filters
-    filters = filter_service.get_filters_by_picker_id(picker_id=picker.id)
-    for filter in filters:
+    for filter in filter_service.get_filters_by_picker_id(picker_id=picker.id):
         filter_service.delete_filter(filter.id)
 
-    # delete picker
     picker_service.delete_picker(picker_id=picker.id)
-
     return None
