@@ -66,7 +66,7 @@ def map_feeds_list_to_list_feeds_response(
     return ListFeedsResponse(
         feeds=[
             ExternalFeeds(
-                name=feed.name,
+                name=feed.name if feed.name else "",
                 external_id=feed.external_id,
                 created_at=feed.created_at
             )
