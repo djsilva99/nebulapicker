@@ -11,7 +11,7 @@ class FeedsRepository(FeedsPort):
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, feed_request: FeedRequest) -> Feed:
+    def create_feed(self, feed_request: FeedRequest) -> Feed:
         sql = text(
             "INSERT INTO feeds (name) "
             "VALUES (:name) "
@@ -32,7 +32,7 @@ class FeedsRepository(FeedsPort):
             created_at=data["created_at"],
         )
 
-    def get_all(self) -> list[Feed]:
+    def get_all_feeds(self) -> list[Feed]:
         sql = text("SELECT id, external_id, name, created_at FROM feeds")
         result = self.db.execute(sql)
 
@@ -40,7 +40,7 @@ class FeedsRepository(FeedsPort):
             Feed(**item._mapping) for item in result
         ]
 
-    def get_by_external_id(self, external_id: UUID) -> Feed | None:
+    def get_feed_by_external_id(self, external_id: UUID) -> Feed | None:
         sql = text(
             "SELECT id, name, external_id, created_at "
             "FROM feeds WHERE external_id = :external_id;"
@@ -51,7 +51,7 @@ class FeedsRepository(FeedsPort):
             return Feed(**result)
         return None
 
-    def get_by_id(self, id: int) -> Feed | None:
+    def get_feed_by_id(self, id: int) -> Feed | None:
         sql = text(
             "SELECT id, name, external_id, created_at "
             "FROM feeds WHERE id = :id;"
@@ -62,7 +62,7 @@ class FeedsRepository(FeedsPort):
             return Feed(**result)
         return None
 
-    def get_feed_items(self, feed_id: int) -> list[FeedItem]:
+    def get_feed_items_by_feed_id(self, feed_id: int) -> list[FeedItem]:
         sql = text(
             "SELECT id, feed_id, external_id, link, title, description, created_at "
             "FROM feed_items WHERE feed_id = :feed_id;"

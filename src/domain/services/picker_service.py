@@ -9,13 +9,13 @@ class PickerService:
         self.pickers_port = pickers_port
 
     def create_picker(self, picker_request: PickerRequest) -> Picker:
-        return self.pickers_port.create(picker_request)
+        return self.pickers_port.create_picker(picker_request)
 
     def delete_picker(self, picker_id: int) -> bool:
-        return self.pickers_port.delete(picker_id)
+        return self.pickers_port.delete_picker(picker_id)
 
     def get_picker_by_external_id(self, external_id: UUID) -> Picker:
-        return self.pickers_port.get_by_external_id(external_id)
+        return self.pickers_port.get_picker_by_external_id(external_id)
 
     def get_picker_by_id(self, picker_id: int) -> Picker:
         return self.pickers_port.get_picker_by_id(picker_id)

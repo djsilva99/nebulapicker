@@ -36,24 +36,24 @@ def test_get_all_sources_returns_sources(source_service, mock_source_port):
             created_at=datetime(2025, 1, 1, 12, 0, 0),
         ),
     ]
-    mock_source_port.get_all.return_value = fake_sources
+    mock_source_port.get_all_sources.return_value = fake_sources
 
     # WHEN
     result = source_service.get_all_sources()
 
     # THEN
     assert result == fake_sources
-    mock_source_port.get_all.assert_called_once()
+    mock_source_port.get_all_sources.assert_called_once()
 
 
 def test_get_all_sources_returns_empty(source_service, mock_source_port):
     # GIVEN
     fake_sources = []
-    mock_source_port.get_all.return_value = fake_sources
+    mock_source_port.get_all_sources.return_value = fake_sources
 
     # WHEN
     result = source_service.get_all_sources()
 
     # THEN
     assert result == fake_sources
-    mock_source_port.get_all.assert_called_once()
+    mock_source_port.get_all_sources.assert_called_once()

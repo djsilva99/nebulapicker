@@ -83,7 +83,7 @@ def test_create_feed_successfully(repo, db_session):
     )
 
     # WHEN
-    feed = repo.create(feed_request)
+    feed = repo.create_feed(feed_request)
 
     # THEN
     assert feed is not None
@@ -116,7 +116,7 @@ def test_get_all_feeds(repo, db_session):
     db_session.commit()
 
     # WHEN
-    feeds = repo.get_all()
+    feeds = repo.get_all_feeds()
 
     # THEN
     assert len(feeds) == 2
@@ -125,7 +125,7 @@ def test_get_all_feeds(repo, db_session):
 
 def test_get_all_feeds_empty(repo, db_session):
     # WHEN
-    feeds = repo.get_all()
+    feeds = repo.get_all_feeds()
 
     # THEN
     assert len(feeds) == 0
@@ -149,7 +149,7 @@ def test_get_by_external_id_returns_source(repo, db_session):
     inserted_id = db_session.execute(text("SELECT id FROM feeds")).scalar_one()
 
     # WHEN
-    feed = repo.get_by_external_id(UUID(external_id))
+    feed = repo.get_feed_by_external_id(UUID(external_id))
 
     # THEN
     assert feed is not None
@@ -178,7 +178,7 @@ def test_get_by_id_returns_source(repo, db_session):
     inserted_id = db_session.execute(text("SELECT id FROM feeds")).scalar_one()
 
     # WHEN
-    feed = repo.get_by_id(feed_id)
+    feed = repo.get_feed_by_id(feed_id)
 
     # THEN
     assert feed is not None
@@ -259,7 +259,7 @@ def test_get_feed_items(repo, db_session):
     db_session.commit()
 
     # WHEN
-    items = repo.get_feed_items(feed_id=1)
+    items = repo.get_feed_items_by_feed_id(feed_id=1)
 
     # THEN
     assert len(items) == 2

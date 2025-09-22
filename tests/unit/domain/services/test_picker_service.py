@@ -33,13 +33,13 @@ def test_create_picker(picker_service, pickers_port_mock):
         cronjob="30 * * * *",
         created_at=datetime(2025, 1, 1, 12, 0, 0),
     )
-    pickers_port_mock.create.return_value = expected_picker
+    pickers_port_mock.create_picker.return_value = expected_picker
 
     # WHEN
     created_picker = picker_service.create_picker(picker_request)
 
     # THEN
-    pickers_port_mock.create.assert_called_once_with(picker_request)
+    pickers_port_mock.create_picker.assert_called_once_with(picker_request)
     assert created_picker is not None
     assert created_picker.external_id == external_id
     assert created_picker.source_id == 1
@@ -58,49 +58,49 @@ def test_get_pickers_by_external_id_success(picker_service, pickers_port_mock):
         cronjob="30 * * * *",
         created_at=datetime(2025, 1, 1, 12, 0, 0),
     )
-    pickers_port_mock.get_by_external_id.return_value = picker
+    pickers_port_mock.get_picker_by_external_id.return_value = picker
 
     # WHEN
     picker_response = picker_service.get_picker_by_external_id(external_id)
 
     # THEN
-    pickers_port_mock.get_by_external_id.assert_called_once()
+    pickers_port_mock.get_picker_by_external_id.assert_called_once()
     assert picker_response == picker
 
 
 def test_get_filters_by_picker_id_returns_none(picker_service, pickers_port_mock):
     # GIVEN
-    pickers_port_mock.get_by_external_id.return_value = None
+    pickers_port_mock.get_picker_by_external_id.return_value = None
 
     # WHEN
     picker_response = picker_service.get_picker_by_external_id(uuid4())
 
     # THEN
-    pickers_port_mock.get_by_external_id.assert_called_once()
+    pickers_port_mock.get_picker_by_external_id.assert_called_once()
     assert picker_response is None
 
 
 def test_delete_picker_success(picker_service, pickers_port_mock):
     # GIVEN
-    pickers_port_mock.delete.return_value = True
+    pickers_port_mock.delete_picker.return_value = True
 
     # WHEN
     result = picker_service.delete_picker(123)
 
     # THEN
-    pickers_port_mock.delete.assert_called_once_with(123)
+    pickers_port_mock.delete_picker.assert_called_once_with(123)
     assert result is True
 
 
 def test_delete_filter_not_found(picker_service, pickers_port_mock):
     # GIVEN
-    pickers_port_mock.delete.return_value = False
+    pickers_port_mock.delete_picker.return_value = False
 
     # WHEN
     result = picker_service.delete_picker(999)
 
     # THEN
-    pickers_port_mock.delete.assert_called_once_with(999)
+    pickers_port_mock.delete_picker.assert_called_once_with(999)
     assert result is False
 
 

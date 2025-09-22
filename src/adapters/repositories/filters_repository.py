@@ -9,7 +9,7 @@ class FiltersRepository(FiltersPort):
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, filter_request: FilterRequest) -> Filter:
+    def create_filter(self, filter_request: FilterRequest) -> Filter:
         sql = text(
             "INSERT INTO filters (picker_id, operation, args) "
             "VALUES (:picker_id, :operation, :args) "
@@ -35,13 +35,13 @@ class FiltersRepository(FiltersPort):
             created_at=data["created_at"],
         )
 
-    def delete(self, filter_id: int) -> bool:
+    def delete_filter(self, filter_id: int) -> bool:
         sql = text("DELETE FROM filters WHERE id = :id RETURNING id")
         result = self.db.execute(sql, {"id": filter_id}).first()
         self.db.commit()
         return result is not None
 
-    def get_by_picker_id(self, picker_id: int) -> list[Filter]:
+    def get_filter_by_picker_id(self, picker_id: int) -> list[Filter]:
         sql = text(
             "SELECT id, picker_id, operation, args, created_at "
             "FROM filters WHERE picker_id = :picker_id;"

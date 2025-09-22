@@ -79,7 +79,7 @@ def test_get_by_external_id_returns_source(repo, db_session):
     inserted_id = db_session.execute(text("SELECT id FROM sources")).scalar_one()
 
     # WHEN
-    source = repo.get_by_external_id(UUID(external_id))
+    source = repo.get_source_by_external_id(UUID(external_id))
 
     # THEN
     assert source is not None
@@ -110,7 +110,7 @@ def test_get_by_id_returns_source(repo, db_session):
     inserted_id = db_session.execute(text("SELECT id FROM sources")).scalar_one()
 
     # WHEN
-    source = repo.get_by_id(source_id)
+    source = repo.get_source_by_id(source_id)
 
     # THEN
     assert source is not None
@@ -139,7 +139,7 @@ def test_get_by_url_returns_source(repo, db_session):
     inserted_id = db_session.execute(text("SELECT id FROM sources")).scalar_one()
 
     # WHEN
-    source = repo.get_by_url(url)
+    source = repo.get_source_by_url(url)
 
     # THEN
     assert source is not None
@@ -178,7 +178,7 @@ def test_get_all_returns_sources(repo, db_session):
     db_session.commit()
 
     # WHEN
-    sources = repo.get_all()
+    sources = repo.get_all_sources()
 
     # THEN
     assert len(sources) == 2
@@ -187,7 +187,7 @@ def test_get_all_returns_sources(repo, db_session):
 
 def test_get_all_returns_empty(repo, db_session):
     # WHEN
-    sources = repo.get_all()
+    sources = repo.get_all_sources()
 
     # THEN
     assert len(sources) == 0
@@ -195,7 +195,7 @@ def test_get_all_returns_empty(repo, db_session):
 
 def test_get_by_external_id_returns_none_when_not_found(repo, db_session):
     # WHEN
-    source = repo.get_by_external_id(uuid4())
+    source = repo.get_source_by_external_id(uuid4())
 
     # THEN
     assert source is None
@@ -203,7 +203,7 @@ def test_get_by_external_id_returns_none_when_not_found(repo, db_session):
 
 def test_get_by_url_returns_none_when_not_found(repo, db_session):
     # WHEN
-    source = repo.get_by_url("www.test.com/feed")
+    source = repo.get_source_by_url("www.test.com/feed")
 
     # THEN
     assert source is None

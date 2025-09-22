@@ -7,10 +7,10 @@ class FilterService:
         self.filters_port = filters_port
 
     def create_filter(self, filter_request: FilterRequest) -> Filter:
-        return self.filters_port.create(filter_request)
+        return self.filters_port.create_filter(filter_request)
 
     def delete_filter(self, filter_id: int) -> bool:
-        return self.filters_port.delete(filter_id)
+        return self.filters_port.delete_filter(filter_id)
 
     def get_filters_by_picker_id(self, picker_id: int) -> list[Filter]:
-        return self.filters_port.get_by_picker_id(picker_id)
+        return self.filters_port.get_filter_by_picker_id(picker_id)
