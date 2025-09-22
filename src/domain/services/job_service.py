@@ -59,6 +59,7 @@ class JobService:
         filters = self.filter_service.get_filters_by_picker_id(picker_id)
         feed_items = self.feed_service.get_feed_items(picker.feed_id)
         source = self.source_service.get_source_by_id(picker.source_id)
+        source_name = source.name if source.name else ""
         source_set = feedparser.parse(source.url)
         entries = source_set.entries
         new_entries = [
@@ -97,7 +98,7 @@ class JobService:
                 if filter.operation is Operation.title_does_not_contain:
                     to_add = title_does_not_contain(
                         to_add,
-                        entry.description,
+                        entry.title,
                         args[0],
                         int(args[1])
                     )
@@ -116,6 +117,7 @@ class JobService:
                     link=entry.link,
                     title=entry.title,
                     description=entry.description,
-                    feed_id=picker.feed_id
+                    feed_id=picker.feed_id,
+                    author=source_name
                 )
                 self.feed_service.create_feed_item(feed_item_request)

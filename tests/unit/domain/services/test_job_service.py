@@ -1,4 +1,5 @@
 from datetime import datetime
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
@@ -44,7 +45,6 @@ def test_add_cronjob(job_service, mock_services):
 
     job_service.add_cronjob(picker)
 
-    # Assert scheduler.add_job was called with a Job
     assert mock_services["scheduler"].add_job.call_count == 1
     job_arg = mock_services["scheduler"].add_job.call_args[0][0]
     assert isinstance(job_arg, Job)
@@ -54,19 +54,11 @@ def test_add_cronjob(job_service, mock_services):
 
 def test_load_all(job_service, mock_services):
     picker1 = Picker(
-        id=1,
-        cronjob="*/5 * * * *",
-        source_id=1,
-        feed_id=1,
-        external_id=uuid4(),
+        id=1, cronjob="*/5 * * * *", source_id=1, feed_id=1, external_id=uuid4(),
         created_at=datetime(2025, 1, 1, 12, 0, 0)
     )
     picker2 = Picker(
-        id=2,
-        cronjob="*/10 * * * *",
-        source_id=2,
-        feed_id=2,
-        external_id=uuid4(),
+        id=2, cronjob="*/10 * * * *", source_id=2, feed_id=2, external_id=uuid4(),
         created_at=datetime(2025, 1, 1, 13, 0, 0)
     )
     mock_services["picker_service"].get_all_pickers.return_value = [picker1, picker2]
@@ -80,124 +72,113 @@ def test_load_all(job_service, mock_services):
 
 @patch("src.domain.services.job_service.feedparser.parse")
 def test_process_adds_new_entry(mock_parse, job_service, mock_services):
-    # Picker and dependencies
     picker = Picker(
-        id=1,
-        cronjob="*/5 * * * *",
-        source_id=10,
-        feed_id=20,
-        external_id=uuid4(),
-        created_at=datetime(2025, 1, 1, 13, 0, 0)
+        id=1, cronjob="*/5 * * * *", source_id=10, feed_id=20,
+        external_id=uuid4(), created_at=datetime(2025, 1, 1, 13, 0, 0)
     )
     mock_services["picker_service"].get_picker_by_id.return_value = picker
     filter_mock = MagicMock(operation=Operation.identity)
     filter_mock.args = "[]"
-    mock_services["filter_service"].get_filters_by_picker_id.return_value = [
-        filter_mock
-    ]
+    mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
     mock_services["feed_service"].get_feed_items.return_value = []
-    mock_services["source_service"].get_source_by_id.return_value = MagicMock(
-        url="http://example.com/feed"
+    mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
+        url="http://example.com/feed", name="Example Source"
     )
 
-    # Mock feedparser returning one entry
     mock_parse.return_value.entries = [
-        MagicMock(link="http://example.com/article1", title="Article 1", description="Desc 1")
+        SimpleNamespace(
+            link="http://example.com/article1",
+            title="Article 1",
+            description="Desc 1"
+        )
     ]
 
     job_service.process(picker_id=1)
 
-    # Assert a feed item was created
     assert mock_services["feed_service"].create_feed_item.call_count == 1
     feed_item = mock_services["feed_service"].create_feed_item.call_args[0][0]
     assert isinstance(feed_item, FeedItemRequest)
     assert feed_item.link == "http://example.com/article1"
     assert feed_item.feed_id == picker.feed_id
+    assert feed_item.author == "Example Source"
 
 
 @patch("src.domain.services.job_service.feedparser.parse")
 def test_process_skips_existing_entry(mock_parse, job_service, mock_services):
     picker = Picker(
-        id=1,
-        cronjob="*/5 * * * *",
-        source_id=10,
-        feed_id=20,
-        external_id=uuid4(),
-        created_at=datetime(2025, 1, 1, 13, 0, 0)
+        id=1, cronjob="*/5 * * * *", source_id=10, feed_id=20,
+        external_id=uuid4(), created_at=datetime(2025, 1, 1, 13, 0, 0)
     )
     mock_services["picker_service"].get_picker_by_id.return_value = picker
     mock_services["filter_service"].get_filters_by_picker_id.return_value = []
     mock_services["feed_service"].get_feed_items.return_value = [
-        MagicMock(link="http://example.com/article1")
+        SimpleNamespace(link="http://example.com/article1")
     ]
-    mock_services["source_service"].get_source_by_id.return_value = MagicMock(
-        url="http://example.com/feed"
+    mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
+        url="http://example.com/feed", name="Example Source"
     )
 
     mock_parse.return_value.entries = [
-        MagicMock(link="http://example.com/article1", title="Article 1", description="Desc 1")
+        SimpleNamespace(
+            link="http://example.com/article1",
+            title="Article 1",
+            description="Desc 1"
+        )
     ]
 
     job_service.process(picker_id=1)
 
-    # Should not create new feed item
     mock_services["feed_service"].create_feed_item.assert_not_called()
 
 
 @patch("src.domain.services.job_service.feedparser.parse")
 def test_process_with_identity_filter_false(mock_parse, job_service, mock_services):
     picker = Picker(
-        id=1,
-        cronjob="*/5 * * * *",
-        source_id=10,
-        feed_id=20,
-        external_id=uuid4(),
-        created_at=datetime(2025, 1, 1, 13, 0, 0)
+        id=1, cronjob="*/5 * * * *", source_id=10, feed_id=20,
+        external_id=uuid4(), created_at=datetime(2025, 1, 1, 13, 0, 0)
     )
     mock_services["picker_service"].get_picker_by_id.return_value = picker
-    # Returning an "identity" filter ensures identity() gets called
     filter_mock = MagicMock(operation=Operation.identity)
     filter_mock.args = "[]"
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
     mock_services["feed_service"].get_feed_items.return_value = []
-    mock_services["source_service"].get_source_by_id.return_value = MagicMock(
-        url="http://example.com/feed"
+    mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
+        url="http://example.com/feed", name="Example Source"
     )
 
     mock_parse.return_value.entries = [
-        MagicMock(link="http://example.com/article2", title="Article 2", description="Desc 2")
+        SimpleNamespace(
+            link="http://example.com/article2",
+            title="Article 2",
+            description="Desc 2"
+        )
     ]
 
     job_service.process(picker_id=1)
 
-    # Since identity just returns True unchanged, item is created
     mock_services["feed_service"].create_feed_item.assert_called_once()
+
 
 @patch("src.domain.services.job_service.feedparser.parse")
 def test_process_with_title_contains_filter(mock_parse, job_service, mock_services):
     picker = Picker(
-        id=1,
-        cronjob="*/5 * * * *",
-        source_id=10,
-        feed_id=20,
-        external_id=uuid4(),
-        created_at=datetime(2025, 1, 1, 13, 0, 0),
+        id=1, cronjob="*/5 * * * *", source_id=10, feed_id=20,
+        external_id=uuid4(), created_at=datetime(2025, 1, 1, 13, 0, 0)
     )
     mock_services["picker_service"].get_picker_by_id.return_value = picker
-
-    # Filter requires "Article" at least once in the title
-    filter_mock = MagicMock(
-        operation=Operation.title_contains,
-        args="['Article', 1]"
-    )
+    filter_mock = MagicMock(operation=Operation.title_contains, args="['Article', 1]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
     mock_services["feed_service"].get_feed_items.return_value = []
-    mock_services["source_service"].get_source_by_id.return_value = MagicMock(
-        url="http://example.com/feed"
+    mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
+        url="http://example.com/feed", name="Example Source"
     )
 
     mock_parse.return_value.entries = [
-        MagicMock(link="http://example.com/article", title="Article 123", description="Some text")
+        SimpleNamespace(
+            link="http://example.com/article",
+            title="Article 123",
+            description="Some text"
+        )
     ]
 
     job_service.process(picker_id=1)
@@ -211,18 +192,15 @@ def test_process_with_description_contains_filter_fails(mock_parse, job_service,
         id=1, cronjob="*", source_id=10, feed_id=20, external_id=uuid4(), created_at=datetime.now()
     )
     mock_services["picker_service"].get_picker_by_id.return_value = picker
-
-    # Requires "banana" to appear in description at least 2 times
-    filter_mock = MagicMock(
-        operation=Operation.description_contains,
-        args="['banana', 2]"
-    )
+    filter_mock = MagicMock(operation=Operation.description_contains, args="['banana', 2]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
     mock_services["feed_service"].get_feed_items.return_value = []
-    mock_services["source_service"].get_source_by_id.return_value = MagicMock(url="http://feed")
+    mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
+        url="http://feed", name="Example Source"
+    )
 
     mock_parse.return_value.entries = [
-        MagicMock(link="http://item", title="Any", description="banana only once")
+        SimpleNamespace(link="http://item", title="Any", description="banana only once")
     ]
 
     job_service.process(picker_id=1)
@@ -234,23 +212,28 @@ def test_process_with_description_contains_filter_fails(mock_parse, job_service,
 @patch("src.domain.services.job_service.feedparser.parse")
 def test_process_with_title_does_not_contain_filter(mock_parse, job_service, mock_services):
     picker = Picker(
-        id=1, cronjob="*", source_id=10, feed_id=20, external_id=uuid4(), created_at=datetime.now()
+        id=1,
+        cronjob="*",
+        source_id=10,
+        feed_id=20,
+        external_id=uuid4(),
+        created_at=datetime.now()
     )
     mock_services["picker_service"].get_picker_by_id.return_value = picker
-
-    # Exclude items whose description contains "spam"
-    filter_mock = MagicMock(operation=Operation.title_does_not_contain)
-    filter_mock.args = "['spam', 1]"
+    filter_mock = MagicMock(operation=Operation.title_does_not_contain, args="['spam', 1]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
     mock_services["feed_service"].get_feed_items.return_value = []
-    mock_services["source_service"].get_source_by_id.return_value = MagicMock(url="http://feed")
+    mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
+        url="http://feed", name="Example Source"
+    )
 
     mock_parse.return_value.entries = [
-        MagicMock(link="http://item2", title="spam stuff", description="oops"),
+        SimpleNamespace(link="http://item2", title="spam stuff", description="oops")
     ]
+
     job_service.process(picker_id=1)
 
-    assert mock_services["feed_service"].create_feed_item.call_count == 0
+    mock_services["feed_service"].create_feed_item.assert_not_called()
 
 
 @patch("src.domain.services.job_service.feedparser.parse")
@@ -259,24 +242,20 @@ def test_process_with_description_does_not_contain_filter(mock_parse, job_servic
         id=1, cronjob="*", source_id=10, feed_id=20, external_id=uuid4(), created_at=datetime.now()
     )
     mock_services["picker_service"].get_picker_by_id.return_value = picker
-
-    # Exclude items whose description contains "error"
-    filter_mock = MagicMock(
-        operation=Operation.description_does_not_contain,
-        args="['error', 1]"
-    )
+    filter_mock = MagicMock(operation=Operation.description_does_not_contain, args="['error', 1]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
     mock_services["feed_service"].get_feed_items.return_value = []
-    mock_services["source_service"].get_source_by_id.return_value = MagicMock(url="http://feed")
+    mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
+        url="http://feed", name="Example Source"
+    )
 
     mock_parse.return_value.entries = [
-        MagicMock(link="http://ok", title="Good", description="All fine"),
-        MagicMock(link="http://bad", title="Oops", description="error inside"),
+        SimpleNamespace(link="http://ok", title="Good", description="All fine"),
+        SimpleNamespace(link="http://bad", title="Oops", description="error inside"),
     ]
 
     job_service.process(picker_id=1)
 
-    # Only the first entry is added
     assert mock_services["feed_service"].create_feed_item.call_count == 1
     feed_item = mock_services["feed_service"].create_feed_item.call_args[0][0]
     assert feed_item.link == "http://ok"

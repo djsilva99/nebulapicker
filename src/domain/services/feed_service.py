@@ -41,6 +41,7 @@ class FeedService:
                 title=feed_item.title,
                 link=feed_item.link,
                 description=feed_item.description,
+                author_name=feed_item.author,
                 pubdate=feed_item.created_at
             )
 
