@@ -43,7 +43,7 @@ def test_create_filter(filter_service, filters_port_mock):
     assert created_filter.args == "[a]"
 
 
-def test_get_filters_by_picker_id_success(filter_service, filters_port_mock):
+def test_get_filters_by_picker_id_successfully(filter_service, filters_port_mock):
     # GIVEN
     filters = [
         Filter(
@@ -71,7 +71,7 @@ def test_get_filters_by_picker_id_success(filter_service, filters_port_mock):
     assert all_filters == filters
 
 
-def test_get_filters_by_picker_id_returns_empty(filter_service, filters_port_mock):
+def test_get_filters_by_picker_id_that_returns_empty(filter_service, filters_port_mock):
     # GIVEN
     filters = []
     filters_port_mock.get_filter_by_picker_id.return_value = filters
@@ -84,7 +84,7 @@ def test_get_filters_by_picker_id_returns_empty(filter_service, filters_port_moc
     assert all_filters == filters
 
 
-def test_delete_filter_success(filter_service, filters_port_mock):
+def test_delete_filter_successfully(filter_service, filters_port_mock):
     # GIVEN
     filters_port_mock.delete_filter.return_value = True
 

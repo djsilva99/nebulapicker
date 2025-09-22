@@ -18,7 +18,7 @@ def source_service(mock_source_port):
     return SourceService(source_port=mock_source_port)
 
 
-def test_get_all_sources_returns_sources(source_service, mock_source_port):
+def test_get_all_sources_successfully(source_service, mock_source_port):
     # GIVEN
     fake_sources = [
         Source(
@@ -46,7 +46,7 @@ def test_get_all_sources_returns_sources(source_service, mock_source_port):
     mock_source_port.get_all_sources.assert_called_once()
 
 
-def test_get_all_sources_returns_empty(source_service, mock_source_port):
+def test_get_all_sources_that_returns_empty(source_service, mock_source_port):
     # GIVEN
     fake_sources = []
     mock_source_port.get_all_sources.return_value = fake_sources

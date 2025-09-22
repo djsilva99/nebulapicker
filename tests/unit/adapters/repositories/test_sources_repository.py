@@ -60,7 +60,7 @@ def repo(db_session):
     return SourcesRepository(db_session)
 
 
-def test_get_by_external_id_returns_source(repo, db_session):
+def test_get_sourcce_by_external_successfully(repo, db_session):
     # GIVEN
     external_id = str(uuid4())
     db_session.execute(
@@ -89,7 +89,7 @@ def test_get_by_external_id_returns_source(repo, db_session):
     assert source.name == "Example"
 
 
-def test_get_by_id_returns_source(repo, db_session):
+def test_get_source_by_id_successfully(repo, db_session):
     # GIVEN
     source_id = 1
     external_id = str(uuid4())
@@ -119,7 +119,7 @@ def test_get_by_id_returns_source(repo, db_session):
     assert source.name == "Example"
 
 
-def test_get_by_url_returns_source(repo, db_session):
+def test_get_source_by_url_successfully(repo, db_session):
     # GIVEN
     url = "www.test.com/feed"
     external_id = str(uuid4())
@@ -149,7 +149,7 @@ def test_get_by_url_returns_source(repo, db_session):
     assert source.name == "Example"
 
 
-def test_get_all_returns_sources(repo, db_session):
+def test_get_all_sources_successfully(repo, db_session):
     # GIVEN
     db_session.execute(
         text("""
@@ -185,7 +185,7 @@ def test_get_all_returns_sources(repo, db_session):
     assert all(isinstance(s, Source) for s in sources)
 
 
-def test_get_all_returns_empty(repo, db_session):
+def test_get_all_sources_that_returns_empty(repo, db_session):
     # WHEN
     sources = repo.get_all_sources()
 
@@ -193,7 +193,7 @@ def test_get_all_returns_empty(repo, db_session):
     assert len(sources) == 0
 
 
-def test_get_by_external_id_returns_none_when_not_found(repo, db_session):
+def test_get_source_by_external_id_that_returns_none_when_not_found(repo, db_session):
     # WHEN
     source = repo.get_source_by_external_id(uuid4())
 
@@ -201,7 +201,7 @@ def test_get_by_external_id_returns_none_when_not_found(repo, db_session):
     assert source is None
 
 
-def test_get_by_url_returns_none_when_not_found(repo, db_session):
+def test_get_source_by_url_returns_none_when_not_found(repo, db_session):
     # WHEN
     source = repo.get_source_by_url("www.test.com/feed")
 

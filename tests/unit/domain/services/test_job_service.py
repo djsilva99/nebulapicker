@@ -34,6 +34,7 @@ def job_service(mock_services):
 
 
 def test_add_cronjob(job_service, mock_services):
+    # GIVEN
     picker = Picker(
         id=1,
         cronjob="*/5 * * * *",
@@ -43,8 +44,10 @@ def test_add_cronjob(job_service, mock_services):
         created_at=datetime(2025, 1, 1, 13, 0, 0)
     )
 
+    # WHEN
     job_service.add_cronjob(picker)
 
+    # THEN
     assert mock_services["scheduler"].add_job.call_count == 1
     job_arg = mock_services["scheduler"].add_job.call_args[0][0]
     assert isinstance(job_arg, Job)
@@ -53,6 +56,7 @@ def test_add_cronjob(job_service, mock_services):
 
 
 def test_load_all(job_service, mock_services):
+    # GIVEN
     picker1 = Picker(
         id=1, cronjob="*/5 * * * *", source_id=1, feed_id=1, external_id=uuid4(),
         created_at=datetime(2025, 1, 1, 12, 0, 0)
@@ -63,8 +67,10 @@ def test_load_all(job_service, mock_services):
     )
     mock_services["picker_service"].get_all_pickers.return_value = [picker1, picker2]
 
+    # WHEN
     job_service.load_all()
 
+    # THEN
     jobs_arg = mock_services["scheduler"].load_jobs.call_args[0][0]
     assert len(jobs_arg) == 2
     assert all(isinstance(job, Job) for job in jobs_arg)
@@ -72,6 +78,7 @@ def test_load_all(job_service, mock_services):
 
 @patch("src.domain.services.job_service.feedparser.parse")
 def test_process_adds_new_entry(mock_parse, job_service, mock_services):
+    # GIVEN
     picker = Picker(
         id=1, cronjob="*/5 * * * *", source_id=10, feed_id=20,
         external_id=uuid4(), created_at=datetime(2025, 1, 1, 13, 0, 0)
@@ -93,8 +100,10 @@ def test_process_adds_new_entry(mock_parse, job_service, mock_services):
         )
     ]
 
+    # WHEN
     job_service.process(picker_id=1)
 
+    # THEN
     assert mock_services["feed_service"].create_feed_item.call_count == 1
     feed_item = mock_services["feed_service"].create_feed_item.call_args[0][0]
     assert isinstance(feed_item, FeedItemRequest)
@@ -105,6 +114,7 @@ def test_process_adds_new_entry(mock_parse, job_service, mock_services):
 
 @patch("src.domain.services.job_service.feedparser.parse")
 def test_process_skips_existing_entry(mock_parse, job_service, mock_services):
+    # GIVEN
     picker = Picker(
         id=1, cronjob="*/5 * * * *", source_id=10, feed_id=20,
         external_id=uuid4(), created_at=datetime(2025, 1, 1, 13, 0, 0)
@@ -126,13 +136,16 @@ def test_process_skips_existing_entry(mock_parse, job_service, mock_services):
         )
     ]
 
+    # WHEN
     job_service.process(picker_id=1)
 
+    # THEN
     mock_services["feed_service"].create_feed_item.assert_not_called()
 
 
 @patch("src.domain.services.job_service.feedparser.parse")
-def test_process_with_identity_filter_false(mock_parse, job_service, mock_services):
+def test_process_with_identity_filter(mock_parse, job_service, mock_services):
+    # GIVEN
     picker = Picker(
         id=1, cronjob="*/5 * * * *", source_id=10, feed_id=20,
         external_id=uuid4(), created_at=datetime(2025, 1, 1, 13, 0, 0)
@@ -154,13 +167,16 @@ def test_process_with_identity_filter_false(mock_parse, job_service, mock_servic
         )
     ]
 
+    # WHEN
     job_service.process(picker_id=1)
 
+    # THEN
     mock_services["feed_service"].create_feed_item.assert_called_once()
 
 
 @patch("src.domain.services.job_service.feedparser.parse")
 def test_process_with_title_contains_filter(mock_parse, job_service, mock_services):
+    # GIVEN
     picker = Picker(
         id=1, cronjob="*/5 * * * *", source_id=10, feed_id=20,
         external_id=uuid4(), created_at=datetime(2025, 1, 1, 13, 0, 0)
@@ -181,13 +197,16 @@ def test_process_with_title_contains_filter(mock_parse, job_service, mock_servic
         )
     ]
 
+    # WHEN
     job_service.process(picker_id=1)
 
+    # THEN
     mock_services["feed_service"].create_feed_item.assert_called_once()
 
 
 @patch("src.domain.services.job_service.feedparser.parse")
 def test_process_with_description_contains_filter_fails(mock_parse, job_service, mock_services):
+    # GIVEN
     picker = Picker(
         id=1, cronjob="*", source_id=10, feed_id=20, external_id=uuid4(), created_at=datetime.now()
     )
@@ -203,14 +222,17 @@ def test_process_with_description_contains_filter_fails(mock_parse, job_service,
         SimpleNamespace(link="http://item", title="Any", description="banana only once")
     ]
 
+    # WHEN
     job_service.process(picker_id=1)
 
+    # THEN
     mock_services["feed_service"].create_feed_item.assert_not_called()
 
 
 @patch("src.domain.services.job_service.ast.literal_eval", return_value=["spam", 1])
 @patch("src.domain.services.job_service.feedparser.parse")
 def test_process_with_title_does_not_contain_filter(mock_parse, job_service, mock_services):
+    # GIVEN
     picker = Picker(
         id=1,
         cronjob="*",
@@ -231,13 +253,16 @@ def test_process_with_title_does_not_contain_filter(mock_parse, job_service, moc
         SimpleNamespace(link="http://item2", title="spam stuff", description="oops")
     ]
 
+    # WHEN
     job_service.process(picker_id=1)
 
+    # THEN
     mock_services["feed_service"].create_feed_item.assert_not_called()
 
 
 @patch("src.domain.services.job_service.feedparser.parse")
 def test_process_with_description_does_not_contain_filter(mock_parse, job_service, mock_services):
+    # GIVEN
     picker = Picker(
         id=1, cronjob="*", source_id=10, feed_id=20, external_id=uuid4(), created_at=datetime.now()
     )
@@ -254,8 +279,10 @@ def test_process_with_description_does_not_contain_filter(mock_parse, job_servic
         SimpleNamespace(link="http://bad", title="Oops", description="error inside"),
     ]
 
+    # WHEN
     job_service.process(picker_id=1)
 
+    # THEN
     assert mock_services["feed_service"].create_feed_item.call_count == 1
     feed_item = mock_services["feed_service"].create_feed_item.call_args[0][0]
     assert feed_item.link == "http://ok"
