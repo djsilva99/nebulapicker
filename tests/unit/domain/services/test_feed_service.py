@@ -32,7 +32,7 @@ def test_create_feed_ports(feed_service, feeds_port_mock):
     feed_service.create_feed(feed_request)
 
     # THEN
-    feeds_port_mock.create.assert_called_once_with(feed_request)
+    feeds_port_mock.create_feed.assert_called_once_with(feed_request)
 
 
 def test_get_all_feeds(feed_service, feeds_port_mock):
@@ -51,26 +51,26 @@ def test_get_all_feeds(feed_service, feeds_port_mock):
             created_at=datetime(2025, 1, 1, 14, 0, 0)
         ),
     ]
-    feeds_port_mock.get_all.return_value = feeds
+    feeds_port_mock.get_all_feeds.return_value = feeds
 
     # WHEN
     all_feeds = feed_service.get_all_feeds()
 
     # THEN
-    feeds_port_mock.get_all.assert_called_once()
+    feeds_port_mock.get_all_feeds.assert_called_once()
     assert all_feeds == feeds
 
 
 def test_get_feed_items_delegates_to_port(feed_service, feeds_port_mock):
     # GIVEN
     expected_items = [MagicMock(spec=FeedItem), MagicMock(spec=FeedItem)]
-    feeds_port_mock.get_feed_items.return_value = expected_items
+    feeds_port_mock.get_feed_items_by_feed_id.return_value = expected_items
 
     # WHEN
     result = feed_service.get_feed_items(feed_id=42)
 
     # THEN
-    feeds_port_mock.get_feed_items.assert_called_once_with(42)
+    feeds_port_mock.get_feed_items_by_feed_id.assert_called_once_with(42)
     assert result == expected_items
 
 
@@ -102,8 +102,8 @@ def test_get_rss_builds_rss_feed(feed_service, feeds_port_mock):
             created_at=datetime(2025, 1, 3, 12, 0, 0),
         ),
     ]
-    feeds_port_mock.get_by_external_id.return_value = feed
-    feeds_port_mock.get_feed_items.return_value = items
+    feeds_port_mock.get_feed_by_external_id.return_value = feed
+    feeds_port_mock.get_feed_items_by_feed_id.return_value = items
 
     # WHEN
     rss_xml = feed_service.get_rss(feed.external_id)
@@ -116,8 +116,8 @@ def test_get_rss_builds_rss_feed(feed_service, feeds_port_mock):
     assert "Second item" in rss_xml
     assert "<description>Desc 2</description>" in rss_xml
 
-    feeds_port_mock.get_by_external_id.assert_called_once_with(feed.external_id)
-    feeds_port_mock.get_feed_items.assert_called_once_with(feed.id)
+    feeds_port_mock.get_feed_by_external_id.assert_called_once_with(feed.external_id)
+    feeds_port_mock.get_feed_items_by_feed_id.assert_called_once_with(feed.id)
 
 
 def test_get_feed_by_external_id_delegates(feed_service, feeds_port_mock):
@@ -129,13 +129,13 @@ def test_get_feed_by_external_id_delegates(feed_service, feeds_port_mock):
         external_id=external_id,
         created_at=datetime(2025, 2, 1, 12, 0, 0),
     )
-    feeds_port_mock.get_by_external_id.return_value = feed
+    feeds_port_mock.get_feed_by_external_id.return_value = feed
 
     # WHEN
     result = feed_service.get_feed_by_external_id(external_id)
 
     # THEN
-    feeds_port_mock.get_by_external_id.assert_called_once_with(external_id)
+    feeds_port_mock.get_feed_by_external_id.assert_called_once_with(external_id)
     assert result == feed
 
 

@@ -11,7 +11,7 @@ class PickersRepository(PickersPort):
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, picker_request: PickerRequest) -> Picker:
+    def create_picker(self, picker_request: PickerRequest) -> Picker:
         sql = text(
             "INSERT INTO pickers (source_id, feed_id, cronjob) "
             "VALUES (:source_id, :feed_id, :cronjob) "
@@ -38,13 +38,13 @@ class PickersRepository(PickersPort):
             created_at=data["created_at"],
         )
 
-    def delete(self, picker_id: int) -> bool:
+    def delete_picker(self, picker_id: int) -> bool:
         sql = text("DELETE FROM pickers WHERE id = :id RETURNING id")
         result = self.db.execute(sql, {"id": picker_id}).first()
         self.db.commit()
         return result is not None
 
-    def get_by_external_id(self, external_id: UUID) -> Picker | None:
+    def get_picker_by_external_id(self, external_id: UUID) -> Picker | None:
         sql = text(
             "SELECT id, external_id, source_id, feed_id, cronjob, created_at "
             "FROM pickers WHERE external_id = :external_id;"

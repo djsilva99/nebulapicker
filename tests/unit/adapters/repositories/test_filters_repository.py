@@ -130,7 +130,7 @@ def test_create_inserts_filter_and_returns_model(db_session, filters_repo):
     db_session.commit()
 
     # WHEN
-    created = filters_repo.create(filter_request)
+    created = filters_repo.create_filter(filter_request)
 
     # THEN
     assert created.id is not None
@@ -184,7 +184,7 @@ def test_get_by_picker_id_returns_filters(db_session, filters_repo):
     db_session.commit()
 
     # WHEN
-    results = filters_repo.get_by_picker_id(1)
+    results = filters_repo.get_filter_by_picker_id(1)
 
     # THEN
     assert len(results) == 1
@@ -197,7 +197,7 @@ def test_get_by_picker_id_returns_filters(db_session, filters_repo):
 
 def test_get_by_picker_id_returns_empty_if_none(db_session, filters_repo):
     # WHEN
-    results = filters_repo.get_by_picker_id(9999)
+    results = filters_repo.get_filter_by_picker_id(9999)
 
     # THEN
     assert results == []
@@ -238,7 +238,7 @@ def test_get_by_picker_id_returns_none(db_session, filters_repo):
     db_session.commit()
 
     # WHEN
-    results = filters_repo.get_by_picker_id(2)
+    results = filters_repo.get_filter_by_picker_id(2)
 
     # THEN
     assert results == []
@@ -275,7 +275,7 @@ def test_delete_existing_filter(db_session):
     repo = FiltersRepository(db_session)
 
     # WHEN
-    deleted = repo.delete(filter_id)
+    deleted = repo.delete_filter(filter_id)
 
     # THEN
     assert deleted is True
@@ -290,7 +290,7 @@ def test_delete_non_existing_filter(db_session):
     repo = FiltersRepository(db_session)
 
     # WHEN: deleting a non-existing filter
-    deleted = repo.delete(99999)  # some ID that won’t exist
+    deleted = repo.delete_filter(99999)  # some ID that won’t exist
 
     # THEN: it should return False
     assert deleted is False

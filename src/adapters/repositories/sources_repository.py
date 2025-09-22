@@ -11,7 +11,7 @@ class SourcesRepository(SourcePort):
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, source_request: SourceRequest) -> Source:
+    def create_source(self, source_request: SourceRequest) -> Source:
         sql = text(
             "INSERT INTO sources (url, name) "
             "VALUES (:url, :name) "
@@ -35,7 +35,7 @@ class SourcesRepository(SourcePort):
             created_at=result["created_at"],
         )
 
-    def get_all(self) -> list[Source]:
+    def get_all_sources(self) -> list[Source]:
         sql = text("SELECT id, external_id, url, name, created_at FROM sources")
         result = self.db.execute(sql)
 
@@ -45,7 +45,7 @@ class SourcesRepository(SourcePort):
             ]
         return []
 
-    def get_by_external_id(self, external_id: UUID) -> Source | None:
+    def get_source_by_external_id(self, external_id: UUID) -> Source | None:
         sql = text(
             "SELECT id, external_id, url, name, created_at "
             "FROM sources WHERE external_id = :external_id;"
@@ -56,7 +56,7 @@ class SourcesRepository(SourcePort):
             return Source(**result)
         return None
 
-    def get_by_url(self, url: str) -> Source | None:
+    def get_source_by_url(self, url: str) -> Source | None:
         sql = text(
             "SELECT id, external_id, url, name, created_at "
             "FROM sources WHERE url = :url;"
@@ -74,7 +74,7 @@ class SourcesRepository(SourcePort):
             created_at=result["created_at"],
         )
 
-    def get_by_id(self, id: int) -> Source | None:
+    def get_source_by_id(self, id: int) -> Source | None:
         sql = text(
             "SELECT id, external_id, url, name, created_at "
             "FROM sources WHERE id = :id;"

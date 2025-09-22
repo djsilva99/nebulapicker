@@ -30,13 +30,13 @@ def test_create_filter(filter_service, filters_port_mock):
         args="[a]",
         created_at=datetime(2025, 1, 1, 12, 0, 0),
     )
-    filters_port_mock.create.return_value = expected_filter
+    filters_port_mock.create_filter.return_value = expected_filter
 
     # WHEN
     created_filter = filter_service.create_filter(filter_request)
 
     # THEN
-    filters_port_mock.create.assert_called_once_with(filter_request)
+    filters_port_mock.create_filter.assert_called_once_with(filter_request)
     assert created_filter is not None
     assert created_filter.picker_id == 1
     assert created_filter.operation == Operation('identity')
@@ -61,48 +61,48 @@ def test_get_filters_by_picker_id_success(filter_service, filters_port_mock):
             created_at=datetime(2025, 1, 1, 13, 0, 0)
         ),
     ]
-    filters_port_mock.get_by_picker_id.return_value = filters
+    filters_port_mock.get_filter_by_picker_id.return_value = filters
 
     # WHEN
     all_filters = filter_service.get_filters_by_picker_id(1)
 
     # THEN
-    filters_port_mock.get_by_picker_id.assert_called_once()
+    filters_port_mock.get_filter_by_picker_id.assert_called_once()
     assert all_filters == filters
 
 
 def test_get_filters_by_picker_id_returns_empty(filter_service, filters_port_mock):
     # GIVEN
     filters = []
-    filters_port_mock.get_by_picker_id.return_value = filters
+    filters_port_mock.get_filter_by_picker_id.return_value = filters
 
     # WHEN
     all_filters = filter_service.get_filters_by_picker_id(1)
 
     # THEN
-    filters_port_mock.get_by_picker_id.assert_called_once()
+    filters_port_mock.get_filter_by_picker_id.assert_called_once()
     assert all_filters == filters
 
 
 def test_delete_filter_success(filter_service, filters_port_mock):
     # GIVEN
-    filters_port_mock.delete.return_value = True
+    filters_port_mock.delete_filter.return_value = True
 
     # WHEN
     result = filter_service.delete_filter(123)
 
     # THEN
-    filters_port_mock.delete.assert_called_once_with(123)
+    filters_port_mock.delete_filter.assert_called_once_with(123)
     assert result is True
 
 
 def test_delete_filter_not_found(filter_service, filters_port_mock):
     # GIVEN
-    filters_port_mock.delete.return_value = False
+    filters_port_mock.delete_filter.return_value = False
 
     # WHEN
     result = filter_service.delete_filter(999)
 
     # THEN
-    filters_port_mock.delete.assert_called_once_with(999)
+    filters_port_mock.delete_filter.assert_called_once_with(999)
     assert result is False

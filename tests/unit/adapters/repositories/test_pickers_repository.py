@@ -106,7 +106,7 @@ def test_create_inserts_picker_and_returns_model(db_session, pickers_repo):
     db_session.commit()
 
     # WHEN
-    created = pickers_repo.create(picker_request)
+    created = pickers_repo.create_picker(picker_request)
 
     # THEN
     assert created.source_id == 1
@@ -156,7 +156,7 @@ def test_get_by_external_id_success(db_session, pickers_repo):
     db_session.commit()
 
     # WHEN
-    result = pickers_repo.get_by_external_id(external_id)
+    result = pickers_repo.get_picker_by_external_id(external_id)
 
     # THEN
     assert result is not None
@@ -169,7 +169,7 @@ def test_get_by_external_id_success(db_session, pickers_repo):
 
 def test_get_by_external_id_returns_none(db_session, pickers_repo):
     # WHEN
-    results = pickers_repo.get_by_external_id(uuid4())
+    results = pickers_repo.get_picker_by_external_id(uuid4())
 
     # THEN
     assert results is None
@@ -200,7 +200,7 @@ def test_delete_existing_picker(db_session):
     repo = PickersRepository(db_session)
 
     # WHEN
-    deleted = repo.delete(picker_id)
+    deleted = repo.delete_picker(picker_id)
 
     # THEN
     assert deleted is True
@@ -215,7 +215,7 @@ def test_delete_non_existing_picker(db_session):
     repo = PickersRepository(db_session)
 
     # WHEN
-    deleted = repo.delete(99999)
+    deleted = repo.delete_picker(99999)
 
     # THEN
     assert deleted is False
