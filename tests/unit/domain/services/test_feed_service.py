@@ -120,7 +120,7 @@ def test_get_rss_builds_rss_feed(feed_service, feeds_port_mock):
     feeds_port_mock.get_feed_items_by_feed_id.assert_called_once_with(feed.id)
 
 
-def test_get_feed_by_external_id_delegates(feed_service, feeds_port_mock):
+def test_get_feed_by_external_id_delegates_to_port(feed_service, feeds_port_mock):
     # GIVEN
     external_id = uuid4()
     feed = Feed(

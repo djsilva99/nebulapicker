@@ -270,7 +270,7 @@ def test_get_feed_items(repo, db_session):
 
 
 def test_create_feed_item_successfully(repo, db_session):
-    # GIVEN: a feed in the DB
+    # GIVEN
     db_session.execute(
         text("""
             INSERT INTO feeds (id, external_id, name, created_at)
@@ -295,7 +295,7 @@ def test_create_feed_item_successfully(repo, db_session):
     # WHEN
     feed_item = repo.create_feed_item(feed_item_request)
 
-    # THEN: returned object
+    # THEN
     assert isinstance(feed_item, FeedItem)
     assert feed_item.feed_id == 1
     assert feed_item.link == "https://example.com/new-item"
@@ -304,8 +304,6 @@ def test_create_feed_item_successfully(repo, db_session):
     assert isinstance(feed_item.id, int)
     assert isinstance(feed_item.external_id, UUID)
     assert isinstance(feed_item.created_at, datetime)
-
-    # AND: verify persisted in DB
     row = db_session.execute(
         text("SELECT title, link, description FROM feed_items WHERE id = :id"),
         {"id": feed_item.id},

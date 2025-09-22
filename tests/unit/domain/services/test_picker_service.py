@@ -17,7 +17,7 @@ def picker_service(pickers_port_mock):
     return PickerService(pickers_port=pickers_port_mock)
 
 
-def test_create_picker(picker_service, pickers_port_mock):
+def test_create_picker_successfully(picker_service, pickers_port_mock):
     # GIVEN
     external_id = uuid4()
     picker_request = PickerRequest(
@@ -47,7 +47,7 @@ def test_create_picker(picker_service, pickers_port_mock):
     assert created_picker.cronjob == "30 * * * *"
 
 
-def test_get_pickers_by_external_id_success(picker_service, pickers_port_mock):
+def test_get_pickers_by_external_id_successfully(picker_service, pickers_port_mock):
     # GIVEN
     external_id = uuid4()
     picker = Picker(
@@ -68,7 +68,7 @@ def test_get_pickers_by_external_id_success(picker_service, pickers_port_mock):
     assert picker_response == picker
 
 
-def test_get_filters_by_picker_id_returns_none(picker_service, pickers_port_mock):
+def test_get_filters_by_picker_id_that_returns_none(picker_service, pickers_port_mock):
     # GIVEN
     pickers_port_mock.get_picker_by_external_id.return_value = None
 
@@ -80,7 +80,7 @@ def test_get_filters_by_picker_id_returns_none(picker_service, pickers_port_mock
     assert picker_response is None
 
 
-def test_delete_picker_success(picker_service, pickers_port_mock):
+def test_delete_picker_successfully(picker_service, pickers_port_mock):
     # GIVEN
     pickers_port_mock.delete_picker.return_value = True
 
@@ -104,7 +104,7 @@ def test_delete_filter_not_found(picker_service, pickers_port_mock):
     assert result is False
 
 
-def test_get_pickers_by_feed_id_returns_list(picker_service, pickers_port_mock):
+def test_get_pickers_by_feed_id_that_returns_list(picker_service, pickers_port_mock):
     # GIVEN
     feed_id = 42
     pickers = [
@@ -137,7 +137,7 @@ def test_get_pickers_by_feed_id_returns_list(picker_service, pickers_port_mock):
     assert all(p.feed_id == feed_id for p in result)
 
 
-def test_get_pickers_by_feed_id_returns_empty(picker_service, pickers_port_mock):
+def test_get_pickers_by_feed_id_that_returns_empty(picker_service, pickers_port_mock):
     # GIVEN
     pickers_port_mock.get_pickers_by_feed_id.return_value = []
 
@@ -149,7 +149,7 @@ def test_get_pickers_by_feed_id_returns_empty(picker_service, pickers_port_mock)
     assert result == []
 
 
-def test_get_picker_by_id_delegates(picker_service, pickers_port_mock):
+def test_get_picker_by_id_delegates_to_port(picker_service, pickers_port_mock):
     # GIVEN
     picker_id = 42
     expected_picker = Picker(
@@ -170,7 +170,7 @@ def test_get_picker_by_id_delegates(picker_service, pickers_port_mock):
     assert result == expected_picker
 
 
-def test_get_all_pickers_delegates(picker_service, pickers_port_mock):
+def test_get_all_pickers_delegates_to_port(picker_service, pickers_port_mock):
     # GIVEN
     pickers_list = [
         Picker(

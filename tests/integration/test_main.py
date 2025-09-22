@@ -172,7 +172,7 @@ def test_list_feeds_with_data(client: TestClient, db_session: Session):
     assert "external_id" in data["feeds"][0]
 
 
-def test_create_feed(client: TestClient, db_session: Session):
+def test_create_feed_successfully(client: TestClient, db_session: Session):
     # GIVEN
     feed_payload = {
         "name": "fake_feed_name",
@@ -188,7 +188,7 @@ def test_create_feed(client: TestClient, db_session: Session):
     assert "created_at" in response.json()
 
 
-def test_create_picker_success(client: TestClient, db_session: Session):
+def test_create_picker_successfully(client: TestClient, db_session: Session):
     # GIVEN
     db_session.execute(
         text("INSERT INTO sources (id, url, name) VALUES (:id, :url, :name)"),
@@ -239,8 +239,8 @@ def test_create_picker_invalid_source_or_feed(client: TestClient, db_session: Se
     assert response.status_code == 400 or response.status_code == 422
 
 
-def test_get_picker_success(client: TestClient, db_session: Session):
-    # GIVEN: create source
+def test_get_picker_successfully(client: TestClient, db_session: Session):
+    # GIVEN
     db_session.execute(
         text("INSERT INTO sources (id, external_id, url, name) "
              "VALUES (:id, :external_id, :url, :name)"),
@@ -252,7 +252,6 @@ def test_get_picker_success(client: TestClient, db_session: Session):
         }
     )
 
-    # GIVEN: create feed
     feed_external_id = str(uuid4())
     db_session.execute(
         text("INSERT INTO feeds (id, external_id, name) "
@@ -260,7 +259,6 @@ def test_get_picker_success(client: TestClient, db_session: Session):
         {"id": 1, "external_id": feed_external_id, "name": "feed_name"}
     )
 
-    # GIVEN: create picker
     picker_external_id = str(uuid4())
     db_session.execute(
         text("INSERT INTO pickers (id, external_id, source_id, feed_id, cronjob, created_at) "
@@ -274,7 +272,6 @@ def test_get_picker_success(client: TestClient, db_session: Session):
         }
     )
 
-    # GIVEN: create filters
     db_session.execute(
         text("INSERT INTO filters (id, picker_id, operation, args, created_at) "
              "VALUES (:id, :picker_id, :operation, :args, NOW())"),
@@ -307,14 +304,13 @@ def test_get_picker_not_found(client: TestClient):
     assert response.json()["detail"] == "Picker not found"
 
 
-def test_delete_picker_success(client, db_session):
-    # GIVEN a source
+def test_delete_picker_successfully(client, db_session):
+    # GIVEN
     db_session.execute(
         text("INSERT INTO sources (id, url, name) VALUES (1, 'https://example.com', 'src1');")
     )
     db_session.commit()
 
-    # GIVEN a feed
     feed_external_id = str(uuid4())
     db_session.execute(
         text("INSERT INTO feeds (id, external_id, name) VALUES (1, :external_id, 'feed1');"),
@@ -322,7 +318,6 @@ def test_delete_picker_success(client, db_session):
     )
     db_session.commit()
 
-    # GIVEN a picker
     picker_external_id = str(uuid4())
     db_session.execute(
         text(
@@ -333,7 +328,6 @@ def test_delete_picker_success(client, db_session):
     )
     db_session.commit()
 
-    # GIVEN filters attached to that picker
     db_session.execute(
         text(
             "INSERT INTO filters (id, picker_id, operation, args) "
@@ -347,18 +341,14 @@ def test_delete_picker_success(client, db_session):
 
     # THEN
     assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    # picker should be gone
     picker = db_session.execute(text("SELECT * FROM pickers WHERE id = 1")).first()
     assert picker is None
-
-    # filters should be gone
     filters = db_session.execute(text("SELECT * FROM filters WHERE picker_id = 1")).all()
     assert filters == []
 
 
 def test_delete_picker_not_found(client, db_session):
-    # GIVEN a random external_id
+    # GIVEN
     missing_external_id = str(uuid4())
 
     # WHEN
@@ -369,7 +359,7 @@ def test_delete_picker_not_found(client, db_session):
     assert response.json() == {"detail": "Picker not found"}
 
 
-def test_get_feed_rss_success(client: TestClient, db_session: Session):
+def test_get_feed_rss_successfully(client: TestClient, db_session: Session):
     # GIVEN
     feed_external_id = str(uuid4())
     db_session.execute(
@@ -395,7 +385,7 @@ def test_get_feed_rss_success(client: TestClient, db_session: Session):
     assert "<title>item_title</title>" in response.text
 
 
-def test_get_feed_success(client: TestClient, db_session: Session):
+def test_get_feed_successfully(client: TestClient, db_session: Session):
     # GIVEN
     db_session.execute(
         text("INSERT INTO sources (id, external_id, url, name) "
@@ -434,8 +424,6 @@ def test_get_feed_success(client: TestClient, db_session: Session):
     assert data["name"] == "feed1"
     assert data["external_id"] == feed_external_id
     assert "created_at" in data
-
-    # check pickers
     assert len(data["pickers"]) == 1
     picker = data["pickers"][0]
     assert picker["cronjob"] == "*/5 * * * *"
@@ -444,8 +432,6 @@ def test_get_feed_success(client: TestClient, db_session: Session):
     assert isinstance(picker["filters"], list)
     assert picker["filters"][0]["operation"] == "identity"
     assert picker["filters"][0]["args"] == "[a]"
-
-    # check feed_items
     assert len(data["feed_items"]) == 1
     assert data["feed_items"][0]["title"] == "feed_item_title"
     assert data["feed_items"][0]["link"] == "http://example.com/item1"

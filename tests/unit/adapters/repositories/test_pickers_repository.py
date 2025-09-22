@@ -14,7 +14,6 @@ TEST_DB_NAME = "test_nebula_repo"
 
 @pytest.fixture(scope="session")
 def setup_test_db():
-    """Create and drop the test database (once per session)."""
     with psycopg.connect(TEST_DB_URL, autocommit=True) as conn:
         with conn.cursor() as cur:
             cur.execute(f'DROP DATABASE IF EXISTS "{TEST_DB_NAME}" WITH (FORCE)')
@@ -61,7 +60,6 @@ def setup_test_db():
 
 @pytest.fixture
 def db_session(setup_test_db):
-    """Provide a clean database session for each test."""
     engine = create_engine(setup_test_db)
     testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = testing_session_local()
@@ -82,7 +80,7 @@ def pickers_repo(db_session):
 
 
 
-def test_create_inserts_picker_and_returns_model(db_session, pickers_repo):
+def test_create_picker_successfully(db_session, pickers_repo):
     # GIVEN
     picker_request = PickerRequest(
         feed_id=1,
@@ -90,7 +88,6 @@ def test_create_inserts_picker_and_returns_model(db_session, pickers_repo):
         cronjob="1,31 * * * *"
     )
 
-    # Insert a dummy picker so FK works (if pickers table exists in schema)
     db_session.execute(
         text(
             "INSERT INTO feeds (id, name)"
@@ -124,7 +121,7 @@ def test_create_inserts_picker_and_returns_model(db_session, pickers_repo):
     assert row is not None
 
 
-def test_get_by_external_id_success(db_session, pickers_repo):
+def test_get_picker_by_external_id_success(db_session, pickers_repo):
     # GIVEN
     external_id = uuid4()
     db_session.execute(
@@ -167,7 +164,7 @@ def test_get_by_external_id_success(db_session, pickers_repo):
     assert result.external_id == external_id
 
 
-def test_get_by_external_id_returns_none(db_session, pickers_repo):
+def test_get_picker_by_external_id_returns_none(db_session, pickers_repo):
     # WHEN
     results = pickers_repo.get_picker_by_external_id(uuid4())
 
@@ -175,7 +172,7 @@ def test_get_by_external_id_returns_none(db_session, pickers_repo):
     assert results is None
 
 
-def test_delete_existing_picker(db_session):
+def test_delete_picker_for_existing_picker(db_session):
     # GIVEN
     db_session.execute(
         text(
@@ -211,7 +208,7 @@ def test_delete_existing_picker(db_session):
     assert result is None
 
 
-def test_delete_non_existing_picker(db_session):
+def test_delete_picker_for_non_existing_picker(db_session):
     repo = PickersRepository(db_session)
 
     # WHEN
@@ -221,7 +218,7 @@ def test_delete_non_existing_picker(db_session):
     assert deleted is False
 
 
-def test_get_pickers_by_feed_id(pickers_repo, db_session):
+def test_get_pickers_by_feed_id_successfully(pickers_repo, db_session):
     # GIVEN
     now = datetime(2025, 1, 1, 12, 0, 0)
     feed_id = db_session.execute(
@@ -348,7 +345,7 @@ def test_get_pickers_by_feed_id(pickers_repo, db_session):
     assert "30 * * * *" in cronjobs
 
 
-def test_get_picker_by_id_returns_picker(pickers_repo, db_session):
+def test_get_picker_by_id_that_returns_picker(pickers_repo, db_session):
     # GIVEN
     now = datetime(2025, 1, 1, 12, 0, 0)
     db_session.execute(text("INSERT INTO feeds (id, name) VALUES (1, 'Feed A')"))
@@ -382,7 +379,7 @@ def test_get_picker_by_id_returns_picker(pickers_repo, db_session):
     assert picker.created_at == now
 
 
-def test_get_picker_by_id_returns_none_if_not_found(pickers_repo):
+def test_get_picker_by_id_that_returns_none_if_not_found(pickers_repo):
     # WHEN
     picker = pickers_repo.get_picker_by_id(999)
 
@@ -390,7 +387,7 @@ def test_get_picker_by_id_returns_none_if_not_found(pickers_repo):
     assert picker is None
 
 
-def test_get_all_pickers_returns_multiple(pickers_repo, db_session):
+def test_get_all_pickers_that_returns_multiple(pickers_repo, db_session):
     # GIVEN
     now = datetime(2025, 1, 1, 12, 0, 0)
     db_session.execute(text("INSERT INTO feeds (id, name) VALUES (1, 'Feed A'), (2, 'Feed B')"))
@@ -426,7 +423,7 @@ def test_get_all_pickers_returns_multiple(pickers_repo, db_session):
     assert {p.cronjob for p in pickers} == {"0 * * * *", "30 * * * *"}
 
 
-def test_get_all_pickers_empty_returns_empty_list(pickers_repo):
+def test_get_all_pickers_that_returns_empty_list(pickers_repo):
     # WHEN
     pickers = pickers_repo.get_all_pickers()
 

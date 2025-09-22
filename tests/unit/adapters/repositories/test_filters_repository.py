@@ -13,7 +13,6 @@ TEST_DB_NAME = "test_nebula_repo"
 
 @pytest.fixture(scope="session")
 def setup_test_db():
-    """Create and drop the test database (once per session)."""
     with psycopg.connect(TEST_DB_URL, autocommit=True) as conn:
         with conn.cursor() as cur:
             cur.execute(f'DROP DATABASE IF EXISTS "{TEST_DB_NAME}" WITH (FORCE)')
@@ -75,7 +74,6 @@ def setup_test_db():
 
 @pytest.fixture
 def db_session(setup_test_db):
-    """Provide a clean database session for each test."""
     engine = create_engine(setup_test_db)
     testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = testing_session_local()
@@ -101,7 +99,7 @@ def filters_repo(db_session):
 
 
 
-def test_create_inserts_filter_and_returns_model(db_session, filters_repo):
+def test_create_filter_successfully(db_session, filters_repo):
     # GIVEN
     filter_request = FilterRequest(
         picker_id=1,
@@ -149,7 +147,7 @@ def test_create_inserts_filter_and_returns_model(db_session, filters_repo):
     assert row is not None
 
 
-def test_get_by_picker_id_returns_filters(db_session, filters_repo):
+def test_get_filter_by_picker_id(db_session, filters_repo):
     # GIVEN
     db_session.execute(
         text(
@@ -195,7 +193,7 @@ def test_get_by_picker_id_returns_filters(db_session, filters_repo):
     assert isinstance(filter_obj.created_at, datetime)
 
 
-def test_get_by_picker_id_returns_empty_if_none(db_session, filters_repo):
+def test_get_filter_by_picker_id_returns_empty_if_none(db_session, filters_repo):
     # WHEN
     results = filters_repo.get_filter_by_picker_id(9999)
 
@@ -203,7 +201,7 @@ def test_get_by_picker_id_returns_empty_if_none(db_session, filters_repo):
     assert results == []
 
 
-def test_get_by_picker_id_returns_none(db_session, filters_repo):
+def test_get_filter_by_picker_id_returns_none(db_session, filters_repo):
     # GIVEN
     db_session.execute(
         text(
@@ -287,10 +285,11 @@ def test_delete_existing_filter(db_session):
 
 
 def test_delete_non_existing_filter(db_session):
+    # GIVEN
     repo = FiltersRepository(db_session)
 
-    # WHEN: deleting a non-existing filter
+    # WHEN
     deleted = repo.delete_filter(99999)  # some ID that won’t exist
 
-    # THEN: it should return False
+    # THEN
     assert deleted is False
