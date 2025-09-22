@@ -76,9 +76,9 @@ class FeedsRepository(FeedsPort):
 
     def create_feed_item(self, feed_item_request: FeedItemRequest) -> FeedItem:
         sql = text(
-            "INSERT INTO feed_items (feed_id, link, title, description) "
-            "VALUES (:feed_id, :link, :title, :description) "
-            "RETURNING id, feed_id, external_id, link, title, description, created_at"
+            "INSERT INTO feed_items (feed_id, link, title, description, author) "
+            "VALUES (:feed_id, :link, :title, :description, :author) "
+            "RETURNING id, feed_id, external_id, link, title, author, description, created_at"
         )
         result = self.db.execute(
             sql,
@@ -86,7 +86,8 @@ class FeedsRepository(FeedsPort):
                 "feed_id": feed_item_request.feed_id,
                 "link": feed_item_request.link,
                 "title": feed_item_request.title,
-                "description": feed_item_request.description
+                "description": feed_item_request.description,
+                "author": feed_item_request.author
             }
         ).first()
 
@@ -101,4 +102,5 @@ class FeedsRepository(FeedsPort):
             title=data["title"],
             description=data["description"],
             created_at=data["created_at"],
+            author=data["author"]
         )

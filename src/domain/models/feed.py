@@ -23,6 +23,7 @@ class FeedItem(BaseModel):
     description: str
     created_at: datetime
     feed_id: int
+    author: str = ""
 
 
 class FeedItemRequest(BaseModel):
@@ -30,3 +31,4 @@ class FeedItemRequest(BaseModel):
     title: str
     description: str
     feed_id: int
+    author: str = ""

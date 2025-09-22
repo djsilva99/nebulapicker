@@ -41,6 +41,7 @@ def upgrade():
             title TEXT,
             description TEXT,
             link TEXT,
+            author TEXT,
             feed_id INT NOT NULL REFERENCES feeds(id),
             external_id UUID NOT NULL DEFAULT gen_random_uuid(),
             created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
