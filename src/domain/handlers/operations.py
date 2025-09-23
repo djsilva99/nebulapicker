@@ -7,7 +7,7 @@ def title_contains(
     expression: str,
     count: int
 ):
-    if title.count(expression) < count:
+    if title.lower().count(expression.lower()) < count:
         return False
     return to_add
 
@@ -17,7 +17,7 @@ def description_contains(
     expression: str,
     count: int
 ):
-    if description.count(expression) < count:
+    if description.lower().count(expression.lower()) < count:
         return False
     return to_add
 
@@ -27,7 +27,7 @@ def title_does_not_contain(
     expression: str,
     count: int
 ):
-    if title.count(expression) >= count:
+    if title.lower().count(expression.lower()) >= count:
         return False
     return to_add
 
@@ -37,6 +37,6 @@ def description_does_not_contain(
     expression: str,
     count: int
 ):
-    if description.count(expression) >= count:
+    if description.lower().count(expression.lower()) >= count:
         return False
     return to_add
