@@ -22,8 +22,11 @@ from src.adapters.entrypoints.v1.models.picker import (
     FullPickerResponse,
 )
 from src.adapters.entrypoints.v1.models.source import (
+    CreateSourceRequest,
+    CreateSourceResponse,
     GetAllSourcesResponse,
     map_source_list_to_get_all_sources_response,
+    map_source_to_create_source_response,
 )
 from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
 from src.configs.dependencies.services import (
@@ -86,6 +89,61 @@ def list_sources(
 
 
 @router.post(
+    "/sources/",
+    status_code=status.HTTP_201_CREATED,
+    summary="Create Source",
+    description="Create a new source with the given name.",
+    tags=["Sources"],
+    responses={
+        201: {
+            "description": "Source created",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/CreateSourceResponse"
+                    }
+                }
+            }
+        },
+        422: {"description": "Validation error"}
+    }
+)
+def create_source(
+    create_source_request: CreateSourceRequest,
+    source_service: SourceService = Depends(get_source_service)  # noqa: B008
+) -> CreateSourceResponse:
+    source_request = SourceRequest(name=create_source_request.name, url=create_source_request.url)
+    created_source = source_service.create_source(source_request)
+    return map_source_to_create_source_response(created_source)
+
+
+@router.get(
+    "/feeds",
+    summary="List Feeds",
+    description="Return all feeds.",
+    tags=["Feeds"],
+    responses={
+        200: {
+            "description": "List feeds",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/ListFeedsResponse"
+                    }
+                }
+            }
+        }
+    }
+)
+def list_feeds(
+    feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
+) -> ListFeedsResponse:
+    feeds_list = feed_service.get_all_feeds()
+
+    return map_feeds_list_to_list_feeds_response(feeds_list)
+
+
+@router.post(
     "/feeds/",
     status_code=status.HTTP_201_CREATED,
     summary="Create Feed",
@@ -112,32 +170,6 @@ def create_feed(
     feed_request = FeedRequest(name=create_feed_request.name)
     created_feed = feed_service.create_feed(feed_request)
     return map_feed_to_create_feed_response(created_feed)
-
-
-@router.get(
-    "/feeds/",
-    summary="List Feeds",
-    description="Return all feeds.",
-    tags=["Feeds"],
-    responses={
-        200: {
-            "description": "List feeds",
-            "content": {
-                "application/json": {
-                    "schema": {
-                        "$ref": "#/components/schemas/ListFeedsResponse"
-                    }
-                }
-            }
-        }
-    }
-)
-def list_feeds(
-    feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
-) -> ListFeedsResponse:
-    feeds_list = feed_service.get_all_feeds()
-
-    return map_feeds_list_to_list_feeds_response(feeds_list)
 
 
 @router.get(

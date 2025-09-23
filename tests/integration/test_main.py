@@ -117,7 +117,7 @@ def test_welcome(caplog):
 
 def test_read_sources_empty(client: TestClient, db_session: Session):
     # WHEN
-    response = client.get("/v1/sources/")
+    response = client.get("/v1/sources")
 
     # THEN
     assert response.status_code == 200
@@ -133,7 +133,7 @@ def test_read_sources_with_data(client: TestClient, db_session: Session):
     db_session.commit()
 
     # WHEN
-    response = client.get("/v1/sources/")
+    response = client.get("/v1/sources")
 
     # THEN
     assert response.status_code == 200
@@ -146,7 +146,7 @@ def test_read_sources_with_data(client: TestClient, db_session: Session):
 
 def test_list_feeds_empty(client: TestClient, db_session: Session):
     # WHEN
-    response = client.get("/v1/feeds/")
+    response = client.get("/v1/feeds")
 
     # THEN
     assert response.status_code == 200
@@ -162,7 +162,7 @@ def test_list_feeds_with_data(client: TestClient, db_session: Session):
     db_session.commit()
 
     # WHEN
-    response = client.get("/v1/feeds/")
+    response = client.get("/v1/feeds")
 
     # THEN
     assert response.status_code == 200
