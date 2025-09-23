@@ -89,7 +89,7 @@ def list_sources(
 
 
 @router.post(
-    "/sources/",
+    "/sources",
     status_code=status.HTTP_201_CREATED,
     summary="Create Source",
     description="Create a new source with the given name.",
@@ -144,7 +144,7 @@ def list_feeds(
 
 
 @router.post(
-    "/feeds/",
+    "/feeds",
     status_code=status.HTTP_201_CREATED,
     summary="Create Feed",
     description="Create a new feed with the given name.",
@@ -266,7 +266,7 @@ def get_feed(
 
 
 @router.post(
-    "/pickers/",
+    "/pickers",
     status_code=status.HTTP_201_CREATED,
     summary="Create picker (full)",
     description="Create a picker and its dependencies.",
