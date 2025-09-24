@@ -4,20 +4,21 @@ on:
   push:
     tags:
       - '*'
-    branches:
-      - main
+
+permissions:
+  contents: write
 
 jobs:
   create-new-release:
     name: Create new Release
-    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
-
     steps:
-    # Create a new release using the changelog
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        body: ${{ steps.changelog_gen.outputs.changelog }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.changelog_gen.outputs.changelog }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
