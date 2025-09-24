@@ -7,8 +7,9 @@ personalized feed generator that:
 - publishes a clean feed tailored to specific interests.
 
 
-## Run full application using docker compose
-To start the full application (API + database) with docker compose:
+## Run the full application using docker compose
+To run the API without setting up a local environment, start the full
+application (API + database) using Docker Compose:
 ```
 docker-compose -f docker-compose-full.yaml up -d
 ```
@@ -21,6 +22,7 @@ To stop the full application with docker compose:
 ```
 docker-compose -f docker-compose-full.yaml down
 ```
+or use make:
 ```
 make docker-compose-full-down
 ```
