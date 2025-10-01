@@ -38,6 +38,9 @@ jobs:
       - name: Run tests
         run: make test
 
+      - name: Generate Coverage Report (XML)
+        run: poetry run coverage xml
+
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v4
         with:
