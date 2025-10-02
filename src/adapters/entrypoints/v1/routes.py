@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from src.adapters.entrypoints.v1.models.feeds import (
     CreateFeedRequest,
     CreateFeedResponse,
@@ -15,7 +15,6 @@ from src.adapters.entrypoints.v1.models.filter import (
     map_filter_item_to_create_filter_request,
     map_filter_to_filter_item,
 )
-from src.adapters.entrypoints.v1.models.logs import APILog
 from src.adapters.entrypoints.v1.models.picker import (
     CreateFullPickerRequest,
     FullFeedPickerResponse,
@@ -28,7 +27,6 @@ from src.adapters.entrypoints.v1.models.source import (
     map_source_list_to_get_all_sources_response,
     map_source_to_create_source_response,
 )
-from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
 from src.configs.dependencies.services import (
     get_feed_service,
     get_filter_service,
