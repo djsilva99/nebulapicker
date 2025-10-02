@@ -108,7 +108,7 @@ def test_welcome(caplog):
     # WHEN
     client = TestClient(app)
     with caplog.at_level(logging.INFO):
-        response = client.get("/v1")
+        response = client.get("/")
 
     # THEN
     assert response.status_code == status.HTTP_200_OK

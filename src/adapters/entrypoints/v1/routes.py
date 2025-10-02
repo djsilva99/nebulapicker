@@ -47,18 +47,6 @@ from src.domain.services.source_service import SourceService
 
 router = APIRouter(prefix="/v1")
 
-@router.get(
-    "",
-    summary="Welcome",
-    description="Return a welcome message for the API.",
-    response_model=WelcomeResponse,
-    tags=["General"]
-)
-def welcome(request: Request):
-    message_collection = WelcomeResponse()
-    request.app.logger.info(APILog.WELCOME_SUCCESS)
-    return message_collection
-
 
 @router.get(
     "/sources",
