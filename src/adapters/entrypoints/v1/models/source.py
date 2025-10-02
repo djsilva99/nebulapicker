@@ -7,7 +7,7 @@ from src.domain.models.source import Source
 class SourceItem(BaseModel):
     external_id: UUID
     url: str
-    name: str
+    name: str | None
 
 
 class GetAllSourcesResponse(BaseModel):
