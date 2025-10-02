@@ -1,8 +1,7 @@
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 
-from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
 from src.adapters.entrypoints.v1.routes import router as v1_router
 from src.adapters.repositories.feeds_repository import FeedsRepository
 from src.adapters.repositories.filters_repository import FiltersRepository
@@ -70,22 +69,6 @@ def startup():
 @app.on_event("shutdown")
 def shutdown():
     scheduler_adapter.shutdown()
-
-@app.on_event("shutdown")
-def shutdown():
-    scheduler_adapter.shutdown()
-
-
-@app.get(
-    "",
-    summary="Welcome",
-    description="Return a welcome message for the API.",
-    response_model=WelcomeResponse,
-    tags=["General"]
-)
-def welcome(request: Request):
-    message_collection = WelcomeResponse()
-    return message_collection
 
 # Include all v1 routes
 app.include_router(v1_router)
