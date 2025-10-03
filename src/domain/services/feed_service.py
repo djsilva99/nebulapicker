@@ -4,7 +4,6 @@ from feedgenerator import Rss201rev2Feed
 from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest
 from src.domain.ports.feeds_port import FeedsPort
 
-
 MAX_NUMBER_OF_ITEMS = 50
 
 
