@@ -27,8 +27,10 @@ class FeedService:
     def create_feed_item(self, feed_item_request: FeedItemRequest):
         return self.feeds_port.create_feed_item(feed_item_request)
 
-    def get_rss(self, feed_external_id: UUID) -> str:
+    def get_rss(self, feed_external_id: UUID) -> str | None:
         feed = self.feeds_port.get_feed_by_external_id(feed_external_id)
+        if not feed:
+            return None
         feed_items = self.feeds_port.get_feed_items_by_feed_id(feed.id)
         feed_object = Rss201rev2Feed(
             title=feed.name,

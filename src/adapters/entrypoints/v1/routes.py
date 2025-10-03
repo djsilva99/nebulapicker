@@ -184,11 +184,13 @@ def get_feed_rss(
     The response content type is `application/rss+xml`.
     """
     feeds_rss = feed_service.get_rss(external_id)
-    return Response(
-        content=feeds_rss,
-        media_type="application/rss+xml",
-        headers={"Content-Disposition": f'inline; filename="{external_id}.xml"'}
-    )
+    if feeds_rss:
+        return Response(
+            content=feeds_rss,
+            media_type="application/rss+xml",
+            headers={"Content-Disposition": f'inline; filename="{external_id}.xml"'}
+        )
+    raise HTTPException(status_code=404, detail="Feed not found")
 
 
 @router.get(
@@ -291,6 +293,8 @@ def add_picker(
         feed = feed_service.get_feed_by_external_id(
             create_full_picker_request.feed_external_id
         )
+        if not feed:
+            raise HTTPException(status_code=400, detail="Feed not found")
     else:
         feed = feed_service.create_feed(
             FeedRequest(
@@ -303,9 +307,12 @@ def add_picker(
         create_full_picker_request.source_url
     )
     if not source:
+        url = create_full_picker_request.source_url
+        source_name = url.split('//')[1].split('/')[0]
         source = source_service.create_source(
             SourceRequest(
-                url=create_full_picker_request.source_url
+                url=create_full_picker_request.source_url,
+                name=source_name
             )
         )
 
