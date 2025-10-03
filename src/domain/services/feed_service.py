@@ -5,6 +5,9 @@ from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest
 from src.domain.ports.feeds_port import FeedsPort
 
 
+MAX_NUMBER_OF_ITEMS = 50
+
+
 class FeedService:
     def __init__(self, feeds_port: FeedsPort):
         self.feeds_port = feeds_port
@@ -38,7 +41,7 @@ class FeedService:
             description=feed.name,
             language="en",
         )
-        for feed_item in feed_items:
+        for feed_item in feed_items[:MAX_NUMBER_OF_ITEMS]:
             feed_object.add_item(
                 title=feed_item.title,
                 link=feed_item.link,
