@@ -64,7 +64,7 @@ class FeedsRepository(FeedsPort):
 
     def get_feed_items_by_feed_id(self, feed_id: int) -> list[FeedItem]:
         sql = text(
-            "SELECT id, feed_id, external_id, link, title, description, created_at "
+            "SELECT id, feed_id, external_id, link, title, description, author, created_at "
             "FROM feed_items WHERE feed_id = :feed_id;"
         )
         result = self.db.execute(
