@@ -224,6 +224,7 @@ def test_get_feed_items(repo, db_session):
                 link,
                 title,
                 description,
+                author,
                 created_at
             )
             VALUES
@@ -234,6 +235,7 @@ def test_get_feed_items(repo, db_session):
                     'https://example.com/1',
                     'Title 1',
                     'Desc 1',
+                    'author 1',
                     '2025-09-16T10:00:00'
                 ),
                 (
@@ -243,6 +245,7 @@ def test_get_feed_items(repo, db_session):
                     'https://example.com/3',
                     'Title 3',
                     'Desc 3',
+                    'author 1',
                     '2025-09-16T11:00:00'
                 ),
                 (
@@ -252,6 +255,7 @@ def test_get_feed_items(repo, db_session):
                     'https://example.com/2',
                     'Title 2',
                     'Desc 2',
+                    'author 1',
                     '2025-09-16T12:00:00'
                 )
         """)

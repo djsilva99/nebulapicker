@@ -368,9 +368,9 @@ def test_get_feed_rss_successfully(client: TestClient, db_session: Session):
         {"external_id": feed_external_id}
     )
     db_session.execute(
-        text("INSERT INTO feed_items (id, feed_id, title, link, description, created_at) "
+        text("INSERT INTO feed_items (id, feed_id, title, link, description, author, created_at) "
              "VALUES (1, 1, 'item_title', 'http://example.com/item1', "
-             "'item_description', NOW())")
+             "'item_description', 'test_author', NOW())")
     )
     db_session.commit()
 
@@ -409,9 +409,9 @@ def test_get_feed_successfully(client: TestClient, db_session: Session):
              "VALUES (1, 1, 'identity', '[a]', NOW())")
     )
     db_session.execute(
-        text("INSERT INTO feed_items (id, feed_id, title, link, description, created_at) "
+        text("INSERT INTO feed_items (id, feed_id, title, link, description, author, created_at) "
              "VALUES (1, 1, 'feed_item_title', 'http://example.com/item1', "
-             "'feed_item_description', NOW())")
+             "'feed_item_description', 'author_test', NOW())")
     )
     db_session.commit()
 

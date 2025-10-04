@@ -30,6 +30,7 @@ class ExternalFeedItem(BaseModel):
     external_id: UUID
     link: str
     title: str
+    author: str
     created_at: datetime
 
 
@@ -82,5 +83,6 @@ def map_feed_item_to_external_feed_item(
         external_id=feed_item.external_id,
         link=feed_item.link,
         title=feed_item.title,
-        created_at=feed_item.created_at
+        author=feed_item.author,
+        created_at=feed_item.created_at,
     )
