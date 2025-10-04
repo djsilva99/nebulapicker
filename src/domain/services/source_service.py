@@ -11,6 +11,19 @@ class SourceService:
     def create_source(self, source_request: SourceRequest) -> Source:
         return self.source_port.create_source(source_request)
 
+    def update_source(
+        self,
+        source_external_id,
+        source_request: SourceRequest
+    ) -> Source | None:
+        source = self.get_source_by_external_id(source_external_id)
+        if source is None:
+            return None
+        return self.source_port.update_source(source.id, source_request)
+
+    def delete_source(self, source_id: int) -> bool:
+        return self.source_port.delete_source(source_id)
+
     def get_all_sources(self) -> list[Source]:
         return self.source_port.get_all_sources()
 

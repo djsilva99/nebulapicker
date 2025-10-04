@@ -29,3 +29,7 @@ class PickersPort(ABC):
     @abstractmethod
     def get_pickers_by_feed_id(self, feed_id: int) -> list[Picker]:
         pass
+
+    @abstractmethod
+    def get_picker_by_source_id(self, source_id: int) -> list[Picker]:
+        pass

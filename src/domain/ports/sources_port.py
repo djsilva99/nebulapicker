@@ -11,6 +11,18 @@ class SourcePort(ABC):
         pass
 
     @abstractmethod
+    def update_source(
+        self,
+        source_id: int,
+        source_request: SourceRequest
+    ) -> Source:
+        pass
+
+    @abstractmethod
+    def delete_source(self, source_id: int) -> bool:
+        pass
+
+    @abstractmethod
     def get_all_sources(self) -> list[Source]:
         pass
 

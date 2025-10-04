@@ -430,3 +430,52 @@ def test_get_all_pickers_that_returns_empty_list(pickers_repo):
     # THEN
     assert isinstance(pickers, list)
     assert pickers == []
+
+
+def test_get_picker_by_source_id_successfully(pickers_repo, db_session):
+    # GIVEN
+    now = datetime(2025, 1, 1, 12, 0, 0)
+    feed_id = db_session.execute(
+        text(
+            "INSERT INTO feeds (name) VALUES ('Test Feed') RETURNING id"
+        )
+    ).scalar_one()
+    target_source_id = db_session.execute(
+        text("INSERT INTO sources (url) VALUES ('https://target.com') RETURNING id")
+    ).scalar_one()
+    other_source_id = db_session.execute(
+        text("INSERT INTO sources (url) VALUES ('https://other.com') RETURNING id")
+    ).scalar_one()
+    db_session.execute(
+        text("""
+            INSERT INTO pickers (id, external_id, source_id, feed_id, cronjob, created_at)
+            VALUES
+                (1, :ext1, :source_id, :feed_id, '10 * * * *', :created_at),
+                (2, :ext2, :source_id, :feed_id, '20 * * * *', :created_at),
+                (3, :ext3, :other_source_id, :feed_id, '30 * * * *', :created_at)
+        """),
+        {
+            "ext1": uuid4(),
+            "ext2": uuid4(),
+            "ext3": uuid4(),
+            "source_id": target_source_id,
+            "other_source_id": other_source_id,
+            "feed_id": feed_id,
+            "created_at": now,
+        },
+    )
+    db_session.commit()
+
+    # WHEN
+    pickers = pickers_repo.get_picker_by_source_id(target_source_id)
+
+    # THEN
+    assert isinstance(pickers, list)
+    assert len(pickers) == 2
+    assert all(p.source_id == target_source_id for p in pickers)
+    picker_ids = {p.id for p in pickers}
+    cronjobs = {p.cronjob for p in pickers}
+    assert picker_ids == {1, 2}
+    assert cronjobs == {"10 * * * *", "20 * * * *"}
+    pickers_none = pickers_repo.get_picker_by_source_id(other_source_id + 1)
+    assert pickers_none == []

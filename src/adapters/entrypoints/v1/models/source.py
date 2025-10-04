@@ -14,12 +14,12 @@ class GetAllSourcesResponse(BaseModel):
     sources: list[SourceItem] | None
 
 
-class CreateSourceRequest(BaseModel):
+class ExternalSourceRequest(BaseModel):
     url: str
     name: str
 
 
-class CreateSourceResponse(BaseModel):
+class SourceResponse(BaseModel):
     external_id: UUID
     url: str
     name: str
@@ -40,8 +40,8 @@ def map_source_list_to_get_all_sources_response(
 
 def map_source_to_create_source_response(
     source: Source
-) -> CreateSourceResponse:
-    return CreateSourceResponse(
+) -> SourceResponse:
+    return SourceResponse(
         external_id=source.external_id,
         url=source.url,
         name=source.name

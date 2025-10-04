@@ -144,6 +144,113 @@ def test_read_sources_with_data(client: TestClient, db_session: Session):
     assert "external_id" in data["sources"][0]
 
 
+def test_get_source_with_data(client: TestClient, db_session: Session):
+    # GIVEN
+    new_uuid = str(uuid4())
+    db_session.execute(text(
+        "INSERT INTO sources (external_id, url, name) VALUES (:external_id, :url, :name);"
+    ), {"external_id": new_uuid, "url": "https://example.com", "name": "Example Source"})
+    db_session.commit()
+
+    # WHEN
+    response = client.get("/v1/sources/" + new_uuid)
+
+    # THEN
+    assert response.status_code == 200
+    data = response.json()
+    assert data["url"] == "https://example.com"
+    assert data["name"] == "Example Source"
+    assert "external_id" in data
+
+
+def test_get_source_without_data(client: TestClient, db_session: Session):
+    # GIVEN
+    new_uuid = str(uuid4())
+    wrong_uuid = str(uuid4())
+    db_session.execute(text(
+        "INSERT INTO sources (external_id, url, name) VALUES (:external_id, :url, :name);"
+    ), {"external_id": new_uuid, "url": "https://example.com", "name": "Example Source"})
+    db_session.commit()
+
+    # WHEN
+    response = client.get("/v1/sources/" + wrong_uuid)
+
+    # THEN
+    assert response.status_code == 404
+
+
+def test_update_source_successfully(client: TestClient, db_session: Session, mock_services):
+    # GIVEN
+    source_external_id = uuid4()
+    db_session.execute(text(
+        "INSERT INTO sources (external_id, url, name) VALUES (:external_id, :url, :name);"
+    ), {"external_id": source_external_id, "url": "https://example.com", "name": "Example Source"})
+    db_session.commit()
+    update_payload = {
+        "url": "https://new.updated.com/feed",
+        "name": "New Source Name"
+    }
+
+    # WHEN
+    response = client.put(
+        f"/v1/sources/{source_external_id}",
+        json=update_payload
+    )
+
+    # THEN
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["external_id"] == str(source_external_id)
+    assert response_data["url"] == update_payload["url"]
+    assert response_data["name"] == update_payload["name"]
+
+
+def test_update_source_not_found(client: TestClient, mock_services):
+    # GIVEN
+    non_existent_id = uuid4()
+    update_payload = {
+        "url": "https://some.url.com",
+        "name": "Some Name"
+    }
+
+    # WHEN
+    response = client.put(
+        f"/v1/sources/{non_existent_id}",
+        json=update_payload
+    )
+
+    # THEN
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_source_successfully(client: TestClient, db_session: Session):
+    # GIVEN
+    source_external_id = uuid4()
+    db_session.execute(text(
+        "INSERT INTO sources (external_id, url, name) VALUES (:external_id, :url, :name);"
+    ), {"external_id": source_external_id, "url": "https://example.com", "name": "Example Source"})
+    db_session.commit()
+
+    # WHEN
+    response = client.delete(f"/v1/sources/{source_external_id}")
+
+    # THEN
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+
+def test_delete_source_not_found(client: TestClient, mock_services):
+    # GIVEN
+    non_existent_id = uuid4()
+
+    # WHEN
+    response = client.delete(f"/v1/sources/{non_existent_id}")
+
+    # THEN
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Source not found"
+
+
 def test_list_feeds_empty(client: TestClient, db_session: Session):
     # WHEN
     response = client.get("/v1/feeds")
