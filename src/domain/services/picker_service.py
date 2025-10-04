@@ -25,3 +25,6 @@ class PickerService:
 
     def get_all_pickers(self) -> list[Picker]:
         return self.pickers_port.get_all_pickers()
+
+    def get_pickers_by_source_id(self, source_id: int) -> list[Picker]:
+        return self.pickers_port.get_picker_by_source_id(source_id)

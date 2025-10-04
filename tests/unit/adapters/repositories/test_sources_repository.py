@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from src.adapters.repositories.sources_repository import SourcesRepository
-from src.domain.models.source import Source
+from src.domain.models.source import Source, SourceRequest
 
 TEST_DB_URL = "postgresql://postgres:postgres@localhost:5433/"
 TEST_DB_NAME = "test_nebula_repo"
@@ -207,3 +207,86 @@ def test_get_source_by_url_returns_none_when_not_found(repo, db_session):
 
     # THEN
     assert source is None
+
+
+def test_update_source_successfully(repo, db_session):
+    # GIVEN
+    initial_external_id = str(uuid4())
+    initial_url = "https://old.url.com"
+    initial_name = "Old Name"
+    initial_created_at = datetime(2025, 5, 1, 10, 0, 0)
+    db_session.execute(
+        text("""
+            INSERT INTO sources (external_id, url, name, created_at)
+            VALUES (:external_id, :url, :name, :created_at)
+            RETURNING id
+        """),
+        {
+            "external_id": initial_external_id,
+            "url": initial_url,
+            "name": initial_name,
+            "created_at": initial_created_at,
+        }
+    )
+    db_session.commit()
+    inserted_source = db_session.execute(
+        text("SELECT id, external_id, created_at FROM sources WHERE url = :url"),
+        {"url": initial_url}
+    ).mappings().first()
+    source_id_to_update = inserted_source["id"]
+    new_url = "https://new.updated.url/feed"
+    new_name = "New Updated Name"
+    source_request = SourceRequest(url=new_url, name=new_name)
+
+    # WHEN
+    updated_source = repo.update_source(source_id_to_update, source_request)
+
+    # THEN
+    assert updated_source is not None
+    assert updated_source.id == source_id_to_update
+    assert str(updated_source.external_id) == initial_external_id
+    assert updated_source.url == new_url
+    assert updated_source.name == new_name
+
+
+def test_delete_source_successfully(repo, db_session):
+    # GIVEN
+    db_session.execute(
+        text("""
+            INSERT INTO sources (external_id, url, name)
+            VALUES (:external_id, :url, :name)
+        """),
+        {
+            "external_id": str(uuid4()),
+            "url": "https://delete-me.com",
+            "name": "To Delete"
+        }
+    )
+    db_session.commit()
+    source_id_to_delete = db_session.execute(
+        text("SELECT id FROM sources WHERE url = 'https://delete-me.com'")
+    ).scalar_one()
+
+    # WHEN
+    result = repo.delete_source(source_id_to_delete)
+
+    # THEN
+    assert result is True
+    remaining_source = db_session.execute(
+        text("SELECT * FROM sources WHERE id = :id"),
+        {"id": source_id_to_delete}
+    ).first()
+    assert remaining_source is None
+
+
+def test_delete_source_returns_false_when_not_found(repo, db_session):
+    # GIVEN
+    non_existent_id = 99999
+
+    # WHEN
+    result = repo.delete_source(non_existent_id)
+
+    # THEN
+    assert result is False
+    count = db_session.execute(text("SELECT COUNT(*) FROM sources")).scalar_one()
+    assert count == 0

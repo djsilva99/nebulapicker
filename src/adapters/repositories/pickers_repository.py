@@ -86,3 +86,12 @@ class PickersRepository(PickersPort):
         result = self.db.execute(sql).mappings()
 
         return [Picker(**picker) for picker in result]
+
+    def get_picker_by_source_id(self, source_id: int) -> list[Picker]:
+        sql = text(
+            "SELECT id, external_id, source_id, feed_id, cronjob, created_at "
+            "FROM pickers WHERE source_id = :source_id;"
+        )
+        result = self.db.execute(sql, {"source_id": source_id}).mappings()
+
+        return [Picker(**picker) for picker in result]

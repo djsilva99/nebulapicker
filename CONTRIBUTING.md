@@ -54,6 +54,7 @@ workflow that is triggered by pushing new tags into the `main` branch.
 Do not forget to change the new version tag in the documentation before
 merging code into the `main` branch and creating the version tag:
 - README.md
+- main.py
 
 Thus, the steps that create a new release are the following:
 

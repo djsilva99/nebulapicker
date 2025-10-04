@@ -21,9 +21,9 @@ from src.adapters.entrypoints.v1.models.picker import (
     FullPickerResponse,
 )
 from src.adapters.entrypoints.v1.models.source import (
-    CreateSourceRequest,
-    CreateSourceResponse,
+    ExternalSourceRequest,
     GetAllSourcesResponse,
+    SourceResponse,
     map_source_list_to_get_all_sources_response,
     map_source_to_create_source_response,
 )
@@ -86,7 +86,7 @@ def list_sources(
             "content": {
                 "application/json": {
                     "schema": {
-                        "$ref": "#/components/schemas/CreateSourceResponse"
+                        "$ref": "#/components/schemas/SourceResponse"
                     }
                 }
             }
@@ -95,12 +95,115 @@ def list_sources(
     }
 )
 def create_source(
-    create_source_request: CreateSourceRequest,
+    create_source_request: ExternalSourceRequest,
     source_service: SourceService = Depends(get_source_service)  # noqa: B008
-) -> CreateSourceResponse:
+) -> SourceResponse:
     source_request = SourceRequest(name=create_source_request.name, url=create_source_request.url)
     created_source = source_service.create_source(source_request)
     return map_source_to_create_source_response(created_source)
+
+
+@router.get(
+    "/sources/{source_external_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Get Source",
+    description="Get an existing source by its ID.",
+    tags=["Sources"],
+    responses={
+        200: {
+            "description": "Source updated",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/SourceResponse"
+                    }
+                }
+            }
+        },
+        404: {"description": "Source not found"},
+        422: {"description": "Validation error"}
+    }
+)
+def get_source(
+    source_external_id: UUID,
+    source_service: SourceService = Depends(get_source_service)  # noqa: B008
+) -> SourceResponse:
+    source = source_service.get_source_by_external_id(
+        source_external_id
+    )
+    if source is None:
+        raise HTTPException(status_code=404, detail="Source not found")
+    return map_source_to_create_source_response(source)
+
+
+@router.put(
+    "/sources/{source_external_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Update Source",
+    description="Update an existing source by its ID.",
+    tags=["Sources"],
+    responses={
+        200: {
+            "description": "Source updated",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/SourceResponse"
+                    }
+                }
+            }
+        },
+        404: {"description": "Source not found"},
+        422: {"description": "Validation error"}
+    }
+)
+def update_source(
+    source_external_id: UUID,
+    update_source_request: ExternalSourceRequest,
+    source_service: SourceService = Depends(get_source_service),  # noqa: B008
+) -> SourceResponse:
+    source_request = SourceRequest(
+        name=update_source_request.name,
+        url=update_source_request.url
+    )
+    updated_source = source_service.update_source(
+        source_external_id,
+        source_request
+    )
+    if updated_source is None:
+        raise HTTPException(status_code=404, detail="Source not found")
+    return map_source_to_create_source_response(updated_source)
+
+
+@router.delete(
+    "/sources/{source_external_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete source",
+    description="Delete a source by external id.",
+    tags=["Sources"],
+    responses={204: {"description": "Deleted"}, 404: {"description": "Source not found"}}
+)
+def delete_source(
+    source_external_id: UUID,
+    source_service: SourceService = Depends(get_source_service),  # noqa: B008
+    filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
+    picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
+):
+    source = source_service.get_source_by_external_id(
+        external_id=source_external_id
+    )
+    if not source:
+        raise HTTPException(status_code=404, detail="Source not found")
+
+    # delete pickers and filters
+    pickers = picker_service.get_pickers_by_source_id(source.id)
+    for picker in pickers:
+        filters = filter_service.get_filters_by_picker_id(picker.id)
+        for filter in filters:
+            filter_service.delete_filter(filter.id)
+        picker_service.delete_picker(picker.id)
+    source_service.delete_source(source.id)
+    return None
 
 
 @router.get(

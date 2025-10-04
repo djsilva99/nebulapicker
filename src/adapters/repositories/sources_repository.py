@@ -35,6 +35,37 @@ class SourcesRepository(SourcePort):
             created_at=result["created_at"],
         )
 
+    def update_source(self, source_id: int, source_request: SourceRequest) -> Source:
+        sql = text(
+            "UPDATE sources "
+            "SET url = :url, name = :name "
+            "WHERE id = :id "
+            "RETURNING id, external_id, url, name, created_at"
+        )
+        result = self.db.execute(
+            sql,
+            {
+                "id": source_id,
+                "url": source_request.url,
+                "name": source_request.name
+            }
+        ).mappings().first()
+        self.db.commit()
+
+        return Source(
+            id=result["id"],
+            external_id=result["external_id"],
+            url=result["url"],
+            name=result["name"],
+            created_at=result["created_at"],
+        )
+
+    def delete_source(self, source_id: int) -> bool:
+        sql = text("DELETE FROM sources WHERE id = :id RETURNING id")
+        result = self.db.execute(sql, {"id": source_id}).first()
+        self.db.commit()
+        return result is not None
+
     def get_all_sources(self) -> list[Source]:
         sql = text("SELECT id, external_id, url, name, created_at FROM sources")
         result = self.db.execute(sql)
