@@ -19,3 +19,6 @@ class SchedulerPort(ABC):
     @abstractmethod
     def load_jobs(self, jobs: list[Job]) -> None:
         pass
+
+    def delete_job(self, job: Job) -> None:
+        pass
