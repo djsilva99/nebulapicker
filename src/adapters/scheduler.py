@@ -1,6 +1,6 @@
+from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from apscheduler.jobstores.base import JobLookupError
 from src.domain.handlers import HANDLERS
 from src.domain.models.job import Job
 from src.domain.ports.scheduler_port import SchedulerPort
