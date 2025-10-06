@@ -3,11 +3,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from src.adapters.entrypoints.v1.models.feeds import (
     CreateFeedRequest,
-    CreateFeedResponse,
+    ExternalUpdateFeedRequest,
+    FeedResponse,
     FullCompleteFeed,
     ListFeedsResponse,
     map_feed_item_to_external_feed_item,
-    map_feed_to_create_feed_response,
+    map_feed_to_feed_response,
     map_feeds_list_to_list_feeds_response,
 )
 from src.adapters.entrypoints.v1.models.filter import (
@@ -34,7 +35,7 @@ from src.configs.dependencies.services import (
     get_picker_service,
     get_source_service,
 )
-from src.domain.models.feed import FeedRequest
+from src.domain.models.feed import FeedRequest, UpdateFeedRequest
 from src.domain.models.picker import PickerRequest
 from src.domain.models.source import SourceRequest
 from src.domain.services.feed_service import FeedService
@@ -255,10 +256,81 @@ def list_feeds(
 def create_feed(
     create_feed_request: CreateFeedRequest,
     feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
-) -> CreateFeedResponse:
+) -> FeedResponse:
     feed_request = FeedRequest(name=create_feed_request.name)
     created_feed = feed_service.create_feed(feed_request)
-    return map_feed_to_create_feed_response(created_feed)
+    return map_feed_to_feed_response(created_feed)
+
+
+@router.patch(
+    "/feeds/{feed_external_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Update Feed",
+    description="Update fields of an existing feed.",
+    tags=["Feeds"],
+    responses={
+        201: {
+            "description": "Feed updated",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/FeedResponse"
+                    }
+                }
+            }
+        },
+        404: {"description": "Feed not found"},
+        422: {"description": "Validation error"}
+    }
+)
+def update_feed(
+    feed_external_id: UUID,
+    update_feed_request: ExternalUpdateFeedRequest,
+    feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
+) -> FeedResponse:
+    update_feed_request = UpdateFeedRequest(
+        name=update_feed_request.name
+    )
+    updated_feed = feed_service.update_feed(
+        feed_external_id,
+        update_feed_request
+    )
+    if updated_feed is None:
+        raise HTTPException(status_code=404, detail="Feed not found")
+    return map_feed_to_feed_response(updated_feed)
+
+
+@router.delete(
+    "/feeds/{feed_external_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete feed",
+    description="Delete a feed by external id (and cascade deletes).",
+    tags=["Feeds"],
+    responses={204: {"description": "Deleted"}, 404: {"description": "Feed not found"}}
+)
+def delete_feed(
+    feed_external_id: UUID,
+    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
+    filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
+    picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
+):
+    feed = feed_service.get_feed_by_external_id(external_id=feed_external_id)
+    if not feed:
+        raise HTTPException(status_code=404, detail="Feed not found")
+
+    pickers = picker_service.get_pickers_by_feed_id(feed.id)
+    for picker in pickers:
+        for filter in filter_service.get_filters_by_picker_id(
+            picker_id=picker.id
+        ):
+            filter_service.delete_filter(filter.id)
+        picker_service.delete_picker(picker_id=picker.id)
+
+    feed_items = feed_service.get_feed_items(feed.id)
+    for feed_item in feed_items:
+        feed_service.delete_feed_item(feed_item.id)
+    feed_service.delete_feed(feed.id)
+    return None
 
 
 @router.get(

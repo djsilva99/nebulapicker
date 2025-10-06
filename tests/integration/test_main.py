@@ -295,6 +295,107 @@ def test_create_feed_successfully(client: TestClient, db_session: Session):
     assert "created_at" in response.json()
 
 
+def test_update_feed_successfully(client: TestClient, db_session: Session, mock_services):
+    # GIVEN
+    source_external_id = uuid4()
+    db_session.execute(
+        text(
+            "INSERT INTO feeds (external_id, name) VALUES (:external_id, :name);"
+        ),
+        {"external_id": source_external_id, "name": "Example Feed"}
+    )
+    db_session.commit()
+    update_payload = {
+        "name": "New Feed Name"
+    }
+
+    # WHEN
+    response = client.patch(
+        f"/v1/feeds/{source_external_id}",
+        json=update_payload
+    )
+
+    # THEN
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["external_id"] == str(source_external_id)
+    assert response_data["name"] == update_payload["name"]
+
+
+def test_delete_feed_successfully(client: TestClient, db_session: Session):
+    # GIVEN
+    feed_external_id = str(uuid4())
+    db_session.execute(
+        text("INSERT INTO feeds (id, external_id, name, created_at) "
+             "VALUES (1, :external_id, 'feed_to_delete', NOW())"),
+        {"external_id": feed_external_id}
+    )
+    db_session.execute(
+        text("INSERT INTO sources (id, url, name) VALUES (1, 'https://example.com/src', 'src1')")
+    )
+    db_session.execute(
+        text("INSERT INTO pickers (id, external_id, source_id, feed_id, cronjob, created_at) "
+             "VALUES (1, :external_id, 1, 1, '*/5 * * * *', NOW())"),
+        {"external_id": str(uuid4())}
+    )
+    db_session.execute(
+        text("INSERT INTO filters (id, picker_id, operation, args, created_at) "
+             "VALUES (1, 1, 'identity', '[a]', NOW()), (2, 1, 'identity', '[b]', NOW())")
+    )
+    db_session.execute(
+        text("INSERT INTO feed_items (id, feed_id, title, link, description, author, created_at) "
+             "VALUES (1, 1, 'feed_item_1', 'http://example.com/item1', "
+             "'desc1', 'author1', NOW()), "
+             "(2, 1, 'feed_item_2', 'http://example.com/item2', 'desc2', 'author2', NOW())")
+    )
+    db_session.commit()
+
+    # WHEN
+    response = client.delete(f"/v1/feeds/{feed_external_id}")
+
+    # THEN
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    # Ensure feed, pickers, filters, and feed_items are deleted
+    remaining_feed = db_session.execute(
+        text(
+            "SELECT * FROM feeds WHERE id = 1"
+        )
+    ).first()
+    remaining_picker = db_session.execute(
+        text(
+            "SELECT * FROM pickers WHERE feed_id = 1"
+        )
+    ).first()
+    remaining_filters = db_session.execute(
+        text(
+            "SELECT * FROM filters WHERE picker_id = 1"
+        )
+    ).all()
+    remaining_feed_items = db_session.execute(
+        text(
+            "SELECT * FROM feed_items WHERE feed_id = 1"
+        )
+    ).all()
+
+    assert remaining_feed is None
+    assert remaining_picker is None
+    assert remaining_filters == []
+    assert remaining_feed_items == []
+
+
+def test_delete_feed_not_found(client: TestClient):
+    # GIVEN
+    non_existent_id = uuid4()
+
+    # WHEN
+    response = client.delete(f"/v1/feeds/{non_existent_id}")
+
+    # THEN
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Feed not found"
+
+
 def test_create_picker_successfully(client: TestClient, db_session: Session):
     # GIVEN
     db_session.execute(
@@ -305,7 +406,6 @@ def test_create_picker_successfully(client: TestClient, db_session: Session):
 
     picker_payload = {
         "source_url": "https://example.com/source",
-        #"feed_id": feed_id,
         "cronjob": "*/10 * * * *",
         "filters": [
             {

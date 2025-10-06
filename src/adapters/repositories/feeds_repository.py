@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest
+from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest, UpdateFeedRequest
 from src.domain.ports.feeds_port import FeedsPort
 
 
@@ -31,6 +31,44 @@ class FeedsRepository(FeedsPort):
             external_id=data["external_id"],
             created_at=data["created_at"],
         )
+
+
+    def update_feed(
+            self,
+            feed_id: int,
+            update_feed_request: UpdateFeedRequest
+    ) -> Feed:
+        values = update_feed_request.model_dump(exclude_unset=True)
+        values = {k: v for k, v in values.items() if v is not None}
+        if not values:
+            return self.get_feed_by_id(feed_id)
+
+        set_clauses = ", ".join([f"{key} = :{key}" for key in values.keys()])
+        sql = text(f"""
+            UPDATE feeds
+            SET {set_clauses}
+            WHERE id = :id
+            RETURNING id, external_id, name, created_at
+        """)
+        values["id"] = feed_id
+        result = self.db.execute(sql, values).mappings().first()
+        self.db.commit()
+
+        if not result:
+            raise ValueError(f"Feed with id {feed_id} not found")
+
+        return Feed(
+            id=result["id"],
+            external_id=result["external_id"],
+            name=result["name"],
+            created_at=result["created_at"],
+        )
+
+    def delete_feed(self, feed_id: int) -> bool:
+        sql = text("DELETE FROM feeds WHERE id = :id RETURNING id")
+        result = self.db.execute(sql, {"id": feed_id}).first()
+        self.db.commit()
+        return result is not None
 
     def get_all_feeds(self) -> list[Feed]:
         sql = text("SELECT id, external_id, name, created_at FROM feeds")
@@ -104,3 +142,9 @@ class FeedsRepository(FeedsPort):
             created_at=data["created_at"],
             author=data["author"]
         )
+
+    def delete_feed_item(self, feed_item_id: int) -> bool:
+        sql = text("DELETE FROM feed_items WHERE id = :id RETURNING id")
+        result = self.db.execute(sql, {"id": feed_item_id}).first()
+        self.db.commit()
+        return result is not None

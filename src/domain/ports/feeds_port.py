@@ -1,13 +1,25 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest
+from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest, UpdateFeedRequest
 
 
 class FeedsPort(ABC):
 
     @abstractmethod
     def create_feed(self, feed_request: FeedRequest) -> Feed:
+        pass
+
+    @abstractmethod
+    def update_feed(
+        self,
+        feed_external_id: int,
+        update_feed_request: UpdateFeedRequest
+    ) -> Feed:
+        pass
+
+    @abstractmethod
+    def delete_feed(self, feed_id: int) -> bool:
         pass
 
     @abstractmethod
@@ -28,4 +40,8 @@ class FeedsPort(ABC):
 
     @abstractmethod
     def create_feed_item(self, feed_item_request: FeedItemRequest) -> FeedItem:
+        pass
+
+    @abstractmethod
+    def delete_feed_item(self, feed_item_id: int) -> bool:
         pass

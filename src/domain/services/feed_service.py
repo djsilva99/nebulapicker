@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from feedgenerator import Rss201rev2Feed
-from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest
+from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest, UpdateFeedRequest
 from src.domain.ports.feeds_port import FeedsPort
 
 MAX_NUMBER_OF_ITEMS = 50
@@ -13,6 +13,19 @@ class FeedService:
 
     def create_feed(self, feed_request: FeedRequest) -> Feed:
         return self.feeds_port.create_feed(feed_request)
+
+    def update_feed(
+        self,
+        feed_external_id: UUID,
+        update_feed_request: UpdateFeedRequest
+    ) -> Feed:
+        feed = self.get_feed_by_external_id(feed_external_id)
+        if feed is None:
+            return None
+        return self.feeds_port.update_feed(feed.id, update_feed_request)
+
+    def delete_feed(self, feed_id: int) -> bool:
+        return self.feeds_port.delete_feed(feed_id)
 
     def get_all_feeds(self) -> list[Feed]:
         return self.feeds_port.get_all_feeds()
@@ -28,6 +41,9 @@ class FeedService:
 
     def create_feed_item(self, feed_item_request: FeedItemRequest):
         return self.feeds_port.create_feed_item(feed_item_request)
+
+    def delete_feed_item(self, feed_item_id: int) -> bool:
+        return self.feeds_port.delete_feed_item(feed_item_id)
 
     def get_rss(self, feed_external_id: UUID) -> str | None:
         feed = self.feeds_port.get_feed_by_external_id(feed_external_id)
