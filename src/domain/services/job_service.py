@@ -42,6 +42,14 @@ class JobService:
         )
         self.scheduler.add_job(job)
 
+    def delete_cronjob(self, picker: Picker):
+        job_to_delete = Job(
+            func_name='process_filters',
+            args=[str(picker.id), self],
+            schedule=picker.cronjob
+        )
+        self.scheduler.delete_job(job_to_delete)
+
     def load_all(self):
         pickers = self.picker_service.get_all_pickers()
         jobs = []

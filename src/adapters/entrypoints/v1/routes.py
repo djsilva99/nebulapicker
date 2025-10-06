@@ -189,6 +189,7 @@ def delete_source(
     source_service: SourceService = Depends(get_source_service),  # noqa: B008
     filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
     picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
+    job_service: JobService = Depends(get_job_service),  # noqa: B008
 ):
     source = source_service.get_source_by_external_id(
         external_id=source_external_id
@@ -203,6 +204,7 @@ def delete_source(
         for filter in filters:
             filter_service.delete_filter(filter.id)
         picker_service.delete_picker(picker.id)
+        job_service.delete_cronjob(picker)
     source_service.delete_source(source.id)
     return None
 
@@ -313,6 +315,7 @@ def delete_feed(
     feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
     filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
     picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
+    job_service: JobService = Depends(get_job_service),  # noqa: B008
 ):
     feed = feed_service.get_feed_by_external_id(external_id=feed_external_id)
     if not feed:
@@ -325,6 +328,7 @@ def delete_feed(
         ):
             filter_service.delete_filter(filter.id)
         picker_service.delete_picker(picker_id=picker.id)
+        job_service.delete_cronjob(picker)
 
     feed_items = feed_service.get_feed_items(feed.id)
     for feed_item in feed_items:
@@ -591,6 +595,7 @@ def delete_picker(
     picker_external_id: UUID,
     filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
     picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
+    job_service: JobService = Depends(get_job_service),  # noqa: B008
 ):
     picker = picker_service.get_picker_by_external_id(external_id=picker_external_id)
     if not picker:
@@ -599,5 +604,6 @@ def delete_picker(
     for filter in filter_service.get_filters_by_picker_id(picker_id=picker.id):
         filter_service.delete_filter(filter.id)
 
+    job_service.delete_cronjob(picker)
     picker_service.delete_picker(picker_id=picker.id)
     return None
