@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from src.adapters.repositories.feeds_repository import FeedsRepository
-from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest
+from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest, UpdateFeedRequest
 
 TEST_DB_URL = "postgresql://postgres:postgres@localhost:5433/"
 TEST_DB_NAME = "test_nebula_repo"
@@ -91,6 +91,65 @@ def test_create_feed_successfully(repo, db_session):
     assert feed.name == "fake_feed_name"
     assert type(feed.external_id) is UUID
     assert type(feed.created_at) is datetime
+
+
+def test_update_feed(repo, db_session):
+    # GIVEN
+    external_id = str(uuid4())
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (external_id, name, created_at)
+            VALUES (:external_id, :name, :created_at)
+        """),
+        {
+            "external_id": external_id,
+            "name": "Example",
+            "created_at": datetime(2025, 1, 1, 12, 0, 0),
+        }
+    )
+    db_session.commit()
+    inserted_id = db_session.execute(text("SELECT id FROM feeds")).scalar_one()
+    update_feed_request = UpdateFeedRequest(
+        name="updated name"
+    )
+
+    # WHEN
+    feed = repo.update_feed(inserted_id, update_feed_request)
+
+    # THEN
+    assert feed is not None
+    assert feed.id == inserted_id
+    assert str(feed.external_id) == external_id
+    assert feed.name == "updated name"
+
+
+def test_delete_feed_successfully(repo, db_session):
+    # GIVEN
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (external_id, name)
+            VALUES (:external_id, :name)
+        """),
+        {
+            "external_id": str(uuid4()),
+            "name": "To Delete"
+        }
+    )
+    db_session.commit()
+    source_id_to_delete = db_session.execute(
+        text("SELECT id FROM feeds WHERE name = 'To Delete'")
+    ).scalar_one()
+
+    # WHEN
+    result = repo.delete_feed(source_id_to_delete)
+
+    # THEN
+    assert result is True
+    remaining_source = db_session.execute(
+        text("SELECT * FROM feeds WHERE id = :id"),
+        {"id": source_id_to_delete}
+    ).first()
+    assert remaining_source is None
 
 
 def test_get_all_feeds(repo, db_session):

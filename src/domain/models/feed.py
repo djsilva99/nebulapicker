@@ -8,6 +8,10 @@ class FeedRequest(BaseModel):
     name: str | None
 
 
+class UpdateFeedRequest(BaseModel):
+    name: str | None = None
+
+
 class Feed(BaseModel):
     id: int
     external_id: UUID

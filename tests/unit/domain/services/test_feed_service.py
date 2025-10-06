@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
-from src.domain.models.feed import Feed, FeedItem, FeedRequest
+from src.domain.models.feed import Feed, FeedItem, FeedRequest, UpdateFeedRequest
 from src.domain.services.feed_service import FeedService
 
 
@@ -22,7 +22,7 @@ def feed_service(feeds_port_mock):
     return FeedService(feeds_port=feeds_port_mock)
 
 
-def test_create_feed_ports(feed_service, feeds_port_mock):
+def test_create_feed(feed_service, feeds_port_mock):
     # GIVEN
     feed_request = FeedRequest(
         name="fake_name"
@@ -33,6 +33,50 @@ def test_create_feed_ports(feed_service, feeds_port_mock):
 
     # THEN
     feeds_port_mock.create_feed.assert_called_once_with(feed_request)
+
+
+def test_update_feed_successfully(feed_service, feeds_port_mock):
+    # GIVEN
+    feed_external_id = uuid4()
+    feed_id = 123
+    existing_feed = Feed(
+        id=feed_id,
+        external_id=feed_external_id,
+        name="Old Name",
+        created_at=datetime(2025, 1, 1, 12, 0, 0),
+    )
+    updated_feed = Feed(
+        id=feed_id,
+        external_id=feed_external_id,
+        name="Updated name",
+        created_at=datetime(2025, 1, 1, 12, 0, 0),
+    )
+    feeds_port_mock.get_feed_by_external_id.return_value = existing_feed
+    feeds_port_mock.update_feed.return_value = updated_feed
+    update_request = UpdateFeedRequest(name="Updated name")
+
+    # WHEN
+    result = feed_service.update_feed(feed_external_id, update_request)
+
+    # THEN
+    assert result == updated_feed
+    feeds_port_mock.update_feed.assert_called_once_with(
+        feed_id,
+        update_request
+    )
+
+
+def test_update_feed_when_feed_does_not_exist(feed_service, feeds_port_mock):
+    # GIVEN
+    feed_external_id = uuid4()
+    feeds_port_mock.get_feed_by_external_id.return_value = None
+    update_request = UpdateFeedRequest(name="Updated name")
+
+    # WHEN
+    result = feed_service.update_feed(feed_external_id, update_request)
+
+    # THEN
+    assert result is None
 
 
 def test_get_all_feeds(feed_service, feeds_port_mock):

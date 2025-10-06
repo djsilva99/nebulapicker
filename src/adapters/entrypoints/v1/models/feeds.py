@@ -9,8 +9,10 @@ from src.domain.models.feed import Feed, FeedItem, FeedRequest
 class CreateFeedRequest(BaseModel):
     name: str
 
+    class Config:
+        extra = "forbid"
 
-class CreateFeedResponse(BaseModel):
+class FeedResponse(BaseModel):
     name: str
     external_id: UUID
     created_at: datetime
@@ -24,6 +26,13 @@ class ExternalFeeds(BaseModel):
 
 class ListFeedsResponse(BaseModel):
     feeds: list[ExternalFeeds]
+
+
+class ExternalUpdateFeedRequest(BaseModel):
+    name: str | None = None
+
+    class Config:
+        extra = "forbid"
 
 
 class ExternalFeedItem(BaseModel):
@@ -51,10 +60,10 @@ def map_create_feed_request_to_feed_request(
     )
 
 
-def map_feed_to_create_feed_response(
+def map_feed_to_feed_response(
     feed: Feed
-) -> CreateFeedResponse:
-    return CreateFeedResponse(
+) -> FeedResponse:
+    return FeedResponse(
         name=feed.name,
         external_id=feed.external_id,
         created_at=feed.created_at
