@@ -47,18 +47,21 @@ merging pull requests. They must all pass.
 
 ### Creating new releases
 
-Creating a new nebulapicker release is only possible from the `main`
-branch. To do so, one needs to create a new tag, relying on 
-[Semantic Versioning](http://semver.org/), e.g., v0.1.1. There is a
-workflow that is triggered by pushing new tags into the `main` branch.
-Do not forget to change the new version tag in the documentation before
-merging code into the `main` branch and creating the version tag:
-- README.md
-- main.py
+The first step in creating a new release is to build and push the
+Docker image for NebulaPicker. Releases can only be created from the
+`main` branch, so make sure that `main` is rebased with develop
+before proceeding. Next, create a new tag following
+[Semantic Versioning](http://semver.org/), e.g., v0.1.1. A workflow
+will be triggered automatically when a new tag is pushed to the
+`main` branch. Before merging code into `main` and creating the
+version tag, don’t forget to update the version number in the
+following files:
+- `README.md`
+- `main.py`
 
-Thus, the steps that create a new release are the following:
-
-1. Create a PR that adds the new version tag into the locations
-   pointed out above. Merge it into the develop branch.
-2. Merge into the develop branch into the `main` branch.
-3. Create a tag with the new version in the `main` branch.
+Thus, the steps to create a new release are as follows:
+1. Build and push a new Docker image for NebulaPicker.
+2. Create a pull request that updates the version tag in the files
+mentioned above, and merge it into the develop branch.
+3. Rebase the `main` branch.
+4. Create a new tag with the updated version in the `main` branch.
