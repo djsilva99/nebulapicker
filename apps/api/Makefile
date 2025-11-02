@@ -54,7 +54,7 @@ docker-compose-full-down: ## Docker compose down the full application
 
 .PHONY: docker-compose-full
 docker-compose-dev-down: ## Docker compose down the dev mode
-	@docker-compose -f docker-compose-full.yaml down
+	@docker-compose -f docker-compose.yaml down
 
 .PHONY: docker-build
 docker-build: ## Docker build
