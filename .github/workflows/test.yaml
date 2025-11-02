@@ -12,6 +12,11 @@ jobs:
   test-api:
     name: Test API (FastAPI)
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./apps/api
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -23,37 +28,30 @@ jobs:
 
       - name: Install Poetry
         run: |
-          cd apps/api
           pip install poetry
           poetry env use $(which python)
 
       - name: Start PostgreSQL (assuming docker-compose is at root)
         run: |
-          cd apps/api
           docker compose up -d
 
       - name: Install Python dependencies
         run: |
-          cd apps/api
           make install
 
       - name: Check lint
         run: |
-          cd apps/api
-          run: make lint
+          make lint
 
       - name: Run tests
         run: |
-          cd apps/api
           make test
 
       - name: Generate Coverage Report (XML)
         run: |
-          cd apps/api
           poetry run coverage xml
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: apps/api/coverage.xml
