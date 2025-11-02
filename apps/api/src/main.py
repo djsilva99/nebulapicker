@@ -1,7 +1,6 @@
 import logging
 
 from fastapi import FastAPI, Request
-
 from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
 from src.adapters.entrypoints.v1.routes import router as v1_router
 from src.adapters.repositories.feeds_repository import FeedsRepository
