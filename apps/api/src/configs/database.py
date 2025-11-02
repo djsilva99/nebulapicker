@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
-
 from src.configs.settings import settings
 
 # Engine & Session factory
