@@ -1,3 +1,6 @@
+# Global build argument to receive the internal API host from docker-compose.
+ARG API_DESTINATION
+
 # ----------------------------------------------------------------------
 # Stage 1: Dependencies (Install all Node modules)
 # ----------------------------------------------------------------------
@@ -8,11 +11,9 @@ FROM node:21.6.1-alpine AS deps
 WORKDIR /app
 
 # Copy only the package files to leverage Docker layer caching.
-# If these files don't change, subsequent builds skip the 'npm install' step.
 COPY package.json package-lock.json ./
 
-# Install only production dependencies for the final image.
-# We also install dev dependencies here temporarily for the build stage.
+# Install all dependencies (production and dev for the builder)
 RUN npm install
 
 # ----------------------------------------------------------------------
@@ -20,6 +21,9 @@ RUN npm install
 # ----------------------------------------------------------------------
 FROM node:21.6.1-alpine AS builder
 WORKDIR /app
+
+# Re-declare ARG to inherit the value from the global ARG
+ARG API_DESTINATION
 
 # Copy all installed dependencies from the 'deps' stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -29,6 +33,9 @@ COPY . .
 
 # Disable Next.js telemetry during the build
 ENV NEXT_TELEMETRY_DISABLED 1
+
+# Inject API_URL environment variable during the build.
+ENV API_URL=${API_DESTINATION}
 
 # Run the Next.js build command
 RUN npm run build
@@ -40,20 +47,17 @@ RUN npm run build
 FROM node:21.6.1-alpine AS runner
 WORKDIR /app
 
-# 1. Copy only necessary production dependencies
 # Copy the installed node_modules from the 'deps' stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# 2. Copy Next.js build output, package.json, and public assets
+# Copy Next.js build output, package.json, and public assets
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/package.json ./package.json
 
-# You may also need next.config.js or any custom server files
-# COPY --from=builder /app/next.config.js ./next.config.js
-
 # Set environment variables for runtime
 ENV NODE_ENV production
+# Set the production port (3000 is standard for Next.js)
 ENV PORT 3000
 ENV NEXT_TELEMETRY_DISABLED 1
 
