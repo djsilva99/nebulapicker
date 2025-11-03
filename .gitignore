@@ -11,3 +11,19 @@ __pycache__
 README.html
 .coverage
 .idea
+
+# next.js
+.next
+out
+node_modules
+
+# production
+build
+
+# misc
+.DS_Store
+*.pem
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
