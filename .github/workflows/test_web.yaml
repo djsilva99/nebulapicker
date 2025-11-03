@@ -15,7 +15,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./apps/web
+        working-directory: ./apps/web # All 'run' commands will execute from this directory
 
     steps:
       - name: Checkout code
@@ -26,9 +26,10 @@ jobs:
         with:
           node-version: '21.6.1'
           cache: 'npm'
+          cache-dependency-path: ./apps/web/package-lock.json
       
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run ESLint
         run: npm run lint
