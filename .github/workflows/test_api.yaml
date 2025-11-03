@@ -1,4 +1,4 @@
-name: Monorepo Test Suite
+name: API Test
 
 on:
   push:
