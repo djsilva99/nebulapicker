@@ -1,4 +1,4 @@
-name: Web APP Build and Lint
+name: WEB CI
 
 on:
   push:

@@ -44,15 +44,7 @@ docker-compose-dev: ## Docker compose the dev mode
 	@echo "Local deployment"
 	@poetry run uvicorn src.main:app --env-file .env.dev --port=8080 --reload
 
-.PHONY: docker-compose-full
-docker-compose-full: ## Docker compose the full application
-	@docker-compose -f docker-compose-full.yaml up -d
-
-.PHONY: docker-compose-full
-docker-compose-full-down: ## Docker compose down the full application
-	@docker-compose -f docker-compose-full.yaml down
-
-.PHONY: docker-compose-full
+.PHONY: docker-compose-dev
 docker-compose-dev-down: ## Docker compose down the dev mode
 	@docker-compose -f docker-compose.yaml down
 
