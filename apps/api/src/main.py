@@ -28,7 +28,7 @@ app = FastAPI(
         "feed generator that fetches content from multiple RSS sources, applies user-defined "
         "filters to remove noise, and publishes a new, clean feed tailored to specific interests."
     ),
-    version="0.2.0",
+    version="0.3.0",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",

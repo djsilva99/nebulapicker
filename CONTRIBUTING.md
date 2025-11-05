@@ -14,14 +14,14 @@ time to time, the content of the `develop` branch is merged into the
 
 The Nebulapicker application is divided into two components: the backend API
 application and the frontend web application. The first is located in the
-`app/api` directory, while the second is in the `app/web`
+`apps/api` directory, while the second is in the `apps/web`
 directory. Development of each application should be done separately.
 
 
 ### API Development
 
 The API is developed using FastAPI. All development commands can be executed
-with Make. To run these commands, you must first navigate to the `app/api`
+with Make. To run these commands, you must first navigate to the `apps/api`
 directory.
 
 To deploy nebulapicker locally:
@@ -58,7 +58,8 @@ merging pull requests.
 ### Web Development
 
 The web application is developed using Next.js. Development commands rely on
-npm. To run these commands, you must first navigate to the `app/web` directory.
+npm. To run these commands, you must first navigate to the `apps/web`
+directory.
 
 Install the required packages:
 ```bash
@@ -103,9 +104,9 @@ triggered automatically when a new tag is pushed to the `main` branch. Before
 merging code into `main` and creating the version tag, don’t forget to update
 the version number in the following files:
 - `README.md`
-- `app/api/main.py`
-- `app/web/package-lock.json`
-- `app/web/package.json`
+- `apps/api/main.py`
+- `apps/web/package-lock.json`
+- `apps/web/package.json`
 
 Thus, the steps to create a new release are as follows:
 1. Build and push the new Docker images for NebulaPicker-api and
