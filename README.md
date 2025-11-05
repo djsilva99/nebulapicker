@@ -1,10 +1,9 @@
 # nebulapicker
 
-[![codecov](https://codecov.io/github/djsilva99/nebulapicker/graph/badge.svg?token=Y5HGCKRYCK)](https://codecov.io/github/djsilva99/nebulapicker)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/djsilva99/nebulapicker/blob/master/LICENSE)
 [![API API](https://github.com/djsilva99/nebulapicker/actions/workflows/test_api.yaml/badge.svg?branch=master)](https://github.com/djsilva99/nebulapicker/actions/workflows/test_api.yaml)
 [![API WEB](https://github.com/djsilva99/nebulapicker/actions/workflows/test_web.yaml/badge.svg?branch=master)](https://github.com/djsilva99/nebulapicker/actions/workflows/test_web.yaml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/djsilva99/nebulapicker/blob/master/LICENSE)
-
+[![codecov](https://codecov.io/github/djsilva99/nebulapicker/graph/badge.svg?token=Y5HGCKRYCK)](https://codecov.io/github/djsilva99/nebulapicker)
 <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/nebulapicker.png" alt="Drawing" height="30"/> nebulapicker v0.2.0
 
 NebulaPicker is a self-hosted Web Application for content curation, designed to
@@ -17,24 +16,27 @@ a personalized feed generator that:
 
 ## Example
 Feed settings:
-<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_settings.png" alt="Feed Settings" height="30"/>
+
+<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_settings.png" alt="Feed Settings"  style="width: 100%; height: auto;"/>
 
 Feed content:
-<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_content.png" alt="Feed Settings" height="30"/>
+
+<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_content.png" alt="Feed Content"  style="width: 100%; height: auto;"/>
 
 Generated rss:
-<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_rss.png" alt="Feed RSS" height="30"/>
+
+<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_rss.png" alt="Feed RSS"  style="width: 100%; height: auto;"/>
 
 
 ## Run the full application using docker compose
 To run the API without setting up a local environment, start the full
 application (API + database + WEB) using Docker Compose:
-```
+```bash
 docker-compose -f docker-compose-full.yaml up -d
 ```
 
 To stop the full application with docker compose:
-```
+```bash
 docker-compose -f docker-compose-full.yaml down
 ```
 
