@@ -4,6 +4,7 @@
 [![API API](https://github.com/djsilva99/nebulapicker/actions/workflows/test_api.yaml/badge.svg?branch=master)](https://github.com/djsilva99/nebulapicker/actions/workflows/test_api.yaml)
 [![API WEB](https://github.com/djsilva99/nebulapicker/actions/workflows/test_web.yaml/badge.svg?branch=master)](https://github.com/djsilva99/nebulapicker/actions/workflows/test_web.yaml)
 [![codecov](https://codecov.io/github/djsilva99/nebulapicker/graph/badge.svg?token=Y5HGCKRYCK)](https://codecov.io/github/djsilva99/nebulapicker)
+
 <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/nebulapicker.png" alt="Drawing" height="30"/> nebulapicker v0.2.0
 
 NebulaPicker is a self-hosted Web Application for content curation, designed to
