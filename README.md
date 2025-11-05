@@ -1,8 +1,8 @@
 # nebulapicker
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/djsilva99/nebulapicker/blob/master/LICENSE)
-[![API API](https://github.com/djsilva99/nebulapicker/actions/workflows/test_api.yaml/badge.svg?branch=master)](https://github.com/djsilva99/nebulapicker/actions/workflows/test_api.yaml)
-[![API WEB](https://github.com/djsilva99/nebulapicker/actions/workflows/test_web.yaml/badge.svg?branch=master)](https://github.com/djsilva99/nebulapicker/actions/workflows/test_web.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/djsilva99/nebulapicker/blob/main/LICENSE)
+[![API API](https://github.com/djsilva99/nebulapicker/actions/workflows/test_api.yaml/badge.svg?branch=main)](https://github.com/djsilva99/nebulapicker/actions/workflows/test_api.yaml)
+[![API WEB](https://github.com/djsilva99/nebulapicker/actions/workflows/test_web.yaml/badge.svg?branch=main)](https://github.com/djsilva99/nebulapicker/actions/workflows/test_web.yaml)
 [![codecov](https://codecov.io/github/djsilva99/nebulapicker/graph/badge.svg?token=Y5HGCKRYCK)](https://codecov.io/github/djsilva99/nebulapicker)
 
 <p>
