@@ -166,7 +166,7 @@ export default function FeedPage() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                window.location.href = `/api/v1/feeds/${data?.external_id}.xml`;
+                window.open(`/api/v1/feeds/${data?.external_id}.xml`, '_blank');
               }}
               size="md"
               borderColor="white"
