@@ -25,4 +25,6 @@ export interface Feed {
     created_at: string;
     pickers?: Picker[];
     feed_items?: FeedItem[]
+    latest_item_datetime?: string,
+    number_of_feed_items?: string
 }
