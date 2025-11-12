@@ -17,6 +17,27 @@ import Link from "next/link";
 import { AddFeedModal } from "@/app/feeds/_components/add-feeds-modal";
 
 
+function timeDeltaFromNow(dateString: string): string {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+
+  if (diffMs < 0) return "0m";
+
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const weeks = Math.floor(days / 7);
+
+  if (weeks > 0) return `${weeks}w`;
+  if (days > 0) return `${days}d`;
+  if (hours > 0) return `${hours}h`;
+  if (minutes > 0) return `${minutes}m`;
+  return `${seconds}s`;
+}
+
+
 export default function Feeds() {
   const [data, setData] = useState<Feed[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -110,12 +131,16 @@ export default function Feeds() {
       {/* TABLE */}
       <Table.Root size="sm" variant="outline">
         <Table.ColumnGroup>
-          <Table.Column htmlWidth="95%"/>
+          <Table.Column htmlWidth="65%"/>
+          <Table.Column htmlWidth="15%"/>
+          <Table.Column htmlWidth="15%"/>
           <Table.Column htmlWidth="5%"/>
         </Table.ColumnGroup>
         <Table.Header>
           <Table.Row>
             <Table.ColumnHeader bg="gray.700" color='white'>NAME</Table.ColumnHeader>
+            <Table.ColumnHeader bg="gray.700" color='white'># FEED ITEMS</Table.ColumnHeader>
+            <Table.ColumnHeader bg="gray.700" color='white'>LATEST FEED ITEM</Table.ColumnHeader>
             <Table.ColumnHeader bg="gray.700" color='white' textAlign="center">ACTIONS</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
@@ -129,6 +154,18 @@ export default function Feeds() {
                     <Box fontWeight="bold">{item.name}</Box>
                     <Box fontSize="sm" color="gray.600">{item.external_id}</Box>
                   </Box>
+                </Link>
+              </Table.Cell>
+
+              <Table.Cell>
+                <Link href={`/feeds/${item.external_id}`} passHref legacyBehavior>
+                  <Box fontWeight="bold">{item.number_of_feed_items}</Box>
+                </Link>
+              </Table.Cell>
+
+              <Table.Cell>
+                <Link href={`/feeds/${item.external_id}`} passHref legacyBehavior>
+                  <Box fontWeight="bold">{timeDeltaFromNow(item.latest_item_datetime as string)}</Box>
                 </Link>
               </Table.Cell>
 
@@ -183,7 +220,7 @@ export default function Feeds() {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      window.location.href = `/api/v1/feeds/${item.external_id}.xml`;
+                      window.open(`/api/v1/feeds/${item.external_id}.xml`, '_blank');
                     }}
                     ml={1}
                   >
