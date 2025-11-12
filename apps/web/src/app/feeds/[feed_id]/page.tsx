@@ -5,11 +5,16 @@ import {
   Heading,
   Box,
   Flex,
+  Button,
+  useDisclosure
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Feed, FeedItem } from "@/types/Feed";
 import { useParams } from 'next/navigation';
+import { FiRss, FiSettings, FiTrash, FiPlus } from "react-icons/fi";
+import { useToast } from "@chakra-ui/toast";
+import { AddFeedItemModal } from "./_components/add_feed_items_modal";
 
 
 const normalizeUrl = (url: string) => {
@@ -46,6 +51,10 @@ export default function FeedPage() {
 
   const [data, setData] = useState<Feed>();
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const { open, onOpen, onClose } = useDisclosure();
+
+  const toast = useToast();
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -72,6 +81,39 @@ export default function FeedPage() {
     );
   }
 
+  const handleDelete = async (externalId: string, feedExternalId: string) => {
+    if (!window.confirm(`Are you sure you want to delete feed item: ${feedExternalId}?`)) {
+      return;
+    }
+
+    setIsDeleting(feedExternalId);
+    try {
+      await axios.delete(`/api/v1/feeds/${externalId}/feed_items/${feedExternalId}`);
+
+      toast({
+        title: "Feed Item Deleted.",
+        description: `feed item ${feedExternalId} was successfully removed.`,
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+
+      fetchData();
+
+    } catch (error) {
+      console.error("Error deleting feed item:", error);
+      toast({
+        title: "Error.",
+        description: `Failed to delete feed item ${feedExternalId}.`,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
   return (
     <Box p={6}>
 
@@ -84,13 +126,65 @@ export default function FeedPage() {
         <Heading as="h1" size="xl">
           {data?.name} ({data?.feed_items?.length})
         </Heading>
+        <Box mr="0px">
+          <Box>
+            <Button
+              aria-label="Create New Feed Item"
+              colorScheme="green"
+              onClick={onOpen}
+              size="md"
+              borderColor="white"
+              borderWidth="1px"
+              color="white"
+              _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
+              mr="4"
+            >
+              <FiPlus />
+            </Button>
+            <Button
+              aria-label="Create New Picker"
+              colorScheme="green"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.location.href = `/feeds/${data?.external_id}/edit`;
+              }}
+              size="md"
+              borderColor="white"
+              borderWidth="1px"
+              color="white"
+              _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
+              mr="4"
+            >
+              <FiSettings />
+            </Button>
+
+            <Button
+              aria-label="Create New Picker"
+              colorScheme="green"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.open(`/api/v1/feeds/${data?.external_id}.xml`, '_blank');
+              }}
+              size="md"
+              borderColor="white"
+              borderWidth="1px"
+              color="white"
+              _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
+            >
+              <FiRss />
+            </Button>
+          </Box>
+        </Box>
       </Flex>
 
       {/* TABLE */}
       <Table.Root size="sm" variant="outline">
         <Table.ColumnGroup>
-          <Table.Column htmlWidth="80%" />
+          <Table.Column htmlWidth="70%" />
           <Table.Column htmlWidth="15%" />
+          <Table.Column htmlWidth="5%" />
           <Table.Column htmlWidth="5%" />
         </Table.ColumnGroup>
         <Table.Header>
@@ -98,6 +192,7 @@ export default function FeedPage() {
             <Table.ColumnHeader bg="gray.700" color='white'>TITLE</Table.ColumnHeader>
             <Table.ColumnHeader bg="gray.700" color='white'>AUTHOR</Table.ColumnHeader>
             <Table.ColumnHeader bg="gray.700" color='white'>DATE</Table.ColumnHeader>
+            <Table.ColumnHeader bg="gray.700" color='white'>ACTIONS</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
 
@@ -137,10 +232,43 @@ export default function FeedPage() {
                 <Box>{timeDeltaFromNow(item.created_at)}</Box>
               </a>
             </Table.Cell>
+
+            <Table.Cell textAlign="center">
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Button
+                  aria-label={`Delete ${item.title}`}
+                  size="sm"
+                  colorScheme="red"
+                  color="white"
+                  _hover={{ bg: 'gray.700', color: 'red' }}
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDelete(data?.external_id, item.external_id);
+                  }}
+                  loading={isDeleting === item.external_id}
+                >
+                  <FiTrash />
+                </Button>
+              </Box>
+            </Table.Cell>
           </Table.Row>
         ))}
         </Table.Body>
       </Table.Root>
+
+      <AddFeedItemModal
+        externalFeedId={data?.external_id as string}
+        isOpen={open}
+        onClose={onClose}
+        onFeedAdded={fetchData}
+        isCentered
+      />
     </Box>
   )
 }
