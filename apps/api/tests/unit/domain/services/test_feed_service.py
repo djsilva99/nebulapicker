@@ -107,15 +107,21 @@ def test_get_all_feeds(feed_service, feeds_port_mock):
 
 def test_get_feed_items_delegates_to_port(feed_service, feeds_port_mock):
     # GIVEN
-    expected_items = [MagicMock(spec=FeedItem), MagicMock(spec=FeedItem)]
-    feeds_port_mock.get_feed_items_by_feed_id.return_value = expected_items
+    item1 = MagicMock(
+        spec=FeedItem, created_at=datetime(2025, 1, 1, 14, 0, 0)
+    )
+    item2 = MagicMock(
+        spec=FeedItem, created_at=datetime(2025, 1, 1, 12, 0, 0)
+    )
+    expected_items_sorted = [item2, item1]
+    feeds_port_mock.get_feed_items_by_feed_id.return_value = [item1, item2]
 
     # WHEN
     result = feed_service.get_feed_items(feed_id=42)
 
     # THEN
     feeds_port_mock.get_feed_items_by_feed_id.assert_called_once_with(42)
-    assert result == expected_items
+    assert result == expected_items_sorted
 
 
 def test_get_rss_builds_rss_feed(feed_service, feeds_port_mock):

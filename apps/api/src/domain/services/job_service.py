@@ -121,11 +121,17 @@ class JobService:
                     )
 
             if to_add:
-                feed_item_request = FeedItemRequest(
-                    link=entry.link,
-                    title=entry.title,
-                    description=entry.description,
+                # this condition makes sure that feed_items are not duplicated
+                # when processing pickers
+                if not self.feed_service.get_feed_items(
                     feed_id=picker.feed_id,
-                    author=source_name
-                )
-                self.feed_service.create_feed_item(feed_item_request)
+                    title=entry.title
+                ):
+                    feed_item_request = FeedItemRequest(
+                        link=entry.link,
+                        title=entry.title,
+                        description=entry.description,
+                        feed_id=picker.feed_id,
+                        author=source_name
+                    )
+                    self.feed_service.create_feed_item(feed_item_request)

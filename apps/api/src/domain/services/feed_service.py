@@ -1,3 +1,4 @@
+import datetime
 from uuid import UUID
 
 from feedgenerator import Rss201rev2Feed
@@ -5,6 +6,7 @@ from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest,
 from src.domain.ports.feeds_port import FeedsPort
 
 MAX_NUMBER_OF_ITEMS = 50
+HOURS_TO_COMPARE = 24
 
 
 class FeedService:
@@ -28,7 +30,7 @@ class FeedService:
         return self.feeds_port.delete_feed(feed_id)
 
     def get_all_feeds(self) -> list[Feed]:
-        return self.feeds_port.get_all_feeds()
+        return sorted(self.feeds_port.get_all_feeds(), key=lambda item: item.name)
 
     def get_feed_by_external_id(self, external_id: UUID) -> Feed | None:
         return self.feeds_port.get_feed_by_external_id(external_id)
@@ -36,8 +38,23 @@ class FeedService:
     def get_feed_by_id(self, id: int) -> Feed | None:
         return self.feeds_port.get_feed_by_id(id)
 
-    def get_feed_items(self, feed_id: int) -> list[FeedItem]:
-        return self.feeds_port.get_feed_items_by_feed_id(feed_id)
+    def get_feed_items(self, feed_id: int, title: str | None = None) -> list[FeedItem]:
+        feed_items = sorted(
+            self.feeds_port.get_feed_items_by_feed_id(feed_id),
+            key=lambda item: item.created_at
+        )
+        if title:
+            feeds_to_return = []
+            for feed_item in feed_items:
+                if (
+                    feed_item.title == title and
+                    feed_item.created_at >= (
+                        datetime.datetime.now() - datetime.timedelta(hours=HOURS_TO_COMPARE)
+                    )
+                ):
+                    feeds_to_return.append(feed_item)
+            return feeds_to_return
+        return feed_items
 
     def create_feed_item(self, feed_item_request: FeedItemRequest):
         return self.feeds_port.create_feed_item(feed_item_request)
