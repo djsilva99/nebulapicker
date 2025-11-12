@@ -69,27 +69,27 @@ const DatePickerWithCalendar: React.FC<DatePickerProps> = ({ formData, setFormDa
   return (
     <div className="custom-calendar-container">
       <Box
-				bg="gray.700"
-				borderColor="white"
-				borderWidth="1px"
-				borderRadius="md"
-				p="10px"
-			>
+        bg="gray.700"
+        borderColor="white"
+        borderWidth="1px"
+        borderRadius="md"
+        p="10px"
+      >
         <Calendar
-					onChange={handleDateChange}
-					value={dateValue}
-					view="month" 
-					selectRange={false}
-					showNavigation={true}
-					maxDetail="month"
-					prevLabel={
-						<Button ml="10px" mr="10px" bg="gray.700">&lt;</Button>
-					}
-					nextLabel={
-						<Button ml="10px" mr="10px" bg="gray.700">&gt;</Button>
-					}
-					prev2Label={<Button bg="gray.700">&laquo;</Button>}
-					next2Label={<Button bg="gray.700">&raquo;</Button>}
+          onChange={handleDateChange}
+          value={dateValue}
+          view="month" 
+          selectRange={false}
+          showNavigation={true}
+          maxDetail="month"
+          prevLabel={
+            <Button ml="10px" mr="10px" bg="gray.700">&lt;</Button>
+          }
+          nextLabel={
+            <Button ml="10px" mr="10px" bg="gray.700">&gt;</Button>
+          }
+          prev2Label={<Button bg="gray.700">&laquo;</Button>}
+          next2Label={<Button bg="gray.700">&raquo;</Button>}
         />
       </Box>
     </div>
@@ -205,33 +205,33 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
           <FormControl isRequired mb={4}>
             <FormLabel color="white">Link</FormLabel>
             <Input
-							name="link"
-							placeholder="Url"
-							value={formData.link}
-							onChange={handleChange}
-							bg="gray.700"
-							color="white"
-							_placeholder={{ color: "gray.400" }}
+              name="link"
+              placeholder="Url"
+              value={formData.link}
+              onChange={handleChange}
+              bg="gray.700"
+              color="white"
+              _placeholder={{ color: "gray.400" }}
             />
             <FormLabel color="white" mt={10}>Title</FormLabel>
             <Input
-							name="title"
-							placeholder="Title"
-							value={formData.title}
-							onChange={handleChange}
-							bg="gray.700"
-							color="white"
-							_placeholder={{ color: "gray.400" }}
+              name="title"
+              placeholder="Title"
+              value={formData.title}
+              onChange={handleChange}
+              bg="gray.700"
+              color="white"
+              _placeholder={{ color: "gray.400" }}
             />
             <FormLabel color="white" mt={10}>Description</FormLabel>
             <Input
-							name="description"
-							placeholder="Description"
-							value={formData.description}
-							onChange={handleChange}
-							bg="gray.700"
-							color="white"
-							_placeholder={{ color: "gray.400" }}
+              name="description"
+              placeholder="Description"
+              value={formData.description}
+              onChange={handleChange}
+              bg="gray.700"
+              color="white"
+              _placeholder={{ color: "gray.400" }}
             />
             <FormLabel color="white" mt={10}>Timestamp</FormLabel>
             <Box position="relative" color="white">
