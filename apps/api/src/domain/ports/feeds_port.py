@@ -39,7 +39,10 @@ class FeedsPort(ABC):
         pass
 
     @abstractmethod
-    def get_feed_item_by_feed_item_external_id(self, feed_item_external_id: UUID) -> FeedItem | None:
+    def get_feed_item_by_feed_item_external_id(
+        self,
+        feed_item_external_id: UUID
+    ) -> FeedItem | None:
         pass
 
     @abstractmethod

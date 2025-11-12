@@ -113,7 +113,10 @@ class FeedsRepository(FeedsPort):
 
         return [FeedItem(**feed_item) for feed_item in result]
 
-    def get_feed_item_by_feed_item_external_id(self, feed_item_external_id: UUID) -> FeedItem | None:
+    def get_feed_item_by_feed_item_external_id(
+        self,
+        feed_item_external_id: UUID
+    ) -> FeedItem | None:
         sql = text(
             "SELECT id, feed_id, external_id, link, title, description, author, created_at "
             "FROM feed_items WHERE external_id = :external_id;"

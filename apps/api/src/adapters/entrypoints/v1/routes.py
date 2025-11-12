@@ -3,15 +3,17 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from src.adapters.entrypoints.v1.models.feeds import (
+    CreateFeedItemRequest,
+    CreateFeedItemResponse,
     CreateFeedRequest,
     ExternalUpdateFeedRequest,
     FeedResponse,
     FullCompleteFeed,
     ListFeedsResponse,
+    map_detailed_feeds_list_to_list_feeds_response,
+    map_feed_item_to_create_feed_item_response,
     map_feed_item_to_external_feed_item,
     map_feed_to_feed_response,
-    map_detailed_feeds_list_to_list_feeds_response, CreateFeedItemRequest, CreateFeedItemResponse,
-    map_feed_item_to_create_feed_item_response,
 )
 from src.adapters.entrypoints.v1.models.filter import (
     map_create_filter_request_to_filter_request,
@@ -37,7 +39,7 @@ from src.configs.dependencies.services import (
     get_picker_service,
     get_source_service,
 )
-from src.domain.models.feed import FeedRequest, UpdateFeedRequest, FeedItemRequest
+from src.domain.models.feed import FeedItemRequest, FeedRequest, UpdateFeedRequest
 from src.domain.models.picker import PickerRequest
 from src.domain.models.source import SourceRequest
 from src.domain.services.feed_service import FeedService
@@ -489,12 +491,14 @@ def create_feed_item(
     tags=["Feeds"],
     responses={204: {"description": "Deleted"}, 404: {"description": "Feed item not found"}}
 )
-def delete_feed(
+def delete_feed_item(
     feed_external_id: UUID,
     feed_item_external_id: UUID,
     feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
 ):
-    feed_item = feed_service.get_feed_item_by_external_id(feed_item_external_id=feed_item_external_id)
+    feed_item = feed_service.get_feed_item_by_external_id(
+        feed_item_external_id=feed_item_external_id
+    )
     if not feed_item:
         raise HTTPException(status_code=404, detail="Feed item not found")
 

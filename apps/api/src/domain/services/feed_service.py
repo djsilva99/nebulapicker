@@ -2,7 +2,14 @@ import datetime
 from uuid import UUID
 
 from feedgenerator import Rss201rev2Feed
-from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest, UpdateFeedRequest, DetailedFeed
+from src.domain.models.feed import (
+    DetailedFeed,
+    Feed,
+    FeedItem,
+    FeedItemRequest,
+    FeedRequest,
+    UpdateFeedRequest,
+)
 from src.domain.ports.feeds_port import FeedsPort
 
 MAX_NUMBER_OF_ITEMS = 50
@@ -41,7 +48,10 @@ class FeedService:
         for feed in feeds:
             feed_items = self.feeds_port.get_feed_items_by_feed_id(feed.id)
             number_of_feed_items = len(feed_items)
-            latest_item_datetime = sorted(feed_items, key=lambda item: item.created_at)[-1].created_at
+            latest_item_datetime = sorted(
+                feed_items,
+                key=lambda item: item.created_at
+            )[-1].created_at
             detailed_feeds.append(
                 DetailedFeed(
                     id=feed.id,

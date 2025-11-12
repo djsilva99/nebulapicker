@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from src.adapters.entrypoints.v1.models.picker import FullFeedPickerResponse
-from src.domain.models.feed import Feed, FeedItem, FeedRequest, DetailedFeed
+from src.domain.models.feed import DetailedFeed, Feed, FeedItem, FeedRequest
 
 
 class CreateFeedRequest(BaseModel):
