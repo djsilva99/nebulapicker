@@ -1,3 +1,4 @@
+import datetime
 from uuid import UUID
 
 from sqlalchemy import text
@@ -112,10 +113,23 @@ class FeedsRepository(FeedsPort):
 
         return [FeedItem(**feed_item) for feed_item in result]
 
-    def create_feed_item(self, feed_item_request: FeedItemRequest) -> FeedItem:
+    def get_feed_item_by_feed_item_external_id(self, feed_item_external_id: UUID) -> FeedItem | None:
         sql = text(
-            "INSERT INTO feed_items (feed_id, link, title, description, author) "
-            "VALUES (:feed_id, :link, :title, :description, :author) "
+            "SELECT id, feed_id, external_id, link, title, description, author, created_at "
+            "FROM feed_items WHERE external_id = :external_id;"
+        )
+        result = self.db.execute(sql, {"external_id": feed_item_external_id}).mappings().first()
+
+        if result:
+            return FeedItem(**result)
+        return None
+
+    def create_feed_item(self, feed_item_request: FeedItemRequest) -> FeedItem:
+        if feed_item_request.created_at is None:
+            feed_item_request.created_at = datetime.datetime.now()
+        sql = text(
+            "INSERT INTO feed_items (feed_id, link, title, description, author, created_at) "
+            "VALUES (:feed_id, :link, :title, :description, :author, :created_at) "
             "RETURNING id, feed_id, external_id, link, title, author, description, created_at"
         )
         result = self.db.execute(
@@ -125,7 +139,8 @@ class FeedsRepository(FeedsPort):
                 "link": feed_item_request.link,
                 "title": feed_item_request.title,
                 "description": feed_item_request.description,
-                "author": feed_item_request.author
+                "author": feed_item_request.author,
+                "created_at": feed_item_request.created_at
             }
         ).first()
 
