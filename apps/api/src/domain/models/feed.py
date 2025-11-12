@@ -19,6 +19,15 @@ class Feed(BaseModel):
     created_at: datetime
 
 
+class DetailedFeed(BaseModel):
+    id: int
+    external_id: UUID
+    name: str | None
+    created_at: datetime
+    latest_item_datetime: datetime
+    number_of_feed_items: int
+
+
 class FeedItem(BaseModel):
     id: int
     external_id: UUID
@@ -36,3 +45,4 @@ class FeedItemRequest(BaseModel):
     description: str
     feed_id: int
     author: str = ""
+    created_at: datetime | None = None

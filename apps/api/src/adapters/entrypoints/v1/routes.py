@@ -1,15 +1,19 @@
+import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from src.adapters.entrypoints.v1.models.feeds import (
+    CreateFeedItemRequest,
+    CreateFeedItemResponse,
     CreateFeedRequest,
     ExternalUpdateFeedRequest,
     FeedResponse,
     FullCompleteFeed,
     ListFeedsResponse,
+    map_detailed_feeds_list_to_list_feeds_response,
+    map_feed_item_to_create_feed_item_response,
     map_feed_item_to_external_feed_item,
     map_feed_to_feed_response,
-    map_feeds_list_to_list_feeds_response,
 )
 from src.adapters.entrypoints.v1.models.filter import (
     map_create_filter_request_to_filter_request,
@@ -35,7 +39,7 @@ from src.configs.dependencies.services import (
     get_picker_service,
     get_source_service,
 )
-from src.domain.models.feed import FeedRequest, UpdateFeedRequest
+from src.domain.models.feed import FeedItemRequest, FeedRequest, UpdateFeedRequest
 from src.domain.models.picker import PickerRequest
 from src.domain.models.source import SourceRequest
 from src.domain.services.feed_service import FeedService
@@ -43,6 +47,8 @@ from src.domain.services.filter_service import FilterService
 from src.domain.services.job_service import JobService
 from src.domain.services.picker_service import PickerService
 from src.domain.services.source_service import SourceService
+
+ADDED = "ADDED"
 
 router = APIRouter(prefix="/v1")
 
@@ -230,9 +236,9 @@ def delete_source(
 def list_feeds(
     feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
 ) -> ListFeedsResponse:
-    feeds_list = feed_service.get_all_feeds()
+    detailed_feeds_list = feed_service.get_detailed_feeds()
 
-    return map_feeds_list_to_list_feeds_response(feeds_list)
+    return map_detailed_feeds_list_to_list_feeds_response(detailed_feeds_list)
 
 
 @router.post(
@@ -431,6 +437,73 @@ def get_feed(
         feed_items=external_feed_items,
     )
 
+
+@router.post(
+    "/feeds/{feed_external_id}/feed_items",
+    status_code=status.HTTP_201_CREATED,
+    summary="Create feed item",
+    description="Create a feed item.",
+    response_model=CreateFeedItemResponse,
+    tags=["Feeds"],
+    responses={
+        201: {
+            "description": "Feed item created",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/FeedItemResponse"
+                    }
+                }
+            }
+        },
+        400: {"description": "Bad request / validation error"}
+    }
+)
+def create_feed_item(
+    feed_external_id: UUID,
+    create_feed_item_request: CreateFeedItemRequest,
+    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
+) -> CreateFeedItemResponse:
+    feed = feed_service.get_feed_by_external_id(feed_external_id)
+    if not feed:
+        raise HTTPException(status_code=400, detail="Feed not found")
+    created_at = create_feed_item_request.created_at
+    if created_at is None:
+        created_at = datetime.datetime.now()
+    feed_item = feed_service.create_feed_item(
+        FeedItemRequest(
+            link=create_feed_item_request.link,
+            title=create_feed_item_request.title,
+            description=create_feed_item_request.description,
+            feed_id=feed.id,
+            author=ADDED,
+            created_at=created_at
+        )
+    )
+    return map_feed_item_to_create_feed_item_response(feed_item)
+
+
+@router.delete(
+    "/feeds/{feed_external_id}/feed_items/{feed_item_external_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete feed item",
+    description="Delete a feed item by its external id.",
+    tags=["Feeds"],
+    responses={204: {"description": "Deleted"}, 404: {"description": "Feed item not found"}}
+)
+def delete_feed_item(
+    feed_external_id: UUID,
+    feed_item_external_id: UUID,
+    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
+):
+    feed_item = feed_service.get_feed_item_by_external_id(
+        feed_item_external_id=feed_item_external_id
+    )
+    if not feed_item:
+        raise HTTPException(status_code=404, detail="Feed item not found")
+
+    feed_service.delete_feed_item(feed_item.id)
+    return None
 
 @router.post(
     "/pickers",

@@ -263,9 +263,27 @@ def test_list_feeds_empty(client: TestClient, db_session: Session):
 def test_list_feeds_with_data(client: TestClient, db_session: Session):
     # GIVEN
     new_uuid = str(uuid4())
+    feed_id = 1
+    feed_external_id = str(uuid4())
     db_session.execute(text(
-        "INSERT INTO feeds (external_id, name) VALUES (:external_id, :name);"
+        "INSERT INTO feeds (id, external_id, name) VALUES (1, :external_id, :name);"
     ), {"external_id": new_uuid, "name": "fake_name"})
+    db_session.commit()
+    db_session.execute(
+        text(
+            "INSERT INTO feed_items (feed_id, external_id, link, title, "
+            "description, author) VALUES (:feed_id, :external_id, :link, "
+            ":title, :description, :author);"
+        ),
+        {
+            "external_id": feed_external_id,
+            "feed_id": feed_id,
+            "link": "fake_link",
+            "title": "fake_title",
+            "author": "fake_author",
+            "description": "fake_description"
+        }
+    )
     db_session.commit()
 
     # WHEN
