@@ -49,6 +49,8 @@ def db_session(setup_test_db):
                 description TEXT,
                 link TEXT,
                 author TEXT,
+                content TEXT,
+                reading_time INTEGER,
                 feed_id INT NOT NULL REFERENCES feeds(id),
                 external_id UUID NOT NULL DEFAULT gen_random_uuid(),
                 created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP

@@ -103,7 +103,8 @@ class FeedsRepository(FeedsPort):
 
     def get_feed_items_by_feed_id(self, feed_id: int) -> list[FeedItem]:
         sql = text(
-            "SELECT id, feed_id, external_id, link, title, description, author, created_at "
+            "SELECT id, feed_id, external_id, link, title, description, author, created_at, "
+            "content, reading_time "
             "FROM feed_items WHERE feed_id = :feed_id;"
         )
         result = self.db.execute(
@@ -118,7 +119,8 @@ class FeedsRepository(FeedsPort):
         feed_item_external_id: UUID
     ) -> FeedItem | None:
         sql = text(
-            "SELECT id, feed_id, external_id, link, title, description, author, created_at "
+            "SELECT id, feed_id, external_id, link, title, description, author, created_at, "
+            "content, reading_time "
             "FROM feed_items WHERE external_id = :external_id;"
         )
         result = self.db.execute(sql, {"external_id": feed_item_external_id}).mappings().first()
@@ -131,9 +133,12 @@ class FeedsRepository(FeedsPort):
         if feed_item_request.created_at is None:
             feed_item_request.created_at = datetime.datetime.now()
         sql = text(
-            "INSERT INTO feed_items (feed_id, link, title, description, author, created_at) "
-            "VALUES (:feed_id, :link, :title, :description, :author, :created_at) "
-            "RETURNING id, feed_id, external_id, link, title, author, description, created_at"
+            "INSERT INTO feed_items (feed_id, link, title, description, author, content, "
+            "reading_time, created_at) "
+            "VALUES (:feed_id, :link, :title, :description, :author, :content, "
+            ":reading_time, :created_at) "
+            "RETURNING id, feed_id, external_id, link, title, author, description, content, "
+            "reading_time, created_at"
         )
         result = self.db.execute(
             sql,
@@ -143,6 +148,8 @@ class FeedsRepository(FeedsPort):
                 "title": feed_item_request.title,
                 "description": feed_item_request.description,
                 "author": feed_item_request.author,
+                "content": feed_item_request.content,
+                "reading_time": feed_item_request.reading_time,
                 "created_at": feed_item_request.created_at
             }
         ).first()
@@ -157,8 +164,10 @@ class FeedsRepository(FeedsPort):
             link=data["link"],
             title=data["title"],
             description=data["description"],
+            author=data["author"],
+            content=data["content"],
+            reading_time=data["reading_time"],
             created_at=data["created_at"],
-            author=data["author"]
         )
 
     def delete_feed_item(self, feed_item_id: int) -> bool:

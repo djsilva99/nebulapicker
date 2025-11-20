@@ -8,8 +8,10 @@ from src.adapters.repositories.filters_repository import FiltersRepository
 from src.adapters.repositories.pickers_repository import PickersRepository
 from src.adapters.repositories.sources_repository import SourcesRepository
 from src.adapters.scheduler import Scheduler
+from src.adapters.wallabag_extractor import WallabagExtractor
 from src.configs.database import get_db
 from src.configs.settings import Settings
+from src.domain.services.extractor_service import ExtractorService
 from src.domain.services.feed_service import FeedService
 from src.domain.services.filter_service import FilterService
 from src.domain.services.job_service import JobService
@@ -51,16 +53,19 @@ def startup():
     source_repository = SourcesRepository(db_session)
     picker_repository = PickersRepository(db_session)
     filter_repository = FiltersRepository(db_session)
+    wallabag_service = WallabagExtractor()
     feed_service = FeedService(feeds_port=feed_repository)
     source_service = SourceService(source_port=source_repository)
     picker_service = PickerService(pickers_port=picker_repository)
     filter_service = FilterService(filters_port=filter_repository)
+    extractor_service = ExtractorService(extractor_port=wallabag_service)
     job_service = JobService(
         feed_service=feed_service,
         source_service=source_service,
         picker_service=picker_service,
         filter_service=filter_service,
-        scheduler=scheduler_adapter
+        scheduler=scheduler_adapter,
+        extractor_service=extractor_service
     )
     app.state.job_service = job_service
     scheduler_adapter.start()

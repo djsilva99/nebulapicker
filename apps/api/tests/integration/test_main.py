@@ -33,6 +33,7 @@ def mock_services():
         "filter_service": MagicMock(),
         "source_service": MagicMock(),
         "feed_service": MagicMock(),
+        "extractor_service": MagicMock(),
     }
 
 
@@ -43,6 +44,7 @@ def setup_job_service(mock_services):
     filter_service = mock_services["filter_service"]
     source_service = mock_services["source_service"]
     feed_service = mock_services["feed_service"]
+    extractor_service = mock_services["extractor_service"]
 
     app.state.job_service = JobService(
         scheduler=scheduler,
@@ -50,6 +52,7 @@ def setup_job_service(mock_services):
         filter_service=filter_service,
         source_service=source_service,
         feed_service=feed_service,
+        extractor_service=extractor_service
     )
     return
 
@@ -634,9 +637,10 @@ def test_get_feed_successfully(client: TestClient, db_session: Session):
              "VALUES (1, 1, 'identity', '[a]', NOW())")
     )
     db_session.execute(
-        text("INSERT INTO feed_items (id, feed_id, title, link, description, author, created_at) "
+        text("INSERT INTO feed_items (id, feed_id, title, link, description, author, "
+             "content, reading_time, created_at) "
              "VALUES (1, 1, 'feed_item_title', 'http://example.com/item1', "
-             "'feed_item_description', 'author_test', NOW())")
+             "'feed_item_description', 'author_test', 'test_content', 2, NOW())")
     )
     db_session.commit()
 

@@ -42,6 +42,7 @@ class ExternalFeedItem(BaseModel):
     link: str
     title: str
     author: str
+    reading_time: int
     created_at: datetime
 
 
@@ -50,6 +51,16 @@ class CreateFeedItemResponse(BaseModel):
     link: str
     title: str
     author: str
+    created_at: datetime
+
+
+class GetFeedItemResponse(BaseModel):
+    external_id: UUID
+    link: str
+    title: str
+    author: str
+    content: str
+    reading_time: int
     created_at: datetime
 
 
@@ -65,6 +76,7 @@ class CreateFeedItemRequest(BaseModel):
     link: str
     title: str
     description: str
+    content: str
     created_at: datetime | None = None
 
 
@@ -112,6 +124,7 @@ def map_feed_item_to_external_feed_item(
         title=feed_item.title,
         author=feed_item.author,
         created_at=feed_item.created_at,
+        reading_time=feed_item.reading_time
     )
 
 
@@ -124,4 +137,18 @@ def map_feed_item_to_create_feed_item_response(
         title=feed_item.title,
         author=feed_item.author,
         created_at=feed_item.created_at,
+    )
+
+
+def map_feed_item_to_get_feed_item_response(
+    feed_item: FeedItem
+):
+    return GetFeedItemResponse(
+        external_id=feed_item.external_id,
+        link=feed_item.link,
+        title=feed_item.title,
+        author=feed_item.author,
+        created_at=feed_item.created_at,
+        content=feed_item.content,
+        reading_time=feed_item.reading_time
     )
