@@ -1,6 +1,7 @@
 import ast
 
 import feedparser
+from src.configs.settings import Settings
 from src.domain.handlers.operations import (
     description_contains,
     description_does_not_contain,
@@ -8,15 +9,18 @@ from src.domain.handlers.operations import (
     title_contains,
     title_does_not_contain,
 )
-from src.domain.models.feed import FeedItemRequest
+from src.domain.models.feed import FeedItemRequest, GetFeedItemContentRequest
 from src.domain.models.filter import Operation
 from src.domain.models.job import Job
 from src.domain.models.picker import Picker
 from src.domain.ports.scheduler_port import SchedulerPort
+from src.domain.services.extractor_service import ExtractorService
 from src.domain.services.feed_service import FeedService
 from src.domain.services.filter_service import FilterService
 from src.domain.services.picker_service import PickerService
 from src.domain.services.source_service import SourceService
+
+settings: Settings = Settings()
 
 
 class JobService:
@@ -26,13 +30,15 @@ class JobService:
         picker_service: PickerService,
         filter_service: FilterService,
         source_service: SourceService,
-        feed_service: FeedService
+        feed_service: FeedService,
+        extractor_service: ExtractorService
     ):
         self.scheduler = scheduler
         self.picker_service = picker_service
         self.filter_service = filter_service
         self.source_service = source_service
         self.feed_service = feed_service
+        self.extractor_service = extractor_service
 
     def add_cronjob(self, picker: Picker):
         job = Job(
@@ -62,7 +68,7 @@ class JobService:
             jobs.append(job)
         self.scheduler.load_jobs(jobs)
 
-    def process(self, picker_id: int):
+    def process(self, picker_id: int):  # noqa: C901
         picker = self.picker_service.get_picker_by_id(picker_id)
         filters = self.filter_service.get_filters_by_picker_id(picker_id)
         feed_items = self.feed_service.get_feed_items(picker.feed_id)
@@ -127,11 +133,26 @@ class JobService:
                     feed_id=picker.feed_id,
                     title=entry.title
                 ):
+                    content = None
+                    if settings.WALLABAG_ENABLED:
+                        content = self.extractor_service.extract_feed_item_content(
+                            GetFeedItemContentRequest(
+                                url=entry.link
+                            )
+                        )
+                    if content:
+                        reading_time = content.reading_time
+                        content = content.content
+                    else:
+                        content = "<p> Nebulapicker was not able to parse the content. </p>"
+                        reading_time = 0
                     feed_item_request = FeedItemRequest(
                         link=entry.link,
                         title=entry.title,
                         description=entry.description,
                         feed_id=picker.feed_id,
-                        author=source_name
+                        author=source_name,
+                        content=content,
+                        reading_time=reading_time
                     )
                     self.feed_service.create_feed_item(feed_item_request)

@@ -8,7 +8,9 @@ from src.domain.models.feed import FeedItemRequest
 from src.domain.models.filter import Operation
 from src.domain.models.job import Job
 from src.domain.models.picker import Picker
-from src.domain.services.job_service import JobService
+from src.domain.services.job_service import JobService, settings
+
+settings.WALLABAG_ENABLED = False
 
 
 @pytest.fixture
@@ -19,6 +21,7 @@ def mock_services():
         "filter_service": MagicMock(),
         "source_service": MagicMock(),
         "feed_service": MagicMock(),
+        "extractor_service": MagicMock(),
     }
 
 
@@ -30,6 +33,7 @@ def job_service(mock_services):
         filter_service=mock_services["filter_service"],
         source_service=mock_services["source_service"],
         feed_service=mock_services["feed_service"],
+        extractor_service=mock_services["extractor_service"]
     )
 
 
@@ -96,7 +100,8 @@ def test_process_adds_new_entry(mock_parse, job_service, mock_services):
         SimpleNamespace(
             link="http://example.com/article1",
             title="Article 1",
-            description="Desc 1"
+            description="Desc 1",
+            content="test_content"
         )
     ]
 

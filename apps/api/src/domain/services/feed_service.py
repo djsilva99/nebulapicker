@@ -48,10 +48,7 @@ class FeedService:
         for feed in feeds:
             feed_items = self.feeds_port.get_feed_items_by_feed_id(feed.id)
             number_of_feed_items = len(feed_items)
-            latest_item_datetime = sorted(
-                feed_items,
-                key=lambda item: item.created_at
-            )[-1].created_at
+            latest_item_datetime = max((i.created_at for i in feed_items), default=feed.created_at)
             detailed_feeds.append(
                 DetailedFeed(
                     id=feed.id,
@@ -59,7 +56,7 @@ class FeedService:
                     name=feed.name,
                     created_at=feed.created_at,
                     latest_item_datetime=latest_item_datetime,
-                    number_of_feed_items=number_of_feed_items
+                    number_of_feed_items=number_of_feed_items,
                 )
             )
         return sorted(detailed_feeds, key=lambda item: item.name)

@@ -9,10 +9,12 @@ from src.adapters.entrypoints.v1.models.feeds import (
     ExternalUpdateFeedRequest,
     FeedResponse,
     FullCompleteFeed,
+    GetFeedItemResponse,
     ListFeedsResponse,
     map_detailed_feeds_list_to_list_feeds_response,
     map_feed_item_to_create_feed_item_response,
     map_feed_item_to_external_feed_item,
+    map_feed_item_to_get_feed_item_response,
     map_feed_to_feed_response,
 )
 from src.adapters.entrypoints.v1.models.filter import (
@@ -477,10 +479,42 @@ def create_feed_item(
             description=create_feed_item_request.description,
             feed_id=feed.id,
             author=ADDED,
+            content=create_feed_item_request.content,
             created_at=created_at
         )
     )
     return map_feed_item_to_create_feed_item_response(feed_item)
+
+
+@router.get(
+    "/feeds/{feed_external_id}/feed_items/{feed_item_external_id}",
+    summary="Get full feed data",
+    description="Return the feed item data.",
+    response_model=GetFeedItemResponse,
+    tags=["Feeds"],
+    responses={
+        200: {
+            "description": "Full feed item details",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/GetFeedItemResponse"
+                    }
+                }
+            }
+        },
+        404: {"description": "Feed item not found"}
+    }
+)
+def get_feed_item(
+    feed_external_id: UUID,
+    feed_item_external_id: UUID,
+    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
+) -> GetFeedItemResponse:
+    feed_item = feed_service.get_feed_item_by_external_id(feed_item_external_id)
+    if not feed_item:
+        raise HTTPException(status_code=400, detail="Feed item not found")
+    return map_feed_item_to_get_feed_item_response(feed_item)
 
 
 @router.delete(
