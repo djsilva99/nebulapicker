@@ -32,6 +32,7 @@ interface NewFeedItem {
   title: string;
   description: string;
   link: string;
+	content: string;
   created_at?: string;
 }
 
@@ -100,7 +101,7 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
   { externalFeedId, isOpen, onClose, onFeedAdded, isCentered }
 ) => {
   const [formData, setFormData] = useState<NewFeedItem>(
-		{ title: "", description: "", link: "" }
+		{ title: "", description: "", link: "", content: "" }
 	);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
@@ -159,7 +160,7 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
       });
       onFeedAdded();
       onClose();
-      setFormData({ title: "", description: "", link: "" });
+      setFormData({ title: "", description: "", link: "", content: "" });
     } catch (error) {
       console.error("Error creating feed item:", error);
       toast({
@@ -181,7 +182,7 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
         backdropFilter="blur(4px)"
       />
       <ModalContent
-        top="300px"
+        top="100px"
         left="35%"
         width="30%"
         maxW="1800px"
@@ -228,6 +229,16 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
               name="description"
               placeholder="Description"
               value={formData.description}
+              onChange={handleChange}
+              bg="gray.700"
+              color="white"
+              _placeholder={{ color: "gray.400" }}
+            />
+            <FormLabel color="white" mt={10}>Content</FormLabel>
+            <Input
+              name="content"
+              placeholder="Content"
+              value={formData.content}
               onChange={handleChange}
               bg="gray.700"
               color="white"

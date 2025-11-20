@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const API_DESTINATION = process.env.API_URL || "http://127.0.0.1:8000";
+const API_DESTINATION = process.env.API_URL || "http://127.0.0.1:8081";
 
 const nextConfig: NextConfig = {
   env: {

@@ -140,7 +140,7 @@ export default function Feeds() {
           <Table.Row>
             <Table.ColumnHeader bg="gray.700" color='white'>NAME</Table.ColumnHeader>
             <Table.ColumnHeader bg="gray.700" color='white'># FEED ITEMS</Table.ColumnHeader>
-            <Table.ColumnHeader bg="gray.700" color='white'>LATEST FEED ITEM</Table.ColumnHeader>
+            <Table.ColumnHeader bg="gray.700" color='white'>LATEST UPDATE</Table.ColumnHeader>
             <Table.ColumnHeader bg="gray.700" color='white' textAlign="center">ACTIONS</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>

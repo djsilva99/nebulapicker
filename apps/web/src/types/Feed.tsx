@@ -17,6 +17,8 @@ export interface FeedItem {
     author: string
     title: string
     created_at: string
+    content?: string
+    reading_time?: string
 }
 
 export interface Feed {
