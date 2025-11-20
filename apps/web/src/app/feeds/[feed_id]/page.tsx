@@ -6,13 +6,14 @@ import {
   Box,
   Flex,
   Button,
-  useDisclosure
+  useDisclosure,
+  Link
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Feed, FeedItem } from "@/types/Feed";
 import { useParams } from 'next/navigation';
-import { FiRss, FiSettings, FiTrash, FiPlus } from "react-icons/fi";
+import { FiRss, FiSettings, FiTrash, FiPlus, FiGlobe } from "react-icons/fi";
 import { useToast } from "@chakra-ui/toast";
 import { AddFeedItemModal } from "./_components/add_feed_items_modal";
 
@@ -182,15 +183,17 @@ export default function FeedPage() {
       {/* TABLE */}
       <Table.Root size="sm" variant="outline">
         <Table.ColumnGroup>
-          <Table.Column htmlWidth="70%" />
+          <Table.Column htmlWidth="55%" />
           <Table.Column htmlWidth="15%" />
-          <Table.Column htmlWidth="5%" />
-          <Table.Column htmlWidth="5%" />
+          <Table.Column htmlWidth="10%" />
+          <Table.Column htmlWidth="10%" />
+          <Table.Column htmlWidth="10%" />
         </Table.ColumnGroup>
         <Table.Header>
           <Table.Row>
             <Table.ColumnHeader bg="gray.700" color='white'>TITLE</Table.ColumnHeader>
             <Table.ColumnHeader bg="gray.700" color='white'>AUTHOR</Table.ColumnHeader>
+            <Table.ColumnHeader bg="gray.700" color='white'>READING TIME</Table.ColumnHeader>
             <Table.ColumnHeader bg="gray.700" color='white'>DATE</Table.ColumnHeader>
             <Table.ColumnHeader bg="gray.700" color='white'>ACTIONS</Table.ColumnHeader>
           </Table.Row>
@@ -206,39 +209,55 @@ export default function FeedPage() {
             color="gray.400"
             _hover={{ bg: 'gray.800', color: '#AC7DBA' }}
           >
-            <Table.Cell borderLeft="none" borderRight="none">
-              <a
-                href={normalizeUrl(item.link)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+            <Table.Cell borderLeft="none" borderRight="none" cursor="pointer"
+              color="gray.400"
+              _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+              <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
+                color="gray.400"
+                _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
                 <Box>{item.title}</Box>
-              </a>
+              </Link>
             </Table.Cell>
             <Table.Cell borderLeft="none" borderRight="none">
-              <a href={normalizeUrl(item.link)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
+                color="gray.400"
+                _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
                 <Box>{item.author}</Box>
-              </a>
+              </Link>
             </Table.Cell>
             <Table.Cell borderLeft="none" borderRight="none">
-              <a
-                href={normalizeUrl(item.link)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Box>{timeDeltaFromNow(item.created_at)}</Box>
-              </a>
+              <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
+                color="gray.400"
+                _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+                <Box>{item.reading_time}m</Box>
+              </Link>
+            </Table.Cell>
+            <Table.Cell borderLeft="none" borderRight="none">
+              <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
+                color="gray.400"
+                _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+                <Box>{timeDeltaFromNow(item.created_at)} ago</Box>
+              </Link>
             </Table.Cell>
 
-            <Table.Cell textAlign="center">
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
+            <Table.Cell borderLeft="none" borderRight="none">
+              <Box>
+                <Button
+                  aria-label={`Go to ${item.link}`}
+                  size="sm"
+                  colorScheme="red"
+                  color="white"
+                  _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.open(item.link, '_blank');
+                  }}
+                  loading={isDeleting === item.external_id}
+                >
+                  <FiGlobe />
+                </Button>
                 <Button
                   aria-label={`Delete ${item.title}`}
                   size="sm"
