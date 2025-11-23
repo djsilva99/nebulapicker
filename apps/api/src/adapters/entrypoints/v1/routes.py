@@ -2,10 +2,12 @@ import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi.responses import StreamingResponse
 from src.adapters.entrypoints.v1.models.feeds import (
     CreateFeedItemRequest,
     CreateFeedItemResponse,
     CreateFeedRequest,
+    ExportFeedItemsRequest,
     ExternalUpdateFeedRequest,
     FeedResponse,
     FullCompleteFeed,
@@ -480,7 +482,8 @@ def create_feed_item(
             feed_id=feed.id,
             author=ADDED,
             content=create_feed_item_request.content,
-            created_at=created_at
+            created_at=created_at,
+            reading_time=0
         )
     )
     return map_feed_item_to_create_feed_item_response(feed_item)
@@ -538,6 +541,41 @@ def delete_feed_item(
 
     feed_service.delete_feed_item(feed_item.id)
     return None
+
+
+@router.post(
+    "/feeds/{feed_external_id}/export",
+    status_code=status.HTTP_200_OK,
+    summary="Exported feed items file",
+    description="Exported feed items file.",
+    tags=["Feeds"],
+    responses={
+        200: {
+            "description": "Export feed items file",
+            "content": {"application/epub+zip": {}},
+        }
+    }
+)
+def export_feed_items(
+    feed_external_id: UUID,
+    export_feed_items_request: ExportFeedItemsRequest,
+    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
+):
+    buffer = feed_service.export_file(
+        feed_external_id,
+        export_feed_items_request.file_type,
+        export_feed_items_request.start_time,
+        export_feed_items_request.end_time
+    )
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/epub+zip",
+        headers={
+            "Content-Disposition": "attachment; filename=export.epub"
+        }
+    )
+
 
 @router.post(
     "/pickers",

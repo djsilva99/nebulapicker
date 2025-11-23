@@ -1,9 +1,15 @@
 from datetime import datetime
+from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel
 from src.adapters.entrypoints.v1.models.picker import FullFeedPickerResponse
 from src.domain.models.feed import DetailedFeed, Feed, FeedItem, FeedRequest
+
+
+class ExportFileType(str, Enum):
+    epub = "epub"
+    pdf = "pdf"
 
 
 class CreateFeedRequest(BaseModel):
@@ -78,6 +84,12 @@ class CreateFeedItemRequest(BaseModel):
     description: str
     content: str
     created_at: datetime | None = None
+
+
+class ExportFeedItemsRequest(BaseModel):
+    file_type: ExportFileType
+    start_time: datetime
+    end_time: datetime
 
 
 def map_create_feed_request_to_feed_request(
