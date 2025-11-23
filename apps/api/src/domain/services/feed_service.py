@@ -1,7 +1,12 @@
 import datetime
+import io
 from uuid import UUID
 
+import requests
+from bs4 import BeautifulSoup
+from ebooklib import epub
 from feedgenerator import Rss201rev2Feed
+from src.adapters.entrypoints.v1.models.feeds import ExportFileType
 from src.domain.models.feed import (
     DetailedFeed,
     Feed,
@@ -112,3 +117,133 @@ class FeedService:
             )
 
         return feed_object.writeString("utf-8")
+
+    def export_file(
+            self,
+            feed_external_id: UUID,
+            file_type: ExportFileType,
+            start_time: datetime,
+            end_time: datetime
+    ) -> io.BytesIO:
+        # initialize buffer
+        buffer = io.BytesIO()
+
+        # Get feed items
+        start_time = start_time.astimezone(datetime.UTC)
+        end_time = end_time.astimezone(datetime.UTC)
+        feed = self.feeds_port.get_feed_by_external_id(feed_external_id)
+        feed_items = self.feeds_port.get_feed_items_by_feed_id(feed.id)
+        feed_items_to_export = [
+            item for item in feed_items if
+            item.created_at.replace(
+                tzinfo=datetime.UTC
+            ) > start_time and
+            item.created_at.replace(tzinfo=datetime.UTC) < end_time
+        ]
+        total_reading_time = sum(
+            [item.reading_time for item in feed_items_to_export]
+        )
+
+        if file_type == ExportFileType.epub.value:
+
+            # Create EPUB
+            book = epub.EpubBook()
+            book.set_identifier(str(feed.external_id))
+            start_str = start_time.strftime("%Y%m%d")
+            end_str = end_time.strftime("%Y%m%d")
+            book.set_title(f"{feed.name}_{start_str}-{end_str} ({total_reading_time}m)")
+            book.set_language("en")
+
+            i = 0
+            spine = ["nav"]
+            toc = []
+            for feed_item in feed_items_to_export:
+                soup = BeautifulSoup(feed_item.content, "html.parser")
+
+                # Process and embed images
+                for j, img_tag in enumerate(soup.find_all("img")):
+                    img_url = img_tag.get("src")
+                    if not img_url:
+                        continue
+                    try:
+                        img_data = requests.get(img_url).content
+                    except Exception:
+                        continue  # skip if download fails
+
+                    img_name = f"images/{i}_{j}.jpg"
+                    epub_img = epub.EpubItem(
+                        uid=f"img{i}_{j}",
+                        file_name=img_name,
+                        media_type="image/jpeg",
+                        content=img_data
+                    )
+                    book.add_item(epub_img)
+                    img_tag["src"] = img_name
+
+                # Build chapter HTML
+                chapter_html = f"""
+                <!DOCTYPE html>
+                <html lang="en">
+                  <head>
+                    <meta charset="utf-8"/>
+                    <title>
+                      {feed_item.created_at.strftime("%Y-%m-%d")}
+                      - {feed_item.title} ({feed_item.reading_time}m)
+                    </title>
+                  </head>
+                  <body>
+                    <h1>{feed_item.title}</h1>
+                    <p>
+                      <strong>
+                        Reading time:
+                      </strong>
+                      {feed_item.reading_time}m
+                    </p>
+                    <p>
+                      <strong>
+                        Source:
+                      </strong>
+                      {feed_item.author}
+                    </p>
+                    <p>
+                      <strong>
+                        Date:
+                      </strong>
+                      {feed_item.created_at.strftime("%Y-%m-%d")}
+                    </p>
+                    <p>
+                      <strong>
+                        Link:
+                      </strong>
+                      <a href="{feed_item.link}">{feed_item.link}</a>
+                    </p>
+                    <div style="height: 24px;">&nbsp;</div>
+                    <div style="height: 24px;">&nbsp;</div>
+                    {str(soup)}
+                  </body>
+                </html>
+                """
+
+                chapter = epub.EpubHtml(
+                    title=f"{feed_item.created_at.strftime('%Y-%m-%d')} - "
+                          f"{feed_item.title} ({feed_item.reading_time}m)",
+                    file_name=f"{i}.xhtml",
+                    lang="en",
+                )
+                chapter.content = chapter_html
+                book.add_item(chapter)
+                spine.append(chapter)
+                toc.append(chapter)
+                i += 1
+
+            # Update buffer
+            book.spine = spine
+            book.toc = toc
+            book.add_item(epub.EpubNav())
+            book.add_item(epub.EpubNcx())
+            epub.write_epub(buffer, book, {})
+            buffer.seek(0)
+
+            return buffer
+
+        raise Exception("wrong file type")
