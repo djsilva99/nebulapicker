@@ -10,7 +10,6 @@ import axios from "axios";
 import { FeedItem } from "@/types/Feed";
 import { useParams } from 'next/navigation';
 import { FiGlobe, FiArrowLeft, FiClock, FiCalendar } from "react-icons/fi";
-import { useToast } from "@chakra-ui/toast";
 import { Global } from "@emotion/react";
 
 export default function FeedItemPage() {
@@ -68,7 +67,7 @@ export default function FeedItemPage() {
         <Global
           styles={`
             .article-container {
-                font-size: 1.15rem !important;
+                font-size: 1rem !important;
                 line-height: 1.7 !important;
                 font-weight: normal !important;
             }
@@ -86,7 +85,7 @@ export default function FeedItemPage() {
 
             .article-container figcaption {
                 font-style: italic !important;
-                font-size: 1em !important;
+                font-size: 0.8em !important;
                 text-align: center !important;
                 margin-bottom: 1em !important;
                 display: block;
@@ -97,18 +96,17 @@ export default function FeedItemPage() {
             .article-container p {
                 margin-bottom: 1em !important;
                 line-height: 1.7 !important;
-                text-align: justify !important;
-                font-size: 1.15rem !important;
+                font-size: 0.9rem !important;
                 font-weight: normal !important;
             }
 
             .article-container div {
                 margin-bottom: 1em !important;
-                font-weight: normal !important;
+                font-weight: 0.5em !important;
             }
 
             .h1 {
-                font-size: 2rem !important;
+                font-size: 1.5rem !important;
                 font-weight: bold !important;
                 margin-bottom: 0.6em !important;
                 line-height: 1.3 !important;
@@ -120,17 +118,17 @@ export default function FeedItemPage() {
           className="h1"
           dangerouslySetInnerHTML={{ __html: data?.title || "" }}
         />
-        <Box>
+        <Box fontSize="0.75rem">
           <Link href={`/feeds/${feedId}`} style={{ color: '#52525b' }}>
             <FiArrowLeft />
-            {feed} feed
+            {feed}
           </Link>
 
           <div
-              style={{ display: "inline-flex", alignItems: "center", gap: "4px", marginLeft: "20px", color: '#52525b' }}
+            style={{ display: "inline-flex", alignItems: "center", gap: "4px", marginLeft: "20px", color: '#52525b' }}
           >
-              <FiClock />
-              {data?.reading_time}m
+            <FiClock />
+            {data?.reading_time}m
           </div>
 
           <div
@@ -159,6 +157,7 @@ export default function FeedItemPage() {
           dangerouslySetInnerHTML={{ __html: data?.content || "" }}
         />
       </Box>
+      <Box flex="1" minH="calc(100vh - 200px)" />
     </Box>
   )
 }

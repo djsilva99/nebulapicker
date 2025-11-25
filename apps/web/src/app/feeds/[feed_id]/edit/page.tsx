@@ -125,13 +125,13 @@ export default function FeedPage() {
   };
 
   return (
-    <Box p={6}>
-      <Flex justifyContent="space-between" alignItems="flex-start" p={6}>
+    <Box p={0}>
+      <Flex justifyContent="space-between" alignItems="flex-start" p={0}>
         <Box>
           <Heading as="h2" size="lg" mt={0} mb={4}>
             Feed Name
           </Heading>
-          <Box as="form" onSubmit={handleUpdate} maxW="500px">
+          <Box as="form" onSubmit={handleUpdate} maxW="175px">
             <FormControl id="feed-name" mb={4}>
               <Input
                 value={newName}
@@ -140,11 +140,11 @@ export default function FeedPage() {
                 required
               />
             </FormControl>
-            <Box fontSize="sm" color="gray.600" mt="10px">
+            <Box fontSize="xs" color="gray.600" mt="10px">
               {data?.external_id}
             </Box>
-            <Box fontSize="sm" color="gray.600" mt="5px">
-              created at {data?.created_at}
+            <Box fontSize="xs" color="gray.600" mt="5px">
+              created at {data?.created_at.slice(0,10)}
             </Box>
           </Box>
 
@@ -158,7 +158,7 @@ export default function FeedPage() {
             Update Name
           </Button>
         </Box>
-        <Box mr="0px">
+        <Box mr="0px" mt="3px">
           <Box>
             <Button
               aria-label="Create New Picker"
@@ -168,13 +168,13 @@ export default function FeedPage() {
                 e.stopPropagation();
                 window.open(`/api/v1/feeds/${data?.external_id}.xml`, '_blank');
               }}
-              size="md"
+              size="xs"
               borderColor="white"
               borderWidth="1px"
               color="white"
               _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
               mt="10"
-              mr="4"
+              mr="2"
             >
               <FiRss />
             </Button>
@@ -186,7 +186,7 @@ export default function FeedPage() {
                 e.stopPropagation();
                 window.location.href = `/feeds/${data?.external_id}`;
               }}
-              size="md"
+              size="xs"
               borderColor="white"
               borderWidth="1px"
               color="white"
@@ -200,7 +200,7 @@ export default function FeedPage() {
         </Box>
       </Flex>
 
-      <Flex justifyContent="space-between" alignItems="flex-start" p={6}>
+      <Flex justifyContent="space-between" alignItems="flex-start" pt={6}>
         <Box>
           <Heading as="h2" size="lg">
             Pickers ({pickers.length})
@@ -211,7 +211,7 @@ export default function FeedPage() {
             aria-label="Create New Picker"
             colorScheme="green"
             onClick={onOpenPickerModal}
-            size="md"
+            size="xs"
             borderColor="white"
             borderWidth="2px"
             color="white"
@@ -222,7 +222,7 @@ export default function FeedPage() {
           </Button>
         </Box>
       </Flex>
-      <Flex justifyContent="space-between" alignItems="flex-start" p={6} width="100%">
+      <Flex justifyContent="space-between" alignItems="flex-start" pt={6} width="100%">
         <Box width="100%">
           <Accordion.Root collapsible defaultValue={["b"]}>
             {pickers.map((picker) => (
@@ -273,6 +273,7 @@ export default function FeedPage() {
         feedId={feedId}
         onPickerAdded={fetchData}
       />
+      <Box flex="1" minH="calc(100vh - 200px)" />
     </Box>
   );
 }

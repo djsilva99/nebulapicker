@@ -13,7 +13,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Feed, FeedItem } from "@/types/Feed";
 import { useParams } from 'next/navigation';
-import { FiRss, FiSettings, FiTrash, FiPlus, FiGlobe } from "react-icons/fi";
+import { FiRss, FiSettings, FiTrash, FiPlus, FiGlobe, FiClock } from "react-icons/fi";
 import { useToast } from "@chakra-ui/toast";
 import { AddFeedItemModal } from "./_components/add_feed_items_modal";
 
@@ -83,7 +83,7 @@ export default function FeedPage() {
   }
 
   const handleDelete = async (externalId: string, feedExternalId: string) => {
-    if (!window.confirm(`Are you sure you want to delete feed item: ${feedExternalId}?`)) {
+    if (typeof window !== 'undefined' && !window.confirm(`Are you sure you want to delete feed item: ${feedExternalId}?`)) {
       return;
     }
 
@@ -116,7 +116,7 @@ export default function FeedPage() {
   };
 
   return (
-    <Box p={6}>
+    <Box p={2}>
 
       {/* HEADER */}
       <Flex
@@ -124,7 +124,7 @@ export default function FeedPage() {
         alignItems="center"
         mb={6}
       >
-        <Heading as="h1" size="xl">
+        <Heading as="h1" size="lg">
           {data?.name} ({data?.feed_items?.length})
         </Heading>
         <Box mr="0px">
@@ -133,12 +133,13 @@ export default function FeedPage() {
               aria-label="Create New Feed Item"
               colorScheme="green"
               onClick={onOpen}
-              size="md"
+              size="xs"
               borderColor="white"
               borderWidth="1px"
               color="white"
               _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
-              mr="4"
+              mr="2"
+              display="none"
             >
               <FiPlus />
             </Button>
@@ -150,12 +151,12 @@ export default function FeedPage() {
                 e.stopPropagation();
                 window.location.href = `/feeds/${data?.external_id}/edit`;
               }}
-              size="md"
+              size="xs"
               borderColor="white"
               borderWidth="1px"
               color="white"
               _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
-              mr="4"
+              mr="2"
             >
               <FiSettings />
             </Button>
@@ -168,7 +169,7 @@ export default function FeedPage() {
                 e.stopPropagation();
                 window.open(`/api/v1/feeds/${data?.external_id}.xml`, '_blank');
               }}
-              size="md"
+              size="xs"
               borderColor="white"
               borderWidth="1px"
               color="white"
@@ -182,19 +183,12 @@ export default function FeedPage() {
 
       {/* TABLE */}
       <Table.Root size="sm" variant="outline">
-        <Table.ColumnGroup>
-          <Table.Column htmlWidth="55%" />
-          <Table.Column htmlWidth="15%" />
-          <Table.Column htmlWidth="10%" />
-          <Table.Column htmlWidth="10%" />
-          <Table.Column htmlWidth="10%" />
-        </Table.ColumnGroup>
         <Table.Header>
           <Table.Row>
             <Table.ColumnHeader bg="gray.700" color='white'>TITLE</Table.ColumnHeader>
-            <Table.ColumnHeader bg="gray.700" color='white'>AUTHOR</Table.ColumnHeader>
-            <Table.ColumnHeader bg="gray.700" color='white'>READING TIME</Table.ColumnHeader>
-            <Table.ColumnHeader bg="gray.700" color='white'>DATE</Table.ColumnHeader>
+            <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}>SOURCE</Table.ColumnHeader>
+            <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}>DATE</Table.ColumnHeader>
+            <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}><FiClock/></Table.ColumnHeader>
             <Table.ColumnHeader bg="gray.700" color='white'>ACTIONS</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
@@ -209,30 +203,38 @@ export default function FeedPage() {
             color="gray.400"
             _hover={{ bg: 'gray.800', color: '#AC7DBA' }}
           >
-            <Table.Cell borderLeft="none" borderRight="none" cursor="pointer"
+            <Table.Cell borderLeft="none" borderRight="none" cursor="pointer" width={{ base: "80%", md: "60%" }}
               color="gray.400"
               _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
               <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
                 color="gray.400"
                 _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
-                <Box>{item.title}</Box>
+                <Box>
+                    <Box fontWeight="medium" color="#7DCDE8">
+                        {item.title}
+                    </Box>
+                    <Box 
+                        fontSize="xs" 
+                        color="gray.500" 
+                        mt={0.5}
+                        display={{ base: 'block', md: 'none' }}
+                    >
+                      <Flex align="center" gap={1}>
+                        {item.author} &nbsp;&nbsp; {timeDeltaFromNow(item.created_at)} ago &nbsp;&nbsp; <FiClock/> {item.reading_time}m
+                      </Flex>
+                    </Box>
+                </Box>
               </Link>
             </Table.Cell>
-            <Table.Cell borderLeft="none" borderRight="none">
+            <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "15%" }}>
               <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
                 color="gray.400"
                 _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
                 <Box>{item.author}</Box>
               </Link>
             </Table.Cell>
-            <Table.Cell borderLeft="none" borderRight="none">
-              <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
-                color="gray.400"
-                _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
-                <Box>{item.reading_time}m</Box>
-              </Link>
-            </Table.Cell>
-            <Table.Cell borderLeft="none" borderRight="none">
+
+            <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "10%" }}>
               <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
                 color="gray.400"
                 _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
@@ -240,11 +242,19 @@ export default function FeedPage() {
               </Link>
             </Table.Cell>
 
-            <Table.Cell borderLeft="none" borderRight="none">
-              <Box>
+           <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "5%" }}>
+              <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
+                color="gray.400"
+                _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+                <Box>{item.reading_time}m</Box>
+              </Link>
+            </Table.Cell>
+
+            <Table.Cell borderLeft="none" borderRight="none" width={{ base: "20%", md: "10%" }}>
+              <Box minW="80px">
                 <Button
                   aria-label={`Go to ${item.link}`}
-                  size="sm"
+                  size="xs"
                   colorScheme="red"
                   color="white"
                   _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
@@ -260,7 +270,7 @@ export default function FeedPage() {
                 </Button>
                 <Button
                   aria-label={`Delete ${item.title}`}
-                  size="sm"
+                  size="xs"
                   colorScheme="red"
                   color="white"
                   _hover={{ bg: 'gray.700', color: 'red' }}
@@ -288,6 +298,7 @@ export default function FeedPage() {
         onFeedAdded={fetchData}
         isCentered
       />
+      <Box flex="1" minH="calc(100vh - 200px)" />
     </Box>
   )
 }
