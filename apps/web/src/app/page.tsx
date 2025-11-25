@@ -18,6 +18,7 @@ export default function Home() {
     <Box p={8} textAlign="center">
       <Heading mb={4}>nebulapicker v1.0</Heading>
       <Text mb={4}>{data}</Text>
+      <Box flex="1" minH="calc(100vh - 200px)" />
     </Box>
   );
 }

@@ -80,7 +80,7 @@ export default function Sources() {
   }
 
   return (
-    <Box p={6}>
+    <Box p={0}>
 
       {/* HEADER + CREATE SOURCE BUTTON */}
       <Flex
@@ -98,6 +98,7 @@ export default function Sources() {
           borderColor="white"
           borderWidth="1px"
           color="white"
+          size="xs"
           _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
         >
           <FiPlus />
@@ -126,7 +127,6 @@ export default function Sources() {
                 <a href={`${item.url}`} target="_blank" rel="noopener noreferrer">
                   <Box>
                     <Box fontWeight="bold">{item.name}</Box>
-                    <Box fontSize="sm" color="gray.600">{item.external_id}</Box>
                   </Box>
                 </a>
               </Table.Cell>
@@ -162,6 +162,7 @@ export default function Sources() {
         onSourceAdded={fetchData}
         isCentered
       />
+      <Box flex="1" minH="calc(100vh - 200px)" />
     </Box>
   )
 }

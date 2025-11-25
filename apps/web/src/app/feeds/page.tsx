@@ -12,9 +12,16 @@ import { useToast } from "@chakra-ui/toast";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Feed } from "@/types/Feed";
-import { FiPlus, FiTrash, FiRss, FiSettings } from "react-icons/fi";
+import {
+  FiPlus,
+  FiTrash,
+  FiRss,
+  FiSettings,
+  // FiDownload
+} from "react-icons/fi";
 import Link from "next/link";
 import { AddFeedModal } from "@/app/feeds/_components/add-feeds-modal";
+// import { DownloadModal } from "@/app/feeds/_components/add-download-modal";
 
 
 function timeDeltaFromNow(dateString: string): string {
@@ -42,8 +49,16 @@ export default function Feeds() {
   const [data, setData] = useState<Feed[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const { open, onOpen, onClose } = useDisclosure();
+  const { open: isAddModalOpen, onOpen: onAddModalOpen, onClose: onAddModalClose } = useDisclosure(); // Renamed existing disclosure
   const toast = useToast();
+
+  // const { open: isDownloadModalOpen, onOpen: onDownloadModalOpen, onClose: onDownloadModalClose } = useDisclosure();
+  const [selectedFeedId, setSelectedFeedId] = useState<string | null>(null);
+
+  // const handleOpenDownloadModal = (externalId: string) => {
+  //   setSelectedFeedId(externalId);
+  //   onDownloadModalOpen();
+  // }
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -104,7 +119,7 @@ export default function Feeds() {
   }
 
   return (
-    <Box p={6}>
+    <Box p={0}>
 
       {/* HEADER AND CREATE FEED BUTTON */}
       <Flex
@@ -118,10 +133,11 @@ export default function Feeds() {
 
         <Button
           colorScheme="blue"
-          onClick={onOpen}
+          onClick={onAddModalOpen}
           borderColor="white"
           borderWidth="1px"
           color="white"
+          size="xs"
           _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
         >
           <FiPlus />
@@ -130,17 +146,11 @@ export default function Feeds() {
 
       {/* TABLE */}
       <Table.Root size="sm" variant="outline">
-        <Table.ColumnGroup>
-          <Table.Column htmlWidth="65%"/>
-          <Table.Column htmlWidth="15%"/>
-          <Table.Column htmlWidth="15%"/>
-          <Table.Column htmlWidth="5%"/>
-        </Table.ColumnGroup>
         <Table.Header>
           <Table.Row>
             <Table.ColumnHeader bg="gray.700" color='white'>NAME</Table.ColumnHeader>
             <Table.ColumnHeader bg="gray.700" color='white'># FEED ITEMS</Table.ColumnHeader>
-            <Table.ColumnHeader bg="gray.700" color='white'>LATEST UPDATE</Table.ColumnHeader>
+            <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}>LAST UPDATE</Table.ColumnHeader>
             <Table.ColumnHeader bg="gray.700" color='white' textAlign="center">ACTIONS</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
@@ -148,37 +158,65 @@ export default function Feeds() {
         <Table.Body>
           {data.map((item: Feed) => (
             <Table.Row key={item.external_id} cursor="pointer" _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
-              <Table.Cell>
+              <Table.Cell width={{ base: "50%", md: "60%" }}>
                 <Link href={`/feeds/${item.external_id}`} passHref legacyBehavior>
                   <Box>
                     <Box fontWeight="bold">{item.name}</Box>
-                    <Box fontSize="sm" color="gray.600">{item.external_id}</Box>
                   </Box>
                 </Link>
               </Table.Cell>
 
-              <Table.Cell>
+              <Table.Cell width={{ base: "30%", md: "15%" }}>
                 <Link href={`/feeds/${item.external_id}`} passHref legacyBehavior>
-                  <Box fontWeight="bold">{item.number_of_feed_items}</Box>
+                  <Box>
+                    <Box fontWeight="bold">{item.number_of_feed_items}</Box>
+                    <Box 
+                      fontSize="xs" 
+                      color="gray.500" 
+                      mt={0.5}
+                      display={{ base: 'block', md: 'none' }}
+                    >
+                      <Flex align="center" gap={1}>
+                        {timeDeltaFromNow(item.latest_item_datetime as string)} ago
+                      </Flex>
+                    </Box>
+                  </Box>
                 </Link>
               </Table.Cell>
 
-              <Table.Cell>
+              <Table.Cell display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "15%" }}>
                 <Link href={`/feeds/${item.external_id}`} passHref legacyBehavior>
-                  <Box fontWeight="bold">{timeDeltaFromNow(item.latest_item_datetime as string)}</Box>
+                  <Box fontWeight="bold">{timeDeltaFromNow(item.latest_item_datetime as string)} ago</Box>
                 </Link>
               </Table.Cell>
 
-              <Table.Cell textAlign="center">
+              <Table.Cell textAlign="center" width={{ base: "20%", md: "10%" }}>
                 <Box
                   display="flex"
                   alignItems="center"
                   justifyContent="center"
                 >
+                  {/*<Button
+                    aria-label={`Export/Download ${item.name}`}
+                    size="sm"
+                    colorScheme="blue"
+                    color="white"
+                    _hover={{ bg: 'gray.700', color: '#7DCDE8' }}
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      // Call the new handler
+                      handleOpenDownloadModal(item.external_id);
+                    }}
+                    mr={1}
+                  >
+                    <FiDownload />
+                  </Button> */}
 
                   <Button
                     aria-label={`Delete ${item.name}`}
-                    size="sm"
+                    size="xs"
                     colorScheme="red"
                     color="white"
                     _hover={{ bg: 'gray.700', color: '#7DCDE8' }}
@@ -195,7 +233,7 @@ export default function Feeds() {
 
                   <Button
                     aria-label={`Delete ${item.name}`}
-                    size="sm"
+                    size="xs"
                     colorScheme="red"
                     color="white"
                     _hover={{ bg: 'gray.700', color: 'red' }}
@@ -212,7 +250,7 @@ export default function Feeds() {
 
                   <Button
                     aria-label={`Download RSS for ${item.name}`}
-                    size="sm"
+                    size="xs"
                     colorScheme="blue"
                     color="white"
                     _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
@@ -222,7 +260,7 @@ export default function Feeds() {
                       e.stopPropagation();
                       window.open(`/api/v1/feeds/${item.external_id}.xml`, '_blank');
                     }}
-                    ml={1}
+                    ml={0}
                   >
                     <FiRss />
                   </Button>
@@ -234,11 +272,19 @@ export default function Feeds() {
       </Table.Root>
 
       <AddFeedModal
-        isOpen={open}
-        onClose={onClose}
+        isOpen={isAddModalOpen}
+        onClose={onAddModalClose}
         onFeedAdded={fetchData}
         isCentered
       />
+
+      {/* <DownloadModal
+        isOpen={isDownloadModalOpen}
+        onClose={onDownloadModalClose}
+        feedExternalId={selectedFeedId}
+      /> */}
+
+      <Box flex="1" minH="calc(100vh - 200px)" />
     </Box>
   )
 }
