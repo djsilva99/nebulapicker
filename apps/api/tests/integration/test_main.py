@@ -118,7 +118,11 @@ def test_welcome(caplog):
     assert response.json() == {"message": "Welcome to NebulaPicker"}
 
 
-def test_read_sources_empty(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_read_sources_empty(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     fake_token = "test-token"
     monkeypatch.setattr("src.adapters.entrypoints.v1.routes.generated_token", fake_token)
@@ -131,7 +135,11 @@ def test_read_sources_empty(client: TestClient, db_session: Session, monkeypatch
     assert response.json() == {'sources': []}
 
 
-def test_read_sources_with_data(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_read_sources_with_data(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     new_uuid = str(uuid4())
     db_session.execute(text(
@@ -153,7 +161,11 @@ def test_read_sources_with_data(client: TestClient, db_session: Session, monkeyp
     assert "external_id" in data["sources"][0]
 
 
-def test_get_source_with_data(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_get_source_with_data(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     new_uuid = str(uuid4())
     db_session.execute(text(
@@ -164,7 +176,9 @@ def test_get_source_with_data(client: TestClient, db_session: Session, monkeypat
     monkeypatch.setattr("src.adapters.entrypoints.v1.routes.generated_token", fake_token)
 
     # WHEN
-    response = client.get("/v1/sources/" + new_uuid, headers={"Authorization": f"Bearer {fake_token}"})
+    response = client.get(
+        "/v1/sources/" + new_uuid, headers={"Authorization": f"Bearer {fake_token}"}
+    )
 
     # THEN
     assert response.status_code == 200
@@ -174,7 +188,11 @@ def test_get_source_with_data(client: TestClient, db_session: Session, monkeypat
     assert "external_id" in data
 
 
-def test_get_source_without_data(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_get_source_without_data(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     new_uuid = str(uuid4())
     wrong_uuid = str(uuid4())
@@ -186,13 +204,20 @@ def test_get_source_without_data(client: TestClient, db_session: Session, monkey
     monkeypatch.setattr("src.adapters.entrypoints.v1.routes.generated_token", fake_token)
 
     # WHEN
-    response = client.get("/v1/sources/" + wrong_uuid, headers={"Authorization": f"Bearer {fake_token}"})
+    response = client.get(
+        "/v1/sources/" + wrong_uuid, headers={"Authorization": f"Bearer {fake_token}"}
+    )
 
     # THEN
     assert response.status_code == 404
 
 
-def test_update_source_successfully(client: TestClient, db_session: Session, mock_services, monkeypatch: pytest.MonkeyPatch):
+def test_update_source_successfully(
+    client: TestClient,
+    db_session: Session,
+    mock_services,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     source_external_id = uuid4()
     db_session.execute(text(
@@ -221,7 +246,11 @@ def test_update_source_successfully(client: TestClient, db_session: Session, moc
     assert response_data["name"] == update_payload["name"]
 
 
-def test_update_source_not_found(client: TestClient, mock_services, monkeypatch: pytest.MonkeyPatch):
+def test_update_source_not_found(
+    client: TestClient,
+    mock_services,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     non_existent_id = uuid4()
     update_payload = {
@@ -242,7 +271,11 @@ def test_update_source_not_found(client: TestClient, mock_services, monkeypatch:
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_delete_source_successfully(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_delete_source_successfully(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     source_external_id = uuid4()
     db_session.execute(text(
@@ -263,7 +296,11 @@ def test_delete_source_successfully(client: TestClient, db_session: Session, mon
 
 
 
-def test_delete_source_not_found(client: TestClient, mock_services, monkeypatch: pytest.MonkeyPatch):
+def test_delete_source_not_found(
+    client: TestClient,
+    mock_services,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     non_existent_id = uuid4()
     fake_token = "test-token"
@@ -280,7 +317,11 @@ def test_delete_source_not_found(client: TestClient, mock_services, monkeypatch:
     assert response.json()["detail"] == "Source not found"
 
 
-def test_list_feeds_empty(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_list_feeds_empty(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # WHEN
     fake_token = "test-token"
     monkeypatch.setattr("src.adapters.entrypoints.v1.routes.generated_token", fake_token)
@@ -294,7 +335,11 @@ def test_list_feeds_empty(client: TestClient, db_session: Session, monkeypatch: 
     assert response.json() == {'feeds': []}
 
 
-def test_list_feeds_with_data(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_list_feeds_with_data(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     new_uuid = str(uuid4())
     feed_id = 1
@@ -336,7 +381,11 @@ def test_list_feeds_with_data(client: TestClient, db_session: Session, monkeypat
     assert "external_id" in data["feeds"][0]
 
 
-def test_create_feed_successfully(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_create_feed_successfully(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     feed_payload = {
         "name": "fake_feed_name",
@@ -358,7 +407,12 @@ def test_create_feed_successfully(client: TestClient, db_session: Session, monke
     assert "created_at" in response.json()
 
 
-def test_update_feed_successfully(client: TestClient, db_session: Session, mock_services, monkeypatch: pytest.MonkeyPatch):
+def test_update_feed_successfully(
+    client: TestClient,
+    db_session: Session,
+    mock_services,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     source_external_id = uuid4()
     db_session.execute(
@@ -388,7 +442,11 @@ def test_update_feed_successfully(client: TestClient, db_session: Session, mock_
     assert response_data["name"] == update_payload["name"]
 
 
-def test_delete_feed_successfully(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_delete_feed_successfully(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     feed_external_id = str(uuid4())
     db_session.execute(
@@ -455,7 +513,10 @@ def test_delete_feed_successfully(client: TestClient, db_session: Session, monke
     assert remaining_feed_items == []
 
 
-def test_delete_feed_not_found(client: TestClient, monkeypatch: pytest.MonkeyPatch):
+def test_delete_feed_not_found(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     non_existent_id = uuid4()
     fake_token = "test-token"
@@ -472,7 +533,11 @@ def test_delete_feed_not_found(client: TestClient, monkeypatch: pytest.MonkeyPat
     assert response.json()["detail"] == "Feed not found"
 
 
-def test_create_picker_successfully(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_create_picker_successfully(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     db_session.execute(
         text("INSERT INTO sources (id, url, name) VALUES (:id, :url, :name)"),
@@ -513,7 +578,11 @@ def test_create_picker_successfully(client: TestClient, db_session: Session, mon
     assert "created_at" in data
 
 
-def test_create_picker_invalid_source_or_feed(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_create_picker_invalid_source_or_feed(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     picker_payload = {
         "source_url": 9999,
@@ -534,7 +603,11 @@ def test_create_picker_invalid_source_or_feed(client: TestClient, db_session: Se
     assert response.status_code == 400 or response.status_code == 422
 
 
-def test_get_picker_successfully(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_get_picker_successfully(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     db_session.execute(
         text("INSERT INTO sources (id, external_id, url, name) "
@@ -595,7 +668,10 @@ def test_get_picker_successfully(client: TestClient, db_session: Session, monkey
     assert data["filters"][0]["args"] == "[a]"
 
 
-def test_get_picker_not_found(client: TestClient, monkeypatch: pytest.MonkeyPatch):
+def test_get_picker_not_found(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     fake_token = "test-token"
     monkeypatch.setattr("src.adapters.entrypoints.v1.routes.generated_token", fake_token)
@@ -611,7 +687,10 @@ def test_get_picker_not_found(client: TestClient, monkeypatch: pytest.MonkeyPatc
     assert response.json()["detail"] == "Picker not found"
 
 
-def test_delete_picker_successfully(client, db_session, monkeypatch: pytest.MonkeyPatch):
+def test_delete_picker_successfully(
+    client, db_session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     db_session.execute(
         text("INSERT INTO sources (id, url, name) VALUES (1, 'https://example.com', 'src1');")
@@ -660,7 +739,11 @@ def test_delete_picker_successfully(client, db_session, monkeypatch: pytest.Monk
     assert filters == []
 
 
-def test_delete_picker_not_found(client, db_session, monkeypatch: pytest.MonkeyPatch):
+def test_delete_picker_not_found(
+    client,
+    db_session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     missing_external_id = str(uuid4())
     fake_token = "test-token"
@@ -703,7 +786,11 @@ def test_get_feed_rss_successfully(client: TestClient, db_session: Session):
     assert "<title>item_title</title>" in response.text
 
 
-def test_get_feed_successfully(client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch):
+def test_get_feed_successfully(
+    client: TestClient,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch
+):
     # GIVEN
     db_session.execute(
         text("INSERT INTO sources (id, external_id, url, name) "

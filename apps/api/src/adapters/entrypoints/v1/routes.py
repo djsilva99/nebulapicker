@@ -1,11 +1,10 @@
 import datetime
+import secrets
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
-import secrets
-
 from src.adapters.entrypoints.v1.models.authentication import LoginRequest
 from src.adapters.entrypoints.v1.models.feeds import (
     CreateFeedItemRequest,
