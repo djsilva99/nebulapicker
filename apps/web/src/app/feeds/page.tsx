@@ -11,6 +11,7 @@ import {
 import { useToast } from "@chakra-ui/toast";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import Cookies from "js-cookie";
 import { Feed } from "@/types/Feed";
 import {
   FiPlus,
@@ -60,17 +61,31 @@ export default function Feeds() {
   //   onDownloadModalOpen();
   // }
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const res = await axios.get("/api/v1/feeds");
-      setData(res.data.feeds);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setIsLoading(false);
+const fetchData = async () => {
+  setIsLoading(true);
+  try {
+    const token = Cookies.get("token");
+    const res = await axios.get("/api/v1/feeds", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    setData(res.data.feeds);
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        Cookies.remove("token");
+        window.location.href = "/login";
+      } else {
+        console.error("Axios error:", error.message);
+      }
+    } else {
+      console.error("Unexpected error:", error);
     }
-  };
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchData();
@@ -83,7 +98,12 @@ export default function Feeds() {
 
     setIsDeleting(externalId);
     try {
-      await axios.delete(`/api/v1/feeds/${externalId}`);
+      const token = Cookies.get("token");
+      await axios.delete(`/api/v1/feeds/${externalId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
 
       toast({
         title: "Feed Deleted.",
