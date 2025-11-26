@@ -3,6 +3,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import StreamingResponse
+from fastapi.security import OAuth2PasswordBearer
+import secrets
+
+from src.adapters.entrypoints.v1.models.authentication import LoginRequest
 from src.adapters.entrypoints.v1.models.feeds import (
     CreateFeedItemRequest,
     CreateFeedItemResponse,
@@ -43,6 +47,7 @@ from src.configs.dependencies.services import (
     get_picker_service,
     get_source_service,
 )
+from src.configs.settings import Settings
 from src.domain.models.feed import FeedItemRequest, FeedRequest, UpdateFeedRequest
 from src.domain.models.picker import PickerRequest
 from src.domain.models.source import SourceRequest
@@ -52,9 +57,42 @@ from src.domain.services.job_service import JobService
 from src.domain.services.picker_service import PickerService
 from src.domain.services.source_service import SourceService
 
+settings: Settings = Settings()
+
 ADDED = "ADDED"
+APP_USERNAME = settings.APP_USERNAME
+APP_PASSWORD = settings.APP_PASSWORD
+
+# Token storage (in-memory)
+generated_token = None
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+def authenticate(token: str = Depends(oauth2_scheme)):
+    if token != generated_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
 
 router = APIRouter(prefix="/v1")
+
+
+@router.post("/login")
+def login(data: LoginRequest):
+    global generated_token
+
+    # Validate credentials
+    if data.username != APP_USERNAME or data.password != APP_PASSWORD:
+        raise HTTPException(
+            status_code=401, detail="Invalid username or password"
+        )
+
+    # If a token was already generated, return the same
+    if generated_token is None:
+        generated_token = secrets.token_hex(32)
+
+    return {"token": generated_token}
 
 
 @router.get(
@@ -77,6 +115,7 @@ router = APIRouter(prefix="/v1")
     }
 )
 def list_sources(
+    _: str = Depends(authenticate),  # noqa: B008
     source_service: SourceService = Depends(get_source_service)  # noqa: B008
 ) -> GetAllSourcesResponse:
     source_list = source_service.get_all_sources()
@@ -107,6 +146,7 @@ def list_sources(
 )
 def create_source(
     create_source_request: ExternalSourceRequest,
+    _: str = Depends(authenticate),  # noqa: B008
     source_service: SourceService = Depends(get_source_service)  # noqa: B008
 ) -> SourceResponse:
     source_request = SourceRequest(name=create_source_request.name, url=create_source_request.url)
@@ -137,6 +177,7 @@ def create_source(
 )
 def get_source(
     source_external_id: UUID,
+    _: str = Depends(authenticate),  # noqa: B008
     source_service: SourceService = Depends(get_source_service)  # noqa: B008
 ) -> SourceResponse:
     source = source_service.get_source_by_external_id(
@@ -171,6 +212,7 @@ def get_source(
 def update_source(
     source_external_id: UUID,
     update_source_request: ExternalSourceRequest,
+    _: str = Depends(authenticate),  # noqa: B008
     source_service: SourceService = Depends(get_source_service),  # noqa: B008
 ) -> SourceResponse:
     source_request = SourceRequest(
@@ -196,6 +238,7 @@ def update_source(
 )
 def delete_source(
     source_external_id: UUID,
+    _: str = Depends(authenticate),  # noqa: B008
     source_service: SourceService = Depends(get_source_service),  # noqa: B008
     filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
     picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
@@ -238,6 +281,7 @@ def delete_source(
     }
 )
 def list_feeds(
+    _: str = Depends(authenticate),  # noqa: B008
     feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
 ) -> ListFeedsResponse:
     detailed_feeds_list = feed_service.get_detailed_feeds()
@@ -267,6 +311,7 @@ def list_feeds(
 )
 def create_feed(
     create_feed_request: CreateFeedRequest,
+    _: str = Depends(authenticate),  # noqa: B008
     feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
 ) -> FeedResponse:
     feed_request = FeedRequest(name=create_feed_request.name)
@@ -298,6 +343,7 @@ def create_feed(
 def update_feed(
     feed_external_id: UUID,
     update_feed_request: ExternalUpdateFeedRequest,
+    _: str = Depends(authenticate),  # noqa: B008
     feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
 ) -> FeedResponse:
     update_feed_request = UpdateFeedRequest(
@@ -322,6 +368,7 @@ def update_feed(
 )
 def delete_feed(
     feed_external_id: UUID,
+    _: str = Depends(authenticate),  # noqa: B008
     feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
     filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
     picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
@@ -404,6 +451,7 @@ def get_feed_rss(
 )
 def get_feed(
     external_id: UUID,
+    _: str = Depends(authenticate),  # noqa: B008
     feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
     filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
     picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
@@ -466,6 +514,7 @@ def get_feed(
 def create_feed_item(
     feed_external_id: UUID,
     create_feed_item_request: CreateFeedItemRequest,
+    _: str = Depends(authenticate),  # noqa: B008
     feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
 ) -> CreateFeedItemResponse:
     feed = feed_service.get_feed_by_external_id(feed_external_id)
@@ -512,6 +561,7 @@ def create_feed_item(
 def get_feed_item(
     feed_external_id: UUID,
     feed_item_external_id: UUID,
+    _: str = Depends(authenticate),  # noqa: B008
     feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
 ) -> GetFeedItemResponse:
     feed_item = feed_service.get_feed_item_by_external_id(feed_item_external_id)
@@ -531,6 +581,7 @@ def get_feed_item(
 def delete_feed_item(
     feed_external_id: UUID,
     feed_item_external_id: UUID,
+    _: str = Depends(authenticate),  # noqa: B008
     feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
 ):
     feed_item = feed_service.get_feed_item_by_external_id(
@@ -559,6 +610,7 @@ def delete_feed_item(
 def export_feed_items(
     feed_external_id: UUID,
     export_feed_items_request: ExportFeedItemsRequest,
+    _: str = Depends(authenticate),  # noqa: B008
     feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
 ):
     buffer = feed_service.export_file(
@@ -600,6 +652,7 @@ def export_feed_items(
 )
 def add_picker(
     create_full_picker_request: CreateFullPickerRequest,
+    _: str = Depends(authenticate),  # noqa: B008
     filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
     picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
     source_service: SourceService = Depends(get_source_service),  # noqa: B008
@@ -704,6 +757,7 @@ def add_picker(
 )
 def get_picker(
     picker_external_id: UUID,
+    _: str = Depends(authenticate),  # noqa: B008
     filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
     picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
     feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
@@ -738,6 +792,7 @@ def get_picker(
 )
 def delete_picker(
     picker_external_id: UUID,
+    _: str = Depends(authenticate),  # noqa: B008
     filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
     picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
     job_service: JobService = Depends(get_job_service),  # noqa: B008
