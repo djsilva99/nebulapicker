@@ -11,6 +11,7 @@ import {
 import { useToast } from "@chakra-ui/toast";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import Cookies from "js-cookie";
 import { Source } from "@/types/Source";
 import { FiPlus, FiTrash } from "react-icons/fi";
 import { AddSourceModal } from "@/app/sources/_components/add-source-modal"
@@ -26,9 +27,24 @@ export default function Sources() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const res = await axios.get("/api/v1/sources");
+      const token = Cookies.get("token");
+      const res = await axios.get("/api/v1/sources", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
       setData(res.data.sources);
-    } catch (error) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Cookies.remove("token");
+          window.location.href = "/login";
+        } else {
+          console.error("Axios error:", error.message);
+        }
+      } else {
+        console.error("Unexpected error:", error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -45,7 +61,12 @@ export default function Sources() {
 
     setIsDeleting(externalId);
     try {
-      await axios.delete(`/api/v1/sources/${externalId}`);
+      const token = Cookies.get("token");
+      await axios.delete(`/api/v1/sources/${externalId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      })
 
       toast({
         title: "Source Deleted.",
@@ -57,7 +78,7 @@ export default function Sources() {
 
       fetchData();
 
-    } catch (error) {
+    } catch (error: unknown) {
       toast({
         title: "Error.",
         description: `Failed to delete ${name}.`,
@@ -65,6 +86,16 @@ export default function Sources() {
         duration: 5000,
         isClosable: true,
       });
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Cookies.remove("token");
+          window.location.href = "/login";
+        } else {
+          console.error("Axios error:", error.message);
+        }
+      } else {
+        console.error("Unexpected error:", error);
+      }
     } finally {
       setIsDeleting(null);
     }

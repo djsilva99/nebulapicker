@@ -19,6 +19,7 @@ import {
 } from "@chakra-ui/form-control";
 import { FiPlus, FiTrash, FiRss, FiList } from "react-icons/fi";
 import axios from 'axios';
+import Cookies from "js-cookie";
 import { useEffect, useState } from 'react';
 import { Feed, Picker } from '@/types/Feed';
 import { AddPickerModal } from '@/app/feeds/[feed_id]/edit/_components/add-picker-modal';
@@ -40,12 +41,27 @@ export default function FeedPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const feedRes = await axios.get("/api/v1/feeds/" + feedId);
+      const token = Cookies.get("token");
+      const feedRes = await axios.get("/api/v1/feeds/" + feedId, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
       setData(feedRes.data);
       setNewName(feedRes.data.name);
       setPickers(feedRes.data.pickers || []);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching data:", error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Cookies.remove("token");
+          window.location.href = "/login";
+        } else {
+          console.error("Axios error:", error.message);
+        }
+      } else {
+        console.error("Unexpected error:", error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +81,12 @@ export default function FeedPage() {
     }
 
     try {
-      await axios.patch(`/api/v1/feeds/${feedId}`, { name: newName });
+      const token = Cookies.get("token");
+      await axios.patch(`/api/v1/feeds/${feedId}`, { name: newName }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
       toast(
         {
           title: "Success",
@@ -75,7 +96,7 @@ export default function FeedPage() {
           isClosable: true
         });
       fetchData();
-    } catch (error) {
+    } catch (error: unknown) {
       toast(
         {
           title: "Error",
@@ -85,6 +106,16 @@ export default function FeedPage() {
           isClosable: true
         }
       );
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Cookies.remove("token");
+          window.location.href = "/login";
+        } else {
+          console.error("Axios error:", error.message);
+        }
+      } else {
+        console.error("Unexpected error:", error);
+      }
     } finally {
       setIsUpdating(false);
     }
@@ -100,7 +131,12 @@ export default function FeedPage() {
     }
 
     try {
-      await axios.delete(`/api/v1/pickers/${externalId}`);
+      const token = Cookies.get("token");
+      await axios.delete(`/api/v1/pickers/${externalId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
 
       toast({
         title: "Picker Deleted.",
@@ -112,7 +148,7 @@ export default function FeedPage() {
 
       fetchData();
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error deleting picker:", error);
       toast({
         title: "Error.",
@@ -121,6 +157,16 @@ export default function FeedPage() {
         duration: 5000,
         isClosable: true,
       });
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Cookies.remove("token");
+          window.location.href = "/login";
+        } else {
+          console.error("Axios error:", error.message);
+        }
+      } else {
+        console.error("Unexpected error:", error);
+      }
     }
   };
 

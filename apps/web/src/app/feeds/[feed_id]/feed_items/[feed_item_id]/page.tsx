@@ -7,6 +7,7 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import Cookies from "js-cookie";
 import { FeedItem } from "@/types/Feed";
 import { useParams } from 'next/navigation';
 import { FiGlobe, FiArrowLeft, FiClock, FiCalendar } from "react-icons/fi";
@@ -24,10 +25,25 @@ export default function FeedItemPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const feedRes = await axios.get("/api/v1/feeds/" + feedId + "/feed_items/" + feedItemId);
+      const token = Cookies.get("token");
+      const feedRes = await axios.get("/api/v1/feeds/" + feedId + "/feed_items/" + feedItemId, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
       setData(feedRes.data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching data:", error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Cookies.remove("token");
+          window.location.href = "/login";
+        } else {
+          console.error("Axios error:", error.message);
+        }
+      } else {
+        console.error("Unexpected error:", error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -39,10 +55,25 @@ export default function FeedItemPage() {
 
   const fetchFeed = async () => {
     try {
-      const feedRes = await axios.get("/api/v1/feeds/" + feedId);
+      const token = Cookies.get("token");
+      const feedRes = await axios.get("/api/v1/feeds/" + feedId, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
       setFeed(feedRes.data.name);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching data:", error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Cookies.remove("token");
+          window.location.href = "/login";
+        } else {
+          console.error("Axios error:", error.message);
+        }
+      } else {
+        console.error("Unexpected error:", error);
+      }
     } finally {
     }
   };
@@ -63,7 +94,7 @@ export default function FeedItemPage() {
   return (
 
     <Box p={1}>
-      <Box maxW="800px" mx="auto">
+      <Box maxW="600px" mx="auto">
         <Global
           styles={`
             .article-container {

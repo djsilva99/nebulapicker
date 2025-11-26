@@ -11,6 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import Cookies from "js-cookie";
 import { Feed, FeedItem } from "@/types/Feed";
 import { useParams } from 'next/navigation';
 import { FiRss, FiSettings, FiTrash, FiPlus, FiGlobe, FiClock } from "react-icons/fi";
@@ -47,6 +48,8 @@ function timeDeltaFromNow(dateString: string): string {
 
 
 export default function FeedPage() {
+  const useWallabagExtractor = process.env.NEXT_PUBLIC_USE_WALLABAG_EXTRACTOR === "true";
+  console.log(useWallabagExtractor)
   const params = useParams();
   const feedId = params.feed_id as string;
 
@@ -60,10 +63,25 @@ export default function FeedPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const feedRes = await axios.get("/api/v1/feeds/" + feedId);
+      const token = Cookies.get("token");
+      const feedRes = await axios.get("/api/v1/feeds/" + feedId, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
       setData(feedRes.data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching data:", error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Cookies.remove("token");
+          window.location.href = "/login";
+        } else {
+          console.error("Axios error:", error.message);
+        }
+      } else {
+        console.error("Unexpected error:", error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +107,12 @@ export default function FeedPage() {
 
     setIsDeleting(feedExternalId);
     try {
-      await axios.delete(`/api/v1/feeds/${externalId}/feed_items/${feedExternalId}`);
+      const token = Cookies.get("token");
+      await axios.delete(`/api/v1/feeds/${externalId}/feed_items/${feedExternalId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
 
       toast({
         title: "Feed Item Deleted.",
@@ -101,7 +124,7 @@ export default function FeedPage() {
 
       fetchData();
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error deleting feed item:", error);
       toast({
         title: "Error.",
@@ -110,6 +133,16 @@ export default function FeedPage() {
         duration: 5000,
         isClosable: true,
       });
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Cookies.remove("token");
+          window.location.href = "/login";
+        } else {
+          console.error("Axios error:", error.message);
+        }
+      } else {
+        console.error("Unexpected error:", error);
+      }
     } finally {
       setIsDeleting(null);
     }
@@ -182,114 +215,208 @@ export default function FeedPage() {
       </Flex>
 
       {/* TABLE */}
-      <Table.Root size="sm" variant="outline">
-        <Table.Header>
-          <Table.Row>
-            <Table.ColumnHeader bg="gray.700" color='white'>TITLE</Table.ColumnHeader>
-            <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}>SOURCE</Table.ColumnHeader>
-            <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}>DATE</Table.ColumnHeader>
-            <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}><FiClock/></Table.ColumnHeader>
-            <Table.ColumnHeader bg="gray.700" color='white'>ACTIONS</Table.ColumnHeader>
-          </Table.Row>
-        </Table.Header>
+      {useWallabagExtractor && (
+        <Table.Root size="sm" variant="outline">
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeader bg="gray.700" color='white'>TITLE</Table.ColumnHeader>
+              <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}>SOURCE</Table.ColumnHeader>
+              <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}>DATE</Table.ColumnHeader>
+              <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}><FiClock/></Table.ColumnHeader>
+              <Table.ColumnHeader bg="gray.700" color='white'>ACTIONS</Table.ColumnHeader>
+            </Table.Row>
+          </Table.Header>
 
-        <Table.Body>
-        {data?.feed_items?.slice().sort(
+          <Table.Body>
+          {data?.feed_items?.slice().sort(
             (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        ).map((item: FeedItem) => (
-          <Table.Row
-            key={item.external_id}
-            cursor="pointer"
-            color="gray.400"
-            _hover={{ bg: 'gray.800', color: '#AC7DBA' }}
-          >
-            <Table.Cell borderLeft="none" borderRight="none" cursor="pointer" width={{ base: "80%", md: "60%" }}
+          ).map((item: FeedItem) => (
+            <Table.Row
+              key={item.external_id}
+              cursor="pointer"
               color="gray.400"
-              _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
-              <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
+              _hover={{ bg: 'gray.800', color: '#AC7DBA' }}
+            >
+              <Table.Cell borderLeft="none" borderRight="none" cursor="pointer" width={{ base: "80%", md: "60%" }}
                 color="gray.400"
                 _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
-                <Box>
+                <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
+                  color="gray.400"
+                  _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+                  <Box>
                     <Box fontWeight="medium" color="#7DCDE8">
-                        {item.title}
+                      {item.title}
                     </Box>
                     <Box 
-                        fontSize="xs" 
-                        color="gray.500" 
-                        mt={0.5}
-                        display={{ base: 'block', md: 'none' }}
+                      fontSize="xs" 
+                      color="gray.500" 
+                      mt={0.5}
+                      display={{ base: 'block', md: 'none' }}
                     >
                       <Flex align="center" gap={1}>
                         {item.author} &nbsp;&nbsp; {timeDeltaFromNow(item.created_at)} ago &nbsp;&nbsp; <FiClock/> {item.reading_time}m
                       </Flex>
                     </Box>
+                  </Box>
+                </Link>
+              </Table.Cell>
+              <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "15%" }}>
+                <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
+                  color="gray.400"
+                  _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+                  <Box>{item.author}</Box>
+                </Link>
+              </Table.Cell>
+
+              <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "10%" }}>
+                <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
+                  color="gray.400"
+                  _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+                  <Box>{timeDeltaFromNow(item.created_at)} ago</Box>
+                </Link>
+              </Table.Cell>
+
+            <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "5%" }}>
+                <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
+                  color="gray.400"
+                  _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+                  <Box>{item.reading_time}m</Box>
+                </Link>
+              </Table.Cell>
+
+              <Table.Cell borderLeft="none" borderRight="none" width={{ base: "20%", md: "10%" }}>
+                <Box minW="80px">
+                  <Button
+                    aria-label={`Go to ${item.link}`}
+                    size="xs"
+                    colorScheme="red"
+                    color="white"
+                    _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      window.open(item.link, '_blank');
+                    }}
+                    loading={isDeleting === item.external_id}
+                  >
+                    <FiGlobe />
+                  </Button>
+                  <Button
+                    aria-label={`Delete ${item.title}`}
+                    size="xs"
+                    colorScheme="red"
+                    color="white"
+                    _hover={{ bg: 'gray.700', color: 'red' }}
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDelete(data?.external_id, item.external_id);
+                    }}
+                    loading={isDeleting === item.external_id}
+                  >
+                    <FiTrash />
+                  </Button>
                 </Box>
-              </Link>
-            </Table.Cell>
-            <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "15%" }}>
-              <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
+              </Table.Cell>
+            </Table.Row>
+          ))}
+          </Table.Body>
+        </Table.Root>
+      )}
+
+      {!useWallabagExtractor && (
+        <Table.Root size="sm" variant="outline">
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeader bg="gray.700" color='white'>TITLE</Table.ColumnHeader>
+              <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}>SOURCE</Table.ColumnHeader>
+              <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}>DATE</Table.ColumnHeader>
+              <Table.ColumnHeader bg="gray.700" color='white'>ACTIONS</Table.ColumnHeader>
+            </Table.Row>
+          </Table.Header>
+
+          <Table.Body>
+          {data?.feed_items?.slice().sort(
+              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          ).map((item: FeedItem) => (
+            <Table.Row
+              key={item.external_id}
+              cursor="pointer"
+              color="gray.400"
+              _hover={{ bg: 'gray.800', color: '#AC7DBA' }}
+            >
+              <Table.Cell borderLeft="none" borderRight="none" cursor="pointer" width={{ base: "85%", md: "60%" }}
                 color="gray.400"
                 _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
-                <Box>{item.author}</Box>
-              </Link>
-            </Table.Cell>
-
-            <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "10%" }}>
-              <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
-                color="gray.400"
-                _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
-                <Box>{timeDeltaFromNow(item.created_at)} ago</Box>
-              </Link>
-            </Table.Cell>
-
-           <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "5%" }}>
-              <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
-                color="gray.400"
-                _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
-                <Box>{item.reading_time}m</Box>
-              </Link>
-            </Table.Cell>
-
-            <Table.Cell borderLeft="none" borderRight="none" width={{ base: "20%", md: "10%" }}>
-              <Box minW="80px">
-                <Button
-                  aria-label={`Go to ${item.link}`}
-                  size="xs"
-                  colorScheme="red"
-                  color="white"
-                  _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    window.open(item.link, '_blank');
-                  }}
-                  loading={isDeleting === item.external_id}
+                <a href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="gray.400"
                 >
-                  <FiGlobe />
-                </Button>
-                <Button
-                  aria-label={`Delete ${item.title}`}
-                  size="xs"
-                  colorScheme="red"
-                  color="white"
-                  _hover={{ bg: 'gray.700', color: 'red' }}
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleDelete(data?.external_id, item.external_id);
-                  }}
-                  loading={isDeleting === item.external_id}
+                  <Box>
+                    <Box fontWeight="medium" color="#7DCDE8">
+                      {item.title}
+                    </Box>
+                    <Box 
+                      fontSize="xs" 
+                      color="gray.500" 
+                      mt={0.5}
+                      display={{ base: 'block', md: 'none' }}
+                    >
+                      <Flex align="center" gap={1}>
+                        {item.author} &nbsp;&nbsp; {timeDeltaFromNow(item.created_at)} ago
+                      </Flex>
+                    </Box>
+                  </Box>
+                </a>
+              </Table.Cell>
+              <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "15%" }}>
+                <a href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="gray.400"
                 >
-                  <FiTrash />
-                </Button>
-              </Box>
-            </Table.Cell>
-          </Table.Row>
-        ))}
-        </Table.Body>
-      </Table.Root>
+                  <Box>{item.author}</Box>
+                </a>
+              </Table.Cell>
+
+              <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "10%" }}>
+                <a href={item.link}
+                  color="gray.400"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Box>{timeDeltaFromNow(item.created_at)} ago</Box>
+                </a>
+              </Table.Cell>
+
+              <Table.Cell borderLeft="none" borderRight="none" width={{ base: "20%", md: "10%" }}>
+                <Box minW="40px">
+                  <Button
+                    aria-label={`Delete ${item.title}`}
+                    size="xs"
+                    colorScheme="red"
+                    color="white"
+                    _hover={{ bg: 'gray.700', color: 'red' }}
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDelete(data?.external_id, item.external_id);
+                    }}
+                    loading={isDeleting === item.external_id}
+                  >
+                    <FiTrash />
+                  </Button>
+                </Box>
+              </Table.Cell>
+            </Table.Row>
+          ))}
+          </Table.Body>
+        </Table.Root>
+      )}
 
       <AddFeedItemModal
         externalFeedId={data?.external_id as string}
