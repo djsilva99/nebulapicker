@@ -162,26 +162,6 @@ class FeedService:
             for feed_item in feed_items_to_export:
                 soup = BeautifulSoup(feed_item.content, "html.parser")
 
-                # Process and embed images
-                # for j, img_tag in enumerate(soup.find_all("img")):
-                #     img_url = img_tag.get("src")
-                #     if not img_url:
-                #         continue
-                #     try:
-                #         img_data = requests.get(img_url).content
-                #     except Exception:
-                #         continue  # skip if download fails
-                #
-                #     img_name = f"images/{i}_{j}.jpg"
-                #     epub_img = epub.EpubItem(
-                #         uid=f"img{i}_{j}",
-                #         file_name=img_name,
-                #         media_type="image/jpeg",
-                #         content=img_data
-                #     )
-                #     book.add_item(epub_img)
-                #     img_tag["src"] = img_name
-
                 for j, img_tag in enumerate(soup.find_all("img")):
                     img_url = img_tag.get("src")
                     if not img_url:
