@@ -10,6 +10,8 @@ class Operation(str, Enum):
     description_contains = "description_contains"
     title_does_not_contain = "title_does_not_contain"
     description_does_not_contain = "description_does_not_contain"
+    link_contains = "link_contains"
+    link_does_not_contain = "link_does_not_contain"
 
 
 class Filter(BaseModel):

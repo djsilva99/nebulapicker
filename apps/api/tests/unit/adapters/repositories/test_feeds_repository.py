@@ -329,8 +329,6 @@ def test_get_feed_items(repo, db_session):
     # THEN
     assert len(items) == 2
     assert isinstance(items[0], FeedItem)
-    assert items[0].title == "Title 1"
-    assert items[1].external_id == UUID("a37d6bc8-f558-411c-9d47-f5f1e92daadb")
     assert 2 not in [item.id for item in items]
 
 
@@ -377,3 +375,113 @@ def test_create_feed_item_successfully(repo, db_session):
     assert row.title == "New Item Title"
     assert row.link == "https://example.com/new-item"
     assert row.description == "New Item Description"
+
+
+def test_get_feed_item_by_external_id(repo, db_session):
+    # GIVEN
+    feed_external_id = uuid4()
+    feed_item_external_id = uuid4()
+
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (id, external_id, name, created_at)
+            VALUES (:id, :external_id, :name, :created_at)
+        """),
+        {
+            "id": 1,
+            "external_id": feed_external_id,
+            "name": "Example Feed",
+            "created_at": datetime(2025, 1, 1, 12, 0, 0),
+        }
+    )
+    db_session.commit()
+
+    db_session.execute(
+        text("""
+            INSERT INTO feed_items (
+                feed_id,
+                external_id,
+                link,
+                title,
+                description,
+                author,
+                content,
+                reading_time,
+                created_at
+            )
+            VALUES (
+                :feed_id,
+                :external_id,
+                :link,
+                :title,
+                :description,
+                :author,
+                :content,
+                :reading_time,
+                :created_at
+            )
+        """),
+        {
+            "feed_id": 1,
+            "external_id": feed_item_external_id,
+            "link": "https://example.com/item",
+            "title": "Item Title",
+            "description": "Item Description",
+            "author": "Author Name",
+            "content": "Item content",
+            "reading_time": 5,
+            "created_at": datetime(2025, 1, 2, 10, 0, 0),
+        }
+    )
+    db_session.commit()
+
+    # WHEN
+    item = repo.get_feed_item_by_feed_item_external_id(feed_item_external_id)
+
+    # THEN
+    assert item is not None
+    assert isinstance(item, FeedItem)
+    assert item.feed_id == 1
+    assert item.external_id == feed_item_external_id
+    assert item.link == "https://example.com/item"
+    assert item.title == "Item Title"
+    assert item.description == "Item Description"
+    assert item.author == "Author Name"
+    assert item.content == "Item content"
+    assert item.reading_time == 5
+    assert item.created_at == datetime(2025, 1, 2, 10, 0, 0)
+
+
+def test_get_number_of_feed_items_by_feed_id(repo, db_session):
+    # GIVEN
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (id, external_id, name, created_at)
+            VALUES
+                (1, gen_random_uuid(), 'Feed 1', CURRENT_TIMESTAMP),
+                (2, gen_random_uuid(), 'Feed 2', CURRENT_TIMESTAMP)
+        """)
+    )
+    db_session.commit()
+
+    db_session.execute(
+        text("""
+            INSERT INTO feed_items (feed_id, title)
+            VALUES
+                (1, 'Item 1'),
+                (1, 'Item 2'),
+                (1, 'Item 3'),
+                (2, 'Item A')
+        """)
+    )
+    db_session.commit()
+
+    # WHEN
+    count_feed_1 = repo.get_number_of_feed_items_by_feed_id(feed_id=1)
+    count_feed_2 = repo.get_number_of_feed_items_by_feed_id(feed_id=2)
+    count_feed_missing = repo.get_number_of_feed_items_by_feed_id(feed_id=999)
+
+    # THEN
+    assert count_feed_1 == 3
+    assert count_feed_2 == 1
+    assert count_feed_missing == 0

@@ -1,4 +1,5 @@
 import requests
+from ftfy import fix_text
 from src.configs.settings import Settings
 from src.domain.models.feed import FeedItemContent, GetFeedItemContentRequest
 from src.domain.ports.extractor_port import ExtractorPort
@@ -54,14 +55,19 @@ class WallabagExtractor(ExtractorPort):
                 timeout=15,
             )
             entry_data = response.json()
-            title = entry_data["title"]
+            try:
+                title = fix_text(entry_data["title"])
+            except Exception:
+                title = entry_data["title"]
             if len(entry_data["content"]) < MINIMUM_CONTENT_LEN:
                 content = "<p> Nebulapicker was not able to parse the content. </p>"
                 reading_time = 0
             else:
-                content = entry_data["content"]
+                try:
+                    content = fix_text(entry_data["content"])
+                except Exception:
+                    content = entry_data["content"]
                 reading_time = entry_data.get("reading_time")
-            print(reading_time, "\n\n")
 
             # Remove wallabag entry
             headers = {

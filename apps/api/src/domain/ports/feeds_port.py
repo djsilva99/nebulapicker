@@ -52,3 +52,7 @@ class FeedsPort(ABC):
     @abstractmethod
     def delete_feed_item(self, feed_item_id: int) -> bool:
         pass
+
+    @abstractmethod
+    def get_number_of_feed_items_by_feed_id(self, feed_id: int) -> int:
+        pass

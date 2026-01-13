@@ -40,3 +40,23 @@ def description_does_not_contain(
     if description.lower().count(expression.lower()) >= count:
         return False
     return to_add
+
+def link_contains(
+    to_add: bool,
+    link: str,
+    expression: str,
+    count: int
+):
+    if link.lower().count(expression.lower()) < count:
+        return False
+    return to_add
+
+def link_does_not_contain(
+    to_add: bool,
+    link: str,
+    expression: str,
+    count: int
+):
+    if link.lower().count(expression.lower()) >= count:
+        return False
+    return to_add
