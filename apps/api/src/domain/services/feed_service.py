@@ -1,4 +1,5 @@
 import datetime
+import imghdr
 import io
 from uuid import UUID
 
@@ -17,7 +18,8 @@ from src.domain.models.feed import (
 )
 from src.domain.ports.feeds_port import FeedsPort
 
-MAX_NUMBER_OF_ITEMS = 50
+MAX_NUMBER_OF_ITEMS = 250
+MAX_NUMBER_OF_ITEMS_IN_RSS = 50
 HOURS_TO_COMPARE = 24
 
 
@@ -52,7 +54,7 @@ class FeedService:
         detailed_feeds = []
         for feed in feeds:
             feed_items = self.feeds_port.get_feed_items_by_feed_id(feed.id)
-            number_of_feed_items = len(feed_items)
+            number_of_feed_items = self.feeds_port.get_number_of_feed_items_by_feed_id(feed.id)
             latest_item_datetime = max((i.created_at for i in feed_items), default=feed.created_at)
             detailed_feeds.append(
                 DetailedFeed(
@@ -107,7 +109,7 @@ class FeedService:
             description=feed.name,
             language="en",
         )
-        for feed_item in feed_items[:MAX_NUMBER_OF_ITEMS]:
+        for feed_item in feed_items[:MAX_NUMBER_OF_ITEMS_IN_RSS]:
             feed_object.add_item(
                 title=feed_item.title,
                 link=feed_item.link,
@@ -119,11 +121,11 @@ class FeedService:
         return feed_object.writeString("utf-8")
 
     def export_file(
-            self,
-            feed_external_id: UUID,
-            file_type: ExportFileType,
-            start_time: datetime,
-            end_time: datetime
+        self,
+        feed_external_id: UUID,
+        file_type: ExportFileType,
+        start_time: datetime,
+        end_time: datetime
     ) -> io.BytesIO:
         # initialize buffer
         buffer = io.BytesIO()
@@ -160,24 +162,56 @@ class FeedService:
             for feed_item in feed_items_to_export:
                 soup = BeautifulSoup(feed_item.content, "html.parser")
 
-                # Process and embed images
                 for j, img_tag in enumerate(soup.find_all("img")):
                     img_url = img_tag.get("src")
                     if not img_url:
                         continue
-                    try:
-                        img_data = requests.get(img_url).content
-                    except Exception:
-                        continue  # skip if download fails
 
-                    img_name = f"images/{i}_{j}.jpg"
+                    try:
+                        headers = {
+                            "User-Agent": (
+                                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                                "(KHTML, like Gecko) Chrome/131 Safari/537.36"
+                            )
+                        }
+                        resp = requests.get(img_url, headers=headers, timeout=10)
+                        data = resp.content
+                    except Exception:
+                        continue  # skip download errors
+
+                    # Detect actual image type (jpeg, png, gif, webp, etc.)
+                    img_type = imghdr.what(None, data)
+
+                    if img_type is None:
+                        # Not an image (likely HTML)
+                        continue
+
+                    # Map imghdr types to EPUB media types
+                    media_types = {
+                        "jpeg": "image/jpeg",
+                        "png": "image/png",
+                        "gif": "image/gif",
+                        "webp": "image/webp",
+                        "bmp": "image/bmp",
+                        "tiff": "image/tiff",
+                    }
+
+                    media_type = media_types.get(img_type)
+                    if not media_type:
+                        continue  # unsupported format
+
+                    # Use correct extension
+                    img_name = f"images/{i}_{j}.{img_type}"
+
                     epub_img = epub.EpubItem(
                         uid=f"img{i}_{j}",
                         file_name=img_name,
-                        media_type="image/jpeg",
-                        content=img_data
+                        media_type=media_type,
+                        content=data
                     )
                     book.add_item(epub_img)
+
+                    # Update HTML <img src="...">
                     img_tag["src"] = img_name
 
                 # Build chapter HTML
@@ -193,30 +227,32 @@ class FeedService:
                   </head>
                   <body>
                     <h1>{feed_item.title}</h1>
-                    <p>
-                      <strong>
-                        Reading time:
-                      </strong>
-                      {feed_item.reading_time}m
-                    </p>
-                    <p>
-                      <strong>
-                        Source:
-                      </strong>
-                      {feed_item.author}
-                    </p>
-                    <p>
-                      <strong>
-                        Date:
-                      </strong>
-                      {feed_item.created_at.strftime("%Y-%m-%d")}
-                    </p>
-                    <p>
-                      <strong>
-                        Link:
-                      </strong>
-                      <a href="{feed_item.link}">{feed_item.link}</a>
-                    </p>
+                    <div class="article-info">
+                      <p>
+                        <strong>
+                          Reading time:
+                        </strong>
+                        {feed_item.reading_time}m
+                      </p>
+                      <p>
+                        <strong>
+                          Source:
+                        </strong>
+                        {feed_item.author}
+                      </p>
+                      <p>
+                        <strong>
+                          Date:
+                        </strong>
+                        {feed_item.created_at.strftime("%Y-%m-%d")}
+                      </p>
+                      <p>
+                        <strong>
+                          Link:
+                        </strong>
+                        <a href="{feed_item.link}">{feed_item.link}</a>
+                      </p>
+                    </div>
                     <div style="height: 24px;">&nbsp;</div>
                     <div style="height: 24px;">&nbsp;</div>
                     {str(soup)}

@@ -618,6 +618,7 @@ def export_feed_items(
         export_feed_items_request.start_time,
         export_feed_items_request.end_time
     )
+    buffer.seek(0)
 
     return StreamingResponse(
         buffer,

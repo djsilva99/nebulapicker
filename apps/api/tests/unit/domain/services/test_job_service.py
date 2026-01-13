@@ -13,6 +13,11 @@ from src.domain.services.job_service import JobService, settings
 settings.WALLABAG_ENABLED = False
 
 
+class AttrDict(dict):
+    def __getattr__(self, item):
+        return self.get(item)
+
+
 @pytest.fixture
 def mock_services():
     return {
@@ -97,7 +102,7 @@ def test_process_adds_new_entry(mock_parse, job_service, mock_services):
     )
 
     mock_parse.return_value.entries = [
-        SimpleNamespace(
+        AttrDict(
             link="http://example.com/article1",
             title="Article 1",
             description="Desc 1",
@@ -160,12 +165,12 @@ def test_process_with_identity_filter(mock_parse, job_service, mock_services):
     filter_mock.args = "[]"
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
     mock_services["feed_service"].get_feed_items.return_value = []
-    mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
+    mock_services["source_service"].get_source_by_id.return_value = AttrDict(
         url="http://example.com/feed", name="Example Source"
     )
 
     mock_parse.return_value.entries = [
-        SimpleNamespace(
+        AttrDict(
             link="http://example.com/article2",
             title="Article 2",
             description="Desc 2"
@@ -190,12 +195,42 @@ def test_process_with_title_contains_filter(mock_parse, job_service, mock_servic
     filter_mock = MagicMock(operation=Operation.title_contains, args="['Article', 1]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
     mock_services["feed_service"].get_feed_items.return_value = []
-    mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
+    mock_services["source_service"].get_source_by_id.return_value = AttrDict(
         url="http://example.com/feed", name="Example Source"
     )
 
     mock_parse.return_value.entries = [
-        SimpleNamespace(
+        AttrDict(
+            link="http://example.com/article",
+            title="Article 123",
+            description="Some text"
+        )
+    ]
+
+    # WHEN
+    job_service.process(picker_id=1)
+
+    # THEN
+    mock_services["feed_service"].create_feed_item.assert_called_once()
+
+
+@patch("src.domain.services.job_service.feedparser.parse")
+def test_process_with_link_contains_filter(mock_parse, job_service, mock_services):
+    # GIVEN
+    picker = Picker(
+        id=1, cronjob="*/5 * * * *", source_id=10, feed_id=20,
+        external_id=uuid4(), created_at=datetime(2025, 1, 1, 13, 0, 0)
+    )
+    mock_services["picker_service"].get_picker_by_id.return_value = picker
+    filter_mock = MagicMock(operation=Operation.link_contains, args="['example.com', 1]")
+    mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
+    mock_services["feed_service"].get_feed_items.return_value = []
+    mock_services["source_service"].get_source_by_id.return_value = AttrDict(
+        url="http://example.com/feed", name="Example Source"
+    )
+
+    mock_parse.return_value.entries = [
+        AttrDict(
             link="http://example.com/article",
             title="Article 123",
             description="Some text"
@@ -219,12 +254,12 @@ def test_process_with_description_contains_filter_fails(mock_parse, job_service,
     filter_mock = MagicMock(operation=Operation.description_contains, args="['banana', 2]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
     mock_services["feed_service"].get_feed_items.return_value = []
-    mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
+    mock_services["source_service"].get_source_by_id.return_value = AttrDict(
         url="http://feed", name="Example Source"
     )
 
     mock_parse.return_value.entries = [
-        SimpleNamespace(link="http://item", title="Any", description="banana only once")
+        AttrDict(link="http://item", title="Any", description="banana only once")
     ]
 
     # WHEN
@@ -250,12 +285,43 @@ def test_process_with_title_does_not_contain_filter(mock_parse, job_service, moc
     filter_mock = MagicMock(operation=Operation.title_does_not_contain, args="['spam', 1]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
     mock_services["feed_service"].get_feed_items.return_value = []
-    mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
+    mock_services["source_service"].get_source_by_id.return_value = AttrDict(
         url="http://feed", name="Example Source"
     )
 
     mock_parse.return_value.entries = [
-        SimpleNamespace(link="http://item2", title="spam stuff", description="oops")
+        AttrDict(link="http://item2", title="spam stuff", description="oops")
+    ]
+
+    # WHEN
+    job_service.process(picker_id=1)
+
+    # THEN
+    mock_services["feed_service"].create_feed_item.assert_not_called()
+
+
+@patch("src.domain.services.job_service.ast.literal_eval", return_value=["spam", 1])
+@patch("src.domain.services.job_service.feedparser.parse")
+def test_process_with_link_does_not_contain_filter(mock_parse, job_service, mock_services):
+    # GIVEN
+    picker = Picker(
+        id=1,
+        cronjob="*",
+        source_id=10,
+        feed_id=20,
+        external_id=uuid4(),
+        created_at=datetime.now()
+    )
+    mock_services["picker_service"].get_picker_by_id.return_value = picker
+    filter_mock = MagicMock(operation=Operation.link_does_not_contain, args="['item', 1]")
+    mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
+    mock_services["feed_service"].get_feed_items.return_value = []
+    mock_services["source_service"].get_source_by_id.return_value = AttrDict(
+        url="http://feed", name="Example Source"
+    )
+
+    mock_parse.return_value.entries = [
+        AttrDict(link="http://item2", title="spam stuff", description="oops")
     ]
 
     # WHEN
@@ -275,13 +341,13 @@ def test_process_with_description_does_not_contain_filter(mock_parse, job_servic
     filter_mock = MagicMock(operation=Operation.description_does_not_contain, args="['error', 1]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
     mock_services["feed_service"].get_feed_items.return_value = []
-    mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
+    mock_services["source_service"].get_source_by_id.return_value = AttrDict(
         url="http://feed", name="Example Source"
     )
 
     mock_parse.return_value.entries = [
-        SimpleNamespace(link="http://ok", title="Good", description="All fine"),
-        SimpleNamespace(link="http://bad", title="Oops", description="error inside"),
+        AttrDict(link="http://ok", title="Good", description="All fine"),
+        AttrDict(link="http://bad", title="Oops", description="error inside"),
     ]
 
     # WHEN

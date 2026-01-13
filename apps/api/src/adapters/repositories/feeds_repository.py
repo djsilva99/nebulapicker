@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest, UpdateFeedRequest
 from src.domain.ports.feeds_port import FeedsPort
 
+MAX_NUMBER_OF_ITEMS = 250
+
 
 class FeedsRepository(FeedsPort):
 
@@ -105,7 +107,9 @@ class FeedsRepository(FeedsPort):
         sql = text(
             "SELECT id, feed_id, external_id, link, title, description, author, created_at, "
             "content, reading_time "
-            "FROM feed_items WHERE feed_id = :feed_id;"
+            "FROM feed_items WHERE feed_id = :feed_id "
+            "ORDER BY created_at DESC "
+            "LIMIT 200;"
         )
         result = self.db.execute(
             sql,
@@ -175,3 +179,13 @@ class FeedsRepository(FeedsPort):
         result = self.db.execute(sql, {"id": feed_item_id}).first()
         self.db.commit()
         return result is not None
+
+    def get_number_of_feed_items_by_feed_id(self, feed_id: int):
+        sql = text("""
+            SELECT COUNT(*)
+            FROM feed_items
+            WHERE feed_id = :feed_id
+        """)
+
+        result = self.db.execute(sql, {"feed_id": feed_id}).scalar()
+        return result

@@ -6,6 +6,8 @@ from src.domain.handlers.operations import (
     description_contains,
     description_does_not_contain,
     identity,
+    link_contains,
+    link_does_not_contain,
     title_contains,
     title_does_not_contain,
 )
@@ -82,6 +84,13 @@ class JobService:
         ]
 
         for entry in new_entries:
+            description = entry.description
+            if entry.get("tags"):
+                tags = [tag['term'] for tag in entry.get("tags")]
+                description += " ["
+                for tag in tags:
+                    description += "category: " + tag + "; "
+                description = description[:-1] + "]"
             to_add = True
             for filter in filters:
                 args = ast.literal_eval(filter.args)
@@ -103,7 +112,7 @@ class JobService:
                 if filter.operation is Operation.description_contains:
                     to_add = description_contains(
                         to_add,
-                        entry.description,
+                        description,
                         args[0],
                         int(args[1])
                     )
@@ -121,7 +130,25 @@ class JobService:
                 if filter.operation is Operation.description_does_not_contain:
                     to_add = description_does_not_contain(
                         to_add,
-                        entry.description,
+                        description,
+                        args[0],
+                        int(args[1])
+                    )
+
+                # link_contains operation
+                if filter.operation is Operation.link_contains:
+                    to_add = link_contains(
+                        to_add,
+                        entry.link,
+                        args[0],
+                        int(args[1])
+                    )
+
+                # link_does_not_contain operation
+                if filter.operation is Operation.link_does_not_contain:
+                    to_add = link_does_not_contain(
+                        to_add,
+                        entry.link,
                         args[0],
                         int(args[1])
                     )
@@ -149,7 +176,7 @@ class JobService:
                     feed_item_request = FeedItemRequest(
                         link=entry.link,
                         title=entry.title,
-                        description=entry.description,
+                        description=description,
                         feed_id=picker.feed_id,
                         author=source_name,
                         content=content,

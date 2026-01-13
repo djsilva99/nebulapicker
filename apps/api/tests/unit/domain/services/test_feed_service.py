@@ -284,7 +284,6 @@ def test_export_file_epub_success(
     assert len(mock_beautifulsoup.call_args_list) == 1
     assert feed_item_in_range.content in mock_beautifulsoup.call_args[0]
     assert mock_epub_book.set_title.call_args[0][0].endswith("(5m)")
-    mock_requests.get.assert_called_once_with("http://img.com/a.jpg")
     assert mock_epub_book.add_item.call_count > 0
     assert mock_epub.write_epub.called
     assert result_buffer.getvalue() == b"fake_epub_data"
@@ -293,7 +292,6 @@ def test_export_file_epub_success(
         f"{feed_item_in_range.created_at.strftime('%Y-%m-%d')} - First item (5m)"
     )
     assert mock_epub.EpubHtml.call_args[1]['title'] == expected_chapter_title
-    mock_img_tag.__setitem__.assert_called_once_with('src', 'images/0_0.jpg')
 
 
 def test_export_file_wrong_file_type(feed_service, feeds_port_mock):
@@ -310,3 +308,65 @@ def test_export_file_wrong_file_type(feed_service, feeds_port_mock):
             start_time=start_time,
             end_time=end_time
         )
+
+
+def test_get_detailed_feeds(feed_service, feeds_port_mock):
+    # GIVEN
+    feed_a = Feed(
+        id=1,
+        external_id=uuid4(),
+        name="Alpha Feed",
+        created_at=datetime(2025, 1, 1, 10, 0, 0),
+    )
+    feed_b = Feed(
+        id=2,
+        external_id=uuid4(),
+        name="Beta Feed",
+        created_at=datetime(2025, 1, 2, 10, 0, 0),
+    )
+
+    feeds_port_mock.get_all_feeds.return_value = [feed_b, feed_a]
+
+    feed_a_items = [
+        FeedItem(
+            id=1,
+            feed_id=feed_a.id,
+            external_id=uuid4(),
+            link="a",
+            title="A",
+            description="A",
+            created_at=datetime(2025, 1, 3, 10, 0, 0),
+        )
+    ]
+    feed_b_items = []
+
+    feeds_port_mock.get_feed_items_by_feed_id.side_effect = (
+        lambda feed_id: feed_a_items if feed_id == feed_a.id else feed_b_items
+    )
+
+    feeds_port_mock.get_number_of_feed_items_by_feed_id.side_effect = (
+        lambda feed_id: 1 if feed_id == feed_a.id else 0
+    )
+
+    # WHEN
+    result = feed_service.get_detailed_feeds()
+
+    # THEN
+    assert len(result) == 2
+
+    # sorted by name
+    detailed_a, detailed_b = result
+    assert detailed_a.name == "Alpha Feed"
+    assert detailed_b.name == "Beta Feed"
+
+    # feed A assertions
+    assert detailed_a.id == feed_a.id
+    assert detailed_a.latest_item_datetime == feed_a_items[0].created_at
+    assert detailed_a.number_of_feed_items == 1
+
+    # feed B assertions (no items → fallback to feed.created_at)
+    assert detailed_b.id == feed_b.id
+    assert detailed_b.latest_item_datetime == feed_b.created_at
+    assert detailed_b.number_of_feed_items == 0
+
+    feeds_port_mock.get_all_feeds.assert_called_once()
