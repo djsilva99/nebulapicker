@@ -18,12 +18,9 @@ import {
   FiTrash,
   FiRss,
   FiSettings,
-  // FiDownload
 } from "react-icons/fi";
 import Link from "next/link";
 import { AddFeedModal } from "@/app/feeds/_components/add-feeds-modal";
-// import { DownloadModal } from "@/app/feeds/_components/add-download-modal";
-
 
 function timeDeltaFromNow(dateString: string): string {
   const now = new Date();
@@ -50,16 +47,10 @@ export default function Feeds() {
   const [data, setData] = useState<Feed[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const { open: isAddModalOpen, onOpen: onAddModalOpen, onClose: onAddModalClose } = useDisclosure(); // Renamed existing disclosure
+  const { open: isAddModalOpen, onOpen: onAddModalOpen, onClose: onAddModalClose } = useDisclosure();
   const toast = useToast();
 
-  // const { open: isDownloadModalOpen, onOpen: onDownloadModalOpen, onClose: onDownloadModalClose } = useDisclosure();
   const [selectedFeedId, setSelectedFeedId] = useState<string | null>(null);
-
-  // const handleOpenDownloadModal = (externalId: string) => {
-  //   setSelectedFeedId(externalId);
-  //   onDownloadModalOpen();
-  // }
 
 const fetchData = async () => {
   setIsLoading(true);
@@ -132,7 +123,6 @@ const fetchData = async () => {
   if (isLoading) {
     return (
       <Box p={6}>
-        <Heading as="h1" size="xl" mb={6}>Feeds</Heading>
         <p>Loading feeds...</p>
       </Box>
     );
@@ -190,9 +180,9 @@ const fetchData = async () => {
                 <Link href={`/feeds/${item.external_id}`} passHref legacyBehavior>
                   <Box>
                     <Box fontWeight="bold">{item.number_of_feed_items}</Box>
-                    <Box 
-                      fontSize="xs" 
-                      color="gray.500" 
+                    <Box
+                      fontSize="xs"
+                      color="gray.500"
                       mt={0.5}
                       display={{ base: 'block', md: 'none' }}
                     >
@@ -216,23 +206,6 @@ const fetchData = async () => {
                   alignItems="center"
                   justifyContent="center"
                 >
-                  {/*<Button
-                    aria-label={`Export/Download ${item.name}`}
-                    size="sm"
-                    colorScheme="blue"
-                    color="white"
-                    _hover={{ bg: 'gray.700', color: '#7DCDE8' }}
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      // Call the new handler
-                      handleOpenDownloadModal(item.external_id);
-                    }}
-                    mr={1}
-                  >
-                    <FiDownload />
-                  </Button> */}
 
                   <Button
                     aria-label={`Delete ${item.name}`}
@@ -298,13 +271,6 @@ const fetchData = async () => {
         isCentered
       />
 
-      {/* <DownloadModal
-        isOpen={isDownloadModalOpen}
-        onClose={onDownloadModalClose}
-        feedExternalId={selectedFeedId}
-      /> */}
-
-      <Box flex="1" minH="calc(100vh - 200px)" />
     </Box>
   )
 }

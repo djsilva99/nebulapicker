@@ -29,6 +29,7 @@ import { Source } from '@/types/Source';
 import { PickerFilter } from '@/types/Feed';
 
 import axios from 'axios';
+import Cookies from "js-cookie";
 import { useEffect, useState } from 'react';
 
 
@@ -66,16 +67,31 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
         setLoadingUrls(true);
         setUrlError(null);
         try {
-          const response = await axios.get("/api/v1/sources");
+          const token = Cookies.get("token");
+          const response = await axios.get("/api/v1/sources", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
           const sources = Array.isArray(response.data)
             ? response.data
             : Array.isArray(response.data?.sources)
             ? response.data.sources
             : [];
           setUrlOptions(sources);
-        } catch (err) {
-          console.error("Error fetching URLs:", err);
+        } catch (error: unknown) {
+          console.error("Error fetching URLs:", error);
           setUrlError("Failed to load URL options");
+          if (axios.isAxiosError(error)) {
+            if (error.response?.status === 401) {
+              Cookies.remove("token");
+              window.location.href = "/login";
+            } else {
+              console.error("Axios error:", error.message);
+            }
+          } else {
+            console.error("Unexpected error:", error);
+          }
         } finally {
           setLoadingUrls(false);
         }
@@ -108,7 +124,14 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
     e.preventDefault();
     setIsSubmitting(true);
     if (!sourceUrl.trim()) {
-      toast({ title: "Error", description: "Source URL is required.", status: "warning", duration: 3000 });
+      toast(
+        {
+          title: "Error",
+          description: "Source URL is required.",
+          status: "warning",
+          duration: 3000
+        }
+      );
       setIsSubmitting(false);
       return;
     }
@@ -119,7 +142,12 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
         filters,
         feed_external_id: feedId,
       };
-      await axios.post("/api/v1/pickers", pickerPayload);
+      const token = Cookies.get("token");
+      await axios.post("/api/v1/pickers", pickerPayload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       toast(
         {
           title: "Picker Created",
@@ -141,6 +169,16 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
           isClosable: true
         }
       );
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Cookies.remove("token");
+          window.location.href = "/login";
+        } else {
+          console.error("Axios error:", error.message);
+        }
+      } else {
+        console.error("Unexpected error:", error);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -153,10 +191,11 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
         backdropFilter="blur(4px)"
       />
       <ModalContent
-        top="200px"
-        left="35%"
-        width="40%"
+        maxH="80vh"
+        top="100px"
+        width={{ base: "90%", md: "40%" }}
         maxW="1800px"
+        mx="auto"
         bg="#161519"
         border="2px solid"
         borderColor="white"
@@ -172,7 +211,7 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
           _hover={{ bg: 'gray.700', color: '#AC7DBA'}}
           cursor="pointer"
         />
-        <ModalBody p={30}>
+        <ModalBody p={30} overflowY="auto" >
           <FormControl isRequired mt="15px">
             {loadingUrls ? (
               <Spinner size="sm" />
@@ -248,7 +287,7 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
                     <FormLabel fontSize="sm" mb={1}>Operation</FormLabel>
                     <Select
                       bg='#453262'
-                      value={filter.operation} 
+                      value={filter.operation}
                       onChange={(e) => handleFilterChange(index, 'operation', e.target.value)}
                       h="38px"
                       borderRadius="xl"
@@ -277,6 +316,12 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
                       </option>
                       <option value="description_does_not_contain">
                         description_does_not_contain
+                      </option>
+                      <option value="link_contains">
+                        link_contains
+                      </option>
+                      <option value="link_does_not_contain">
+                        link_does_not_contain
                       </option>
                     </Select>
                   </FormControl>

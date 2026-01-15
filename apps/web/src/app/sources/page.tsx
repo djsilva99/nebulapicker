@@ -104,7 +104,6 @@ export default function Sources() {
   if (isLoading) {
     return (
       <Box p={6}>
-        <Heading as="h1" size="xl" mb={6}>Sources</Heading>
         <p>Loading sources...</p>
       </Box>
     );
@@ -138,15 +137,10 @@ export default function Sources() {
 
       {/* TABLE */}
       <Table.Root size="sm" variant="outline">
-        <Table.ColumnGroup>
-          <Table.Column htmlWidth="50%"/>
-          <Table.Column htmlWidth="45%"/>
-          <Table.Column htmlWidth="5%"/>
-        </Table.ColumnGroup>
         <Table.Header>
           <Table.Row>
             <Table.ColumnHeader bg="gray.700" color='white'>NAME</Table.ColumnHeader>
-            <Table.ColumnHeader bg="gray.700" color='white' textAlign="start">URL</Table.ColumnHeader>
+            <Table.ColumnHeader bg="gray.700" color='white' textAlign="start" display={{ base: 'none', md: 'table-cell' }}>URL</Table.ColumnHeader>
             <Table.ColumnHeader bg="gray.700" color='white' textAlign="center">ACTIONS</Table.ColumnHeader>
           </Table.Row>
         </Table.Header>
@@ -154,20 +148,30 @@ export default function Sources() {
         <Table.Body>
           {data.map((item: Source) => (
             <Table.Row key={item.external_id} cursor="pointer" _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
-              <Table.Cell>
+              <Table.Cell width={{ base: "95%", md: "45%" }}>
                 <a href={`${item.url}`} target="_blank" rel="noopener noreferrer">
                   <Box>
                     <Box fontWeight="bold">{item.name}</Box>
                   </Box>
                 </a>
+                  <Box
+                    fontSize="xs"
+                    color="gray.500"
+                    mt={0.5}
+                    display={{ base: 'block', md: 'none' }}
+                  >
+                <a href={`${item.url}`} target="_blank" rel="noopener noreferrer">
+                  {item.url.length > 40 ? `${item.url.slice(0, 40)}…` : item.url}
+                </a>
+                  </Box>
               </Table.Cell>
 
-              <Table.Cell textAlign="start">
+              <Table.Cell textAlign="start" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "45%" }}>
                 <a href={`${item.url}`} target="_blank" rel="noopener noreferrer">
                   {item.url}
                 </a>
               </Table.Cell>
-              <Table.Cell textAlign="center">
+              <Table.Cell textAlign="center" width={{ base: "5%", md: "5%" }}>
                 <Button
                   aria-label={`Delete ${item.name}`}
                   size="sm"
@@ -193,7 +197,6 @@ export default function Sources() {
         onSourceAdded={fetchData}
         isCentered
       />
-      <Box flex="1" minH="calc(100vh - 200px)" />
     </Box>
   )
 }

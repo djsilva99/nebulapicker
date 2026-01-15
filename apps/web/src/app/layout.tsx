@@ -9,7 +9,6 @@ import {
     Text,
     Heading,
     Image,
-    useBreakpointValue,
 } from "@chakra-ui/react";
 import NextLink from 'next/link';
 import { FiGlobe, FiRss } from 'react-icons/fi';
@@ -36,7 +35,9 @@ const SidebarLink = ({ href, icon, children }: SidebarLinkProps) => (
       pl={{ base: 0, md: 10 }}
     >
       <Icon as={icon} mr={3} />
-      <Text fontWeight="medium" display={{ base: 'block', md: 'block' }}>{children}</Text>
+      <Text fontWeight="medium" display={{ base: 'block', md: 'block' }}>
+        {children}
+      </Text>
     </Box>
   </NextLink>
 );
@@ -45,32 +46,6 @@ const ChakraRootLayoutContent = ({ children }: { children: React.ReactNode }) =>
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const MOBILE_HEADER_HEIGHT = '60px';
-
-  const isMobileLayout = useBreakpointValue({ base: true, md: false });
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !isMobileLayout) {
-      setIsVisible(true);
-      return;
-    }
-
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const scrollDifference = currentScrollY - lastScrollY.current;
-      if (currentScrollY < 100) {
-        setIsVisible(true);
-      } else if (scrollDifference < 0) {
-        setIsVisible(true);
-      } else if (scrollDifference > 10) {
-        setIsVisible(false);
-      }
-      lastScrollY.current = currentScrollY;
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, [isMobileLayout]);
 
   return (
     <Grid
@@ -89,15 +64,21 @@ const ChakraRootLayoutContent = ({ children }: { children: React.ReactNode }) =>
         borderBottom={{ base: '1px solid', md: 'none' }}
         borderColor="gray.700"
 
-        height={{ base: MOBILE_HEADER_HEIGHT, md: 'auto' }}
-        overflow="hidden"
+        height={{ base: MOBILE_HEADER_HEIGHT, md: '100vh' }}
+        overflow="visible"
 
         position="sticky"
         top="0"
-        zIndex="sticky"
+        zIndex={{ base: 'sticky', md: 'base' }}
 
-        transform={isVisible ? 'translateY(0)' : 'translateY(-100%)'}
-        transition="transform 0.3s ease-in-out"
+        transform={{
+          base: isVisible ? 'translateY(0)' : 'translateY(-100%)',
+          md: 'none',
+        }}
+        transition={{
+          base: 'transform 0.3s ease-in-out',
+          md: 'none',
+        }}
 
         display={{ base: 'flex', md: 'block' }}
         flexDirection={{ base: 'row', md: 'column' }}
@@ -105,6 +86,7 @@ const ChakraRootLayoutContent = ({ children }: { children: React.ReactNode }) =>
         justifyContent={{ base: 'space-between', md: 'flex-start' }}
         px={{ base: 4, md: 0 }}
       >
+
         {/* LOGO LINK */}
         <NextLink href="/" passHref legacyBehavior>
           <Box
@@ -129,7 +111,9 @@ const ChakraRootLayoutContent = ({ children }: { children: React.ReactNode }) =>
                 boxSize={{ base: '24px', md: '32px' }}
                 objectFit="contain"
               />
-                <Text fontSize={12} display={{ base: 'block', md: 'block' }}>nebulapicker</Text>
+                <Text fontSize={12} display={{ base: 'block', md: 'block' }}>
+                  nebulapicker
+                </Text>
             </Heading>
           </Box>
         </NextLink>

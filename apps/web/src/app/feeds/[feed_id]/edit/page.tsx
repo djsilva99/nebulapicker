@@ -122,7 +122,7 @@ export default function FeedPage() {
   };
 
   if (isLoading) {
-    return <Box p={6}><p>Loading feed data...</p></Box>;
+    return <Box p={6}><p>Loading feed settings...</p></Box>;
   }
 
   const handleDelete = async (externalId: string) => {
@@ -199,7 +199,7 @@ export default function FeedPage() {
             colorScheme="blue"
             loading={isUpdating}
             disabled={newName.trim() === data?.name || isUpdating}
-            display="none" // Hides the button
+            display="none"
           >
             Update Name
           </Button>
@@ -277,7 +277,12 @@ export default function FeedPage() {
                   <HStack flex="1" height="40px">
                     <Flex justifyContent="space-between" alignItems="flex-start" p={0} width="100%">
                       <Box>
-                        <Text>{picker.source_url} </Text>
+                        <Text fontSize="md" display={{ base: 'none', md: 'table-cell' }}>
+                          {picker.source_url}
+                        </Text>
+                        <Text fontSize="xs" display={{ md: 'none', base: 'table-cell' }}>
+                          {picker.source_url.length > 40 ? `${picker.source_url.slice(0, 40)}…` : picker.source_url}
+                        </Text>
                         <Text color="gray.700"> {picker.cronjob}</Text>
                       </Box>
                       <Box>
@@ -319,7 +324,6 @@ export default function FeedPage() {
         feedId={feedId}
         onPickerAdded={fetchData}
       />
-      <Box flex="1" minH="calc(100vh - 200px)" />
     </Box>
   );
 }

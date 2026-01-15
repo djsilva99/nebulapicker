@@ -19,7 +19,7 @@ export default function FeedItemPage() {
   const feedItemId = params.feed_item_id as string;
 
   const [data, setData] = useState<FeedItem>();
-  const [feed, setFeed] = useState()
+  const [feed, setFeed] = useState<string>()
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchData = async () => {
@@ -85,7 +85,6 @@ export default function FeedItemPage() {
   if (isLoading) {
     return (
       <Box p={6}>
-        <Heading as="h1" size="xl" mb={6}>Feeds</Heading>
         <p>Loading feed item...</p>
       </Box>
     );
@@ -149,28 +148,36 @@ export default function FeedItemPage() {
           className="h1"
           dangerouslySetInnerHTML={{ __html: data?.title || "" }}
         />
-        <Box fontSize="0.75rem">
+        <Box
+          fontSize="0.75rem"
+          display="flex"
+          flexWrap="wrap"
+          alignItems="center"
+          columnGap="20px"
+          rowGap="4px"
+          pb="10px"
+        >
           <Link href={`/feeds/${feedId}`} style={{ color: '#52525b' }}>
             <FiArrowLeft />
             {feed}
           </Link>
 
           <div
-            style={{ display: "inline-flex", alignItems: "center", gap: "4px", marginLeft: "20px", color: '#52525b' }}
+            style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: '#52525b' }}
           >
             <FiClock />
             {data?.reading_time}m
           </div>
 
           <div
-            style={{ display: "inline-flex", alignItems: "center", gap: "4px", marginLeft: "20px", color: '#52525b' }}
+            style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: '#52525b' }}
           >
             <FiCalendar />
             {data?.created_at.slice(0, 10)}
           </div>
 
           <div
-            style={{ display: "inline-flex", alignItems: "center", gap: "4px", marginLeft: "20px", color: '#52525b' }}
+            style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: '#52525b' }}
           >
             <a
               href={data?.link}
@@ -188,7 +195,6 @@ export default function FeedItemPage() {
           dangerouslySetInnerHTML={{ __html: data?.content || "" }}
         />
       </Box>
-      <Box flex="1" minH="calc(100vh - 200px)" />
     </Box>
   )
 }
