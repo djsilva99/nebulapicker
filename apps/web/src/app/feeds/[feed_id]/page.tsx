@@ -94,7 +94,6 @@ export default function FeedPage() {
   if (isLoading) {
     return (
       <Box p={6}>
-        <Heading as="h1" size="xl" mb={6}>Feeds</Heading>
         <p>Loading feed items...</p>
       </Box>
     );
@@ -247,9 +246,9 @@ export default function FeedPage() {
                     <Box fontWeight="medium" color="#7DCDE8">
                       {item.title}
                     </Box>
-                    <Box 
-                      fontSize="xs" 
-                      color="gray.500" 
+                    <Box
+                      fontSize="xs"
+                      color="gray.500"
                       mt={0.5}
                       display={{ base: 'block', md: 'none' }}
                     >
@@ -359,9 +358,9 @@ export default function FeedPage() {
                     <Box fontWeight="medium" color="#7DCDE8">
                       {item.title}
                     </Box>
-                    <Box 
-                      fontSize="xs" 
-                      color="gray.500" 
+                    <Box
+                      fontSize="xs"
+                      color="gray.500"
                       mt={0.5}
                       display={{ base: 'block', md: 'none' }}
                     >
@@ -425,7 +424,6 @@ export default function FeedPage() {
         onFeedAdded={fetchData}
         isCentered
       />
-      <Box flex="1" minH="calc(100vh - 200px)" />
     </Box>
   )
 }

@@ -46,23 +46,23 @@ interface AddFeedModalProps {
 
 interface DatePickerProps {
   formData: NewFeedItem;
-  setFormData: React.Dispatch<React.SetStateAction<NewFeedItem>>; 
+  setFormData: React.Dispatch<React.SetStateAction<NewFeedItem>>;
 }
 
 const DatePickerWithCalendar: React.FC<DatePickerProps> = ({ formData, setFormData }) => {
-  const dateValue: Date | null = formData.created_at 
-    ? new Date(formData.created_at) 
+  const dateValue: Date | null = formData.created_at
+    ? new Date(formData.created_at)
     : null;
 
   const handleDateChange = (value: CalendarValue, event: React.MouseEvent<HTMLButtonElement, MouseEvent> | undefined) => {
     const selectedValue = value as Date | Date[] | null;
 
-    const date: Date | null = Array.isArray(selectedValue) 
-      ? selectedValue[0] 
+    const date: Date | null = Array.isArray(selectedValue)
+      ? selectedValue[0]
       : (selectedValue as Date | null);
 
-    setFormData((prevData: NewFeedItem) => ({ 
-      ...prevData, 
+    setFormData((prevData: NewFeedItem) => ({
+      ...prevData,
       created_at: date ? date.toISOString() : "",
     }));
   };
@@ -79,7 +79,7 @@ const DatePickerWithCalendar: React.FC<DatePickerProps> = ({ formData, setFormDa
         <Calendar
           onChange={handleDateChange}
           value={dateValue}
-          view="month" 
+          view="month"
           selectRange={false}
           showNavigation={true}
           maxDetail="month"
@@ -101,8 +101,8 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
   { externalFeedId, isOpen, onClose, onFeedAdded, isCentered }
 ) => {
   const [formData, setFormData] = useState<NewFeedItem>(
-		{ title: "", description: "", link: "", content: "" }
-	);
+    { title: "", description: "", link: "", content: "" }
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
 
@@ -262,8 +262,8 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
             type="submit"
             loading={isSubmitting}
             _hover={
-							{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }
-						}
+              { bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }
+            }
             mb="30px"
             mr="30px"
             borderColor="white"

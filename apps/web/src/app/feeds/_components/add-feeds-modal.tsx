@@ -19,6 +19,7 @@ import {
 } from "@chakra-ui/modal";
 import { useState } from "react";
 import axios from "axios";
+import Cookies from "js-cookie";
 
 interface NewFeed {
   name: string;
@@ -58,7 +59,12 @@ export const AddFeedModal: React.FC<AddFeedModalProps> = (
     }
 
     try {
-      await axios.post("/api/v1/feeds", formData);
+      const token = Cookies.get("token");
+      await axios.post("/api/v1/feeds", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       toast({
         title: "Feed Added.",
         description: `${formData.name} was successfully created.`,
@@ -69,15 +75,17 @@ export const AddFeedModal: React.FC<AddFeedModalProps> = (
       onFeedAdded();
       onClose();
       setFormData({ name: "" });
-    } catch (error) {
-      console.error("Error creating feed:", error);
-      toast({
-        title: "Error.",
-        description: "Failed to create feed. Please try again.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+    } catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 401) {
+            Cookies.remove("token");
+            window.location.href = "/login";
+          } else {
+            console.error("Axios error:", error.message);
+          }
+        } else {
+          console.error("Unexpected error:", error);
+        }
     } finally {
       setIsSubmitting(false);
     }
@@ -90,10 +98,10 @@ export const AddFeedModal: React.FC<AddFeedModalProps> = (
         backdropFilter="blur(4px)"
       />
       <ModalContent
-        top="300px"
-        left="35%"
-        width="30%"
-        maxW="1800px"
+        top="100px"
+        width={{ base: "90%", md: "40%" }}
+        maxW="2800px"
+        mx="auto"
         bg="#161519"
         border="1px solid"
         borderColor="white"
@@ -130,7 +138,9 @@ export const AddFeedModal: React.FC<AddFeedModalProps> = (
             colorScheme="blue"
             type="submit"
             loading={isSubmitting}
-            _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
+            _hover={
+              { bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }
+            }
             mb="30px"
             mr="30px"
             borderColor="white"

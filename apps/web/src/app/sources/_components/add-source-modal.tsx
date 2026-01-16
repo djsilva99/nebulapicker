@@ -17,6 +17,7 @@ import {
 } from "@chakra-ui/modal";
 import { useState } from "react";
 import axios from "axios";
+import Cookies from "js-cookie";
 
 interface NewSource {
   name: string;
@@ -57,7 +58,12 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = (
     }
 
     try {
-      await axios.post("/api/v1/sources", formData);
+      const token = Cookies.get("token");
+      await axios.post("/api/v1/sources", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       toast({
         title: "Source Added.",
@@ -70,14 +76,17 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = (
       onSourceAdded();
       onClose();
       setFormData({ name: "", url: "" });
-    } catch (error) {
-      toast({
-        title: "Error.",
-        description: "Failed to create source. Please try again.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Cookies.remove("token");
+          window.location.href = "/login";
+        } else {
+          console.error("Axios error:", error.message);
+        }
+      } else {
+        console.error("Unexpected error:", error);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -90,10 +99,10 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = (
         backdropFilter="blur(4px)"
       />
       <ModalContent
-        top="300px"
-        left="35%"
-        width="30%"
+        top="100px"
+        width={{ base: "90%", md: "50%" }}
         maxW="1800px"
+        mx="auto"
         bg="#161519"
         border="1px solid"
         borderColor="white"
