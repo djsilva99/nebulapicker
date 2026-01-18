@@ -20,9 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.execute("ALTER TABLE feed_items ADD COLUMN image_url TEXT DEFAULT NULL;")
-    pass
 
 
 def downgrade() -> None:
     op.execute("ALTER TABLE feed_items DROP COLUMN image_url;")
-    pass

@@ -103,11 +103,27 @@ class FeedsRepository(FeedsPort):
             return Feed(**result)
         return None
 
-    def get_feed_items_by_feed_id(self, feed_id: int) -> list[FeedItem]:
+    def get_all_feed_items_by_feed_id(self, feed_id: int) -> list[FeedItem]:
         sql = text(
             "SELECT id, feed_id, external_id, link, title, description, author, created_at, "
             "content, reading_time, image_url "
             "FROM feed_items WHERE feed_id = :feed_id "
+            "ORDER BY created_at DESC "
+            "LIMIT 200;"
+        )
+        result = self.db.execute(
+            sql,
+            {"feed_id": feed_id}
+        ).mappings()
+
+        return [FeedItem(**feed_item) for feed_item in result]
+
+    def get_active_feed_items_by_feed_id(self, feed_id: int) -> list[FeedItem]:
+        sql = text(
+            "SELECT id, feed_id, external_id, link, title, description, author, created_at, "
+            "content, reading_time, image_url "
+            "FROM feed_items "
+            "WHERE feed_id = :feed_id  AND is_active = TRUE "
             "ORDER BY created_at DESC "
             "LIMIT 200;"
         )
@@ -191,3 +207,14 @@ class FeedsRepository(FeedsPort):
 
         result = self.db.execute(sql, {"feed_id": feed_id}).scalar()
         return result
+
+    def set_feed_item_as_inactive(self, feed_item_id: int):
+        sql = text(
+            "UPDATE feed_items "
+            "SET is_active = FALSE "
+            "WHERE id = :id "
+            "RETURNING id"
+        )
+        result = self.db.execute(sql, {"id": feed_item_id}).first()
+        self.db.commit()
+        return result is not None

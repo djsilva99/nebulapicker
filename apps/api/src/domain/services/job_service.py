@@ -77,7 +77,7 @@ class JobService:
     def process(self, picker_id: int):  # noqa: C901
         picker = self.picker_service.get_picker_by_id(picker_id)
         filters = self.filter_service.get_filters_by_picker_id(picker_id)
-        feed_items = self.feed_service.get_feed_items(picker.feed_id)
+        feed_items = self.feed_service.get_feed_items(picker.feed_id, all_items=True)
         source = self.source_service.get_source_by_id(picker.source_id)
         source_name = source.name if source.name else ""
         source_set = feedparser.parse(source.url)

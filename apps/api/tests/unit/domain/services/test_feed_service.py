@@ -116,13 +116,13 @@ def test_get_feed_items_delegates_to_port(feed_service, feeds_port_mock):
         spec=FeedItem, created_at=datetime(2025, 1, 1, 12, 0, 0)
     )
     expected_items_sorted = [item2, item1]
-    feeds_port_mock.get_feed_items_by_feed_id.return_value = [item1, item2]
+    feeds_port_mock.get_active_feed_items_by_feed_id.return_value = [item1, item2]
 
     # WHEN
     result = feed_service.get_feed_items(feed_id=42)
 
     # THEN
-    feeds_port_mock.get_feed_items_by_feed_id.assert_called_once_with(42)
+    feeds_port_mock.get_active_feed_items_by_feed_id.assert_called_once_with(42)
     assert result == expected_items_sorted
 
 
@@ -155,7 +155,7 @@ def test_get_rss_builds_rss_feed(feed_service, feeds_port_mock):
         ),
     ]
     feeds_port_mock.get_feed_by_external_id.return_value = feed
-    feeds_port_mock.get_feed_items_by_feed_id.return_value = items
+    feeds_port_mock.get_active_feed_items_by_feed_id.return_value = items
 
     # WHEN
     rss_xml = feed_service.get_rss(feed.external_id)
@@ -169,7 +169,7 @@ def test_get_rss_builds_rss_feed(feed_service, feeds_port_mock):
     assert "<description>Desc 2</description>" in rss_xml
 
     feeds_port_mock.get_feed_by_external_id.assert_called_once_with(feed.external_id)
-    feeds_port_mock.get_feed_items_by_feed_id.assert_called_once_with(feed.id)
+    feeds_port_mock.get_active_feed_items_by_feed_id.assert_called_once_with(feed.id)
 
 
 def test_get_feed_by_external_id_delegates_to_port(feed_service, feeds_port_mock):
@@ -250,7 +250,7 @@ def test_export_file_epub_success(
     )
     all_feed_items = [feed_item_in_range, feed_item_out_of_range]
     feeds_port_mock.get_feed_by_external_id.return_value = feed
-    feeds_port_mock.get_feed_items_by_feed_id.return_value = all_feed_items
+    feeds_port_mock.get_active_feed_items_by_feed_id.return_value = all_feed_items
     mock_soup_instance = MagicMock(spec=BeautifulSoup)
     mock_img_tag = MagicMock()
     mock_img_tag.get.return_value = "http://img.com/a.jpg"
@@ -280,7 +280,7 @@ def test_export_file_epub_success(
     feeds_port_mock.get_feed_by_external_id.assert_called_once_with(
         feed_external_id
     )
-    feeds_port_mock.get_feed_items_by_feed_id.assert_called_once_with(feed.id)
+    feeds_port_mock.get_active_feed_items_by_feed_id.assert_called_once_with(feed.id)
     assert len(mock_beautifulsoup.call_args_list) == 1
     assert feed_item_in_range.content in mock_beautifulsoup.call_args[0]
     assert mock_epub_book.set_title.call_args[0][0].endswith("(5m)")
@@ -340,7 +340,7 @@ def test_get_detailed_feeds(feed_service, feeds_port_mock):
     ]
     feed_b_items = []
 
-    feeds_port_mock.get_feed_items_by_feed_id.side_effect = (
+    feeds_port_mock.get_active_feed_items_by_feed_id.side_effect = (
         lambda feed_id: feed_a_items if feed_id == feed_a.id else feed_b_items
     )
 
