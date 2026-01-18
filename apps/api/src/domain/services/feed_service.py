@@ -53,7 +53,7 @@ class FeedService:
         feeds = self.feeds_port.get_all_feeds()
         detailed_feeds = []
         for feed in feeds:
-            feed_items = self.feeds_port.get_feed_items_by_feed_id(feed.id)
+            feed_items = self.feeds_port.get_active_feed_items_by_feed_id(feed.id)
             number_of_feed_items = self.feeds_port.get_number_of_feed_items_by_feed_id(feed.id)
             latest_item_datetime = max((i.created_at for i in feed_items), default=feed.created_at)
             detailed_feeds.append(
@@ -74,11 +74,22 @@ class FeedService:
     def get_feed_by_id(self, id: int) -> Feed | None:
         return self.feeds_port.get_feed_by_id(id)
 
-    def get_feed_items(self, feed_id: int, title: str | None = None) -> list[FeedItem]:
-        feed_items = sorted(
-            self.feeds_port.get_feed_items_by_feed_id(feed_id),
-            key=lambda item: item.created_at
-        )
+    def get_feed_items(
+        self,
+        feed_id: int,
+        title: str | None = None,
+        all_items: bool = False
+    ) -> list[FeedItem]:
+        if all_items:
+            feed_items = sorted(
+                self.feeds_port.get_all_feed_items_by_feed_id(feed_id),
+                key=lambda item: item.created_at
+            )
+        else:
+            feed_items = sorted(
+                self.feeds_port.get_active_feed_items_by_feed_id(feed_id),
+                key=lambda item: item.created_at
+            )
         if title:
             feeds_to_return = []
             for feed_item in feed_items:
@@ -98,11 +109,14 @@ class FeedService:
     def delete_feed_item(self, feed_item_id: int) -> bool:
         return self.feeds_port.delete_feed_item(feed_item_id)
 
+    def deactivate_feed_item(self, feed_item_id: int) -> bool:
+        return self.feeds_port.set_feed_item_as_inactive(feed_item_id)
+
     def get_rss(self, feed_external_id: UUID) -> str | None:
         feed = self.feeds_port.get_feed_by_external_id(feed_external_id)
         if not feed:
             return None
-        feed_items = self.feeds_port.get_feed_items_by_feed_id(feed.id)
+        feed_items = self.feeds_port.get_active_feed_items_by_feed_id(feed.id)
         feed_object = Rss201rev2Feed(
             title=feed.name,
             link="http://127.0.0.1:8080/" + str(feed.external_id),
@@ -134,7 +148,7 @@ class FeedService:
         start_time = start_time.astimezone(datetime.UTC)
         end_time = end_time.astimezone(datetime.UTC)
         feed = self.feeds_port.get_feed_by_external_id(feed_external_id)
-        feed_items = self.feeds_port.get_feed_items_by_feed_id(feed.id)
+        feed_items = self.feeds_port.get_active_feed_items_by_feed_id(feed.id)
         feed_items_to_export = [
             item for item in feed_items if
             item.created_at.replace(

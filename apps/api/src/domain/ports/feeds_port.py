@@ -35,7 +35,11 @@ class FeedsPort(ABC):
         pass
 
     @abstractmethod
-    def get_feed_items_by_feed_id(self, feed_id: int) -> list[FeedItem]:
+    def get_all_feed_items_by_feed_id(self, feed_id: int) -> list[FeedItem]:
+        pass
+
+    @abstractmethod
+    def get_active_feed_items_by_feed_id(self, feed_id: int) -> list[FeedItem]:
         pass
 
     @abstractmethod
@@ -55,4 +59,8 @@ class FeedsPort(ABC):
 
     @abstractmethod
     def get_number_of_feed_items_by_feed_id(self, feed_id: int) -> int:
+        pass
+
+    @abstractmethod
+    def set_feed_item_as_inactive(self, feed_item_id: int) -> bool:
         pass

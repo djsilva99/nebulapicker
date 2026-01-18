@@ -467,10 +467,11 @@ def test_delete_feed_successfully(
              "VALUES (1, 1, 'identity', '[a]', NOW()), (2, 1, 'identity', '[b]', NOW())")
     )
     db_session.execute(
-        text("INSERT INTO feed_items (id, feed_id, title, link, description, author, created_at) "
+        text("INSERT INTO feed_items (id, feed_id, title, link, description, author, created_at, "
+             "is_active) "
              "VALUES (1, 1, 'feed_item_1', 'http://example.com/item1', "
-             "'desc1', 'author1', NOW()), "
-             "(2, 1, 'feed_item_2', 'http://example.com/item2', 'desc2', 'author2', NOW())")
+             "'desc1', 'author1', NOW(), TRUE), "
+             "(2, 1, 'feed_item_2', 'http://example.com/item2', 'desc2', 'author2', NOW(), TRUE)")
     )
     db_session.commit()
     fake_token = "test-token"

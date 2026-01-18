@@ -589,7 +589,7 @@ def delete_feed_item(
     if not feed_item:
         raise HTTPException(status_code=404, detail="Feed item not found")
 
-    feed_service.delete_feed_item(feed_item.id)
+    feed_service.deactivate_feed_item(feed_item.id)
     return None
 
 
