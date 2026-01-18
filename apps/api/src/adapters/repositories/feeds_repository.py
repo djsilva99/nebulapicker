@@ -106,7 +106,7 @@ class FeedsRepository(FeedsPort):
     def get_feed_items_by_feed_id(self, feed_id: int) -> list[FeedItem]:
         sql = text(
             "SELECT id, feed_id, external_id, link, title, description, author, created_at, "
-            "content, reading_time "
+            "content, reading_time, image_url "
             "FROM feed_items WHERE feed_id = :feed_id "
             "ORDER BY created_at DESC "
             "LIMIT 200;"
@@ -138,11 +138,11 @@ class FeedsRepository(FeedsPort):
             feed_item_request.created_at = datetime.datetime.now()
         sql = text(
             "INSERT INTO feed_items (feed_id, link, title, description, author, content, "
-            "reading_time, created_at) "
+            "reading_time, created_at, image_url) "
             "VALUES (:feed_id, :link, :title, :description, :author, :content, "
-            ":reading_time, :created_at) "
+            ":reading_time, :created_at, :image_url) "
             "RETURNING id, feed_id, external_id, link, title, author, description, content, "
-            "reading_time, created_at"
+            "reading_time, created_at, image_url"
         )
         result = self.db.execute(
             sql,
@@ -154,7 +154,8 @@ class FeedsRepository(FeedsPort):
                 "author": feed_item_request.author,
                 "content": feed_item_request.content,
                 "reading_time": feed_item_request.reading_time,
-                "created_at": feed_item_request.created_at
+                "created_at": feed_item_request.created_at,
+                "image_url": feed_item_request.image_url
             }
         ).first()
 
@@ -172,6 +173,7 @@ class FeedsRepository(FeedsPort):
             content=data["content"],
             reading_time=data["reading_time"],
             created_at=data["created_at"],
+            image_url=data["image_url"]
         )
 
     def delete_feed_item(self, feed_item_id: int) -> bool:

@@ -7,7 +7,9 @@ import {
   Flex,
   Button,
   useDisclosure,
-  Link
+  Link,
+  Image,
+  Spacer
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import axios from "axios";
@@ -222,7 +224,7 @@ export default function FeedPage() {
               <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}>SOURCE</Table.ColumnHeader>
               <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}>DATE</Table.ColumnHeader>
               <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}><FiClock/></Table.ColumnHeader>
-              <Table.ColumnHeader bg="gray.700" color='white'>ACTIONS</Table.ColumnHeader>
+              <Table.ColumnHeader bg="gray.700" color='white' display={{ base: 'none', md: 'table-cell' }}>ACTIONS</Table.ColumnHeader>
             </Table.Row>
           </Table.Header>
 
@@ -236,28 +238,88 @@ export default function FeedPage() {
               color="gray.400"
               _hover={{ bg: 'gray.800', color: '#AC7DBA' }}
             >
-              <Table.Cell borderLeft="none" borderRight="none" cursor="pointer" width={{ base: "80%", md: "60%" }}
+              <Table.Cell
+                borderLeft="none"
+                borderRight="none"
+                cursor="pointer"
+                width={{ base: "100%", md: "60%" }}
                 color="gray.400"
-                _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+                role="group"
+                _hover={{ bg: 'gray.800', color: '#AC7DBA' }}
+              >
                 <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
                   color="gray.400"
                   _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
                   <Box>
-                    <Box fontWeight="medium" color="#7DCDE8">
-                      {item.title}
-                    </Box>
-                    <Box
-                      fontSize="xs"
-                      color="gray.500"
-                      mt={0.5}
-                      display={{ base: 'block', md: 'none' }}
-                    >
-                      <Flex align="center" gap={1}>
-                        {item.author} &nbsp;&nbsp; {timeDeltaFromNow(item.created_at)} ago &nbsp;&nbsp; <FiClock/> {item.reading_time}m
-                      </Flex>
-                    </Box>
+                    <Flex align="center" gap={3}>
+                      <Box
+                        width="80px"
+                        height="60px"
+                        bg="gray.900"
+                        overflow="hidden"
+                        flexShrink={0}
+                      >
+                        <Image
+                          src={item.image_url ?? "/nebulapicker.png"}
+                          width="100%"
+                          height="100%"
+                          objectFit="contain"
+                          pointerEvents="none"
+                        />
+                      </Box>
+                      <Box fontWeight="medium" color="#7DCDE8">
+                        {item.title}
+                      </Box>
+                    </Flex>
                   </Box>
                 </Link>
+                <Box
+                  fontSize="xs"
+                  color="gray.500"
+                  mt={-0.5}
+                  display={{ base: 'block', md: 'none' }}
+                >
+                  <Flex align="center" gap={1}>
+                    {item.author.length > 17 ? `${item.author.slice(0, 17)}…` : item.author} &nbsp;&nbsp;
+                    {timeDeltaFromNow(item.created_at)} ago &nbsp;&nbsp;
+                    <FiClock/> {item.reading_time}m
+                    <Spacer/>
+                    <Box minW="80px">
+                      <Button
+                        aria-label={`Go to ${item.link}`}
+                        size="xs"
+                        colorScheme="red"
+                        color="white"
+                        _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          window.open(item.link, '_blank');
+                        }}
+                        loading={isDeleting === item.external_id}
+                      >
+                        <FiGlobe/>
+                      </Button>
+                      <Button
+                        aria-label={`Delete ${item.title}`}
+                        size="xs"
+                        colorScheme="red"
+                        color="white"
+                        _hover={{ bg: 'gray.700', color: 'red' }}
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDelete(data?.external_id, item.external_id);
+                        }}
+                        loading={isDeleting === item.external_id}
+                      >
+                        <FiTrash/>
+                      </Button>
+                    </Box>
+                  </Flex>
+                </Box>
               </Table.Cell>
               <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "15%" }}>
                 <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
@@ -275,7 +337,7 @@ export default function FeedPage() {
                 </Link>
               </Table.Cell>
 
-            <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "5%" }}>
+              <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "5%" }}>
                 <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
                   color="gray.400"
                   _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
@@ -283,7 +345,7 @@ export default function FeedPage() {
                 </Link>
               </Table.Cell>
 
-              <Table.Cell borderLeft="none" borderRight="none" width={{ base: "20%", md: "10%" }}>
+              <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "10%" }}>
                 <Box minW="80px">
                   <Button
                     aria-label={`Go to ${item.link}`}

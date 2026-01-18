@@ -11,7 +11,11 @@ from src.domain.handlers.operations import (
     title_contains,
     title_does_not_contain,
 )
-from src.domain.models.feed import FeedItemRequest, GetFeedItemContentRequest
+from src.domain.models.feed import (
+    FeedItemRequest,
+    GetFeedItemContentRequest,
+    GetFeedItemImageUrlRequest,
+)
 from src.domain.models.filter import Operation
 from src.domain.models.job import Job
 from src.domain.models.picker import Picker
@@ -161,9 +165,15 @@ class JobService:
                     title=entry.title
                 ):
                     content = None
+                    image_url = None
                     if settings.WALLABAG_ENABLED:
                         content = self.extractor_service.extract_feed_item_content(
                             GetFeedItemContentRequest(
+                                url=entry.link
+                            )
+                        )
+                        image_url = self.extractor_service.extract_feed_item_image(
+                            GetFeedItemImageUrlRequest(
                                 url=entry.link
                             )
                         )
@@ -180,6 +190,7 @@ class JobService:
                         feed_id=picker.feed_id,
                         author=source_name,
                         content=content,
-                        reading_time=reading_time
+                        reading_time=reading_time,
+                        image_url=image_url
                     )
                     self.feed_service.create_feed_item(feed_item_request)

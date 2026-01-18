@@ -19,6 +19,7 @@ export interface FeedItem {
     created_at: string
     content?: string
     reading_time?: string
+    image_url?: string
 }
 
 export interface Feed {

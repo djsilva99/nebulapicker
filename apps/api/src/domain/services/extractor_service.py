@@ -1,4 +1,9 @@
-from src.domain.models.feed import FeedItemContent, GetFeedItemContentRequest
+from src.domain.models.feed import (
+    FeedItemContent,
+    FeedItemImageUrl,
+    GetFeedItemContentRequest,
+    GetFeedItemImageUrlRequest,
+)
 from src.domain.ports.extractor_port import ExtractorPort
 
 
@@ -12,4 +17,12 @@ class ExtractorService:
     ) -> FeedItemContent | None:
         return self.extractor_port.get_feed_item_content(
             feed_item_content_request
+        )
+
+    def extract_feed_item_image(
+        self,
+        feed_item_image_request: GetFeedItemImageUrlRequest
+    ) -> FeedItemImageUrl | None:
+        return self.extractor_port.get_feed_item_image(
+            feed_item_image_request
         )

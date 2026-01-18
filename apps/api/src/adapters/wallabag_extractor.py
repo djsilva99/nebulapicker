@@ -1,7 +1,12 @@
 import requests
 from ftfy import fix_text
 from src.configs.settings import Settings
-from src.domain.models.feed import FeedItemContent, GetFeedItemContentRequest
+from src.domain.models.feed import (
+    FeedItemContent,
+    FeedItemImageUrl,
+    GetFeedItemContentRequest,
+    GetFeedItemImageUrlRequest,
+)
 from src.domain.ports.extractor_port import ExtractorPort
 
 settings: Settings = Settings()
@@ -22,39 +27,7 @@ class WallabagExtractor(ExtractorPort):
     ) -> FeedItemContent | None:
 
         try:
-            token_url = f"{self.base_url}/oauth/v2/token"
-
-            # Get token
-            payload = {
-                "grant_type": "password",
-                "client_id": self.client_id,
-                "client_secret": self.client_secret,
-                "username": self.username,
-                "password": self.password
-            }
-
-            response = requests.post(token_url, data=payload, timeout=10)
-            response.raise_for_status()
-            token_data = response.json()
-            self.access_token = token_data.get("access_token")
-
-            # Create and get wallabag entry
-            entry_url = feed_item_content_request.url
-            headers = {
-                "Authorization": f"Bearer {self.access_token}",
-                "Accept": "application/json",
-                "Content-Type": "application/x-www-form-urlencoded"
-            }
-            payload = {
-                "url": entry_url,
-            }
-            response = requests.post(
-                f"{self.base_url}/api/entries",
-                headers=headers,
-                data=payload,
-                timeout=15,
-            )
-            entry_data = response.json()
+            entry_data = self._get_entry_data(feed_item_content_request.url)
             try:
                 title = fix_text(entry_data["title"])
             except Exception:
@@ -88,3 +61,49 @@ class WallabagExtractor(ExtractorPort):
             )
         except Exception:
             return None
+
+    def get_feed_item_image(
+        self,
+        get_feed_item_image_url_request: GetFeedItemImageUrlRequest
+    ) -> FeedItemImageUrl | None:
+        try:
+            entry_data = self._get_entry_data(get_feed_item_image_url_request.url)
+            return entry_data["preview_picture"]
+
+        except Exception:
+            return None
+
+    def _get_entry_data(self, url):
+        token_url = f"{self.base_url}/oauth/v2/token"
+
+        # Get token
+        payload = {
+            "grant_type": "password",
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "username": self.username,
+            "password": self.password
+        }
+
+        response = requests.post(token_url, data=payload, timeout=10)
+        response.raise_for_status()
+        token_data = response.json()
+        self.access_token = token_data.get("access_token")
+
+        # Create and get wallabag entry
+        entry_url = url
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+        payload = {
+            "url": entry_url,
+        }
+        response = requests.post(
+            f"{self.base_url}/api/entries",
+            headers=headers,
+            data=payload,
+            timeout=15,
+        )
+        return response.json()

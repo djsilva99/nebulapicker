@@ -1,6 +1,11 @@
 from abc import ABC, abstractmethod
 
-from src.domain.models.feed import FeedItemContent, GetFeedItemContentRequest
+from src.domain.models.feed import (
+    FeedItemContent,
+    FeedItemImageUrl,
+    GetFeedItemContentRequest,
+    GetFeedItemImageUrlRequest,
+)
 
 
 class ExtractorPort(ABC):
@@ -10,4 +15,11 @@ class ExtractorPort(ABC):
         self,
         get_feed_item_content_request: GetFeedItemContentRequest
     ) -> FeedItemContent | None:
+        pass
+
+    @abstractmethod
+    def get_feed_item_image(
+        self,
+        get_feed_item_image_url_request: GetFeedItemImageUrlRequest
+    ) -> FeedItemImageUrl | None:
         pass
