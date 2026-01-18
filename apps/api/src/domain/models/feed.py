@@ -39,6 +39,7 @@ class FeedItem(BaseModel):
     author: str = ""
     content: str | None = None
     reading_time: int | None = None
+    image_url: str | None = None
 
 
 class FeedItemRequest(BaseModel):
@@ -50,6 +51,7 @@ class FeedItemRequest(BaseModel):
     created_at: datetime | None = None
     content: str = ""
     reading_time: int | None = None
+    image_url: str | None = None
 
 
 class FeedItemContent(BaseModel):
@@ -58,5 +60,13 @@ class FeedItemContent(BaseModel):
     reading_time: int | None = None
 
 
+class FeedItemImageUrl(BaseModel):
+    url: str
+
+
 class GetFeedItemContentRequest(BaseModel):
+    url: str
+
+
+class GetFeedItemImageUrlRequest(BaseModel):
     url: str

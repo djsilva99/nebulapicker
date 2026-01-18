@@ -50,6 +50,7 @@ class ExternalFeedItem(BaseModel):
     author: str
     reading_time: int
     created_at: datetime
+    image_url: str | None
 
 
 class CreateFeedItemResponse(BaseModel):
@@ -136,7 +137,8 @@ def map_feed_item_to_external_feed_item(
         title=feed_item.title,
         author=feed_item.author,
         created_at=feed_item.created_at,
-        reading_time=feed_item.reading_time
+        reading_time=feed_item.reading_time,
+        image_url=feed_item.image_url
     )
 
 
