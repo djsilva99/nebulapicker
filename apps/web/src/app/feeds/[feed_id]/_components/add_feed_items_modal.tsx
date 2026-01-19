@@ -1,10 +1,8 @@
 "use client";
 
-import { format } from "date-fns";
 import {
   Button,
-  Input,
-  Box
+  Input
 } from "@chakra-ui/react";
 import {
   FormControl,
@@ -21,19 +19,19 @@ import {
 } from "@chakra-ui/modal";
 import { useState } from "react";
 import axios from "axios";
+import Cookies from "js-cookie";
 
-import { Text } from "@chakra-ui/react";
-import Calendar from 'react-calendar';
 import React from 'react';
 
 type CalendarValue = Date | [Date | null, Date | null] | null;
 
 interface NewFeedItem {
+  link: string;
   title: string;
   description: string;
-  link: string;
 	content: string;
   created_at?: string;
+  image_url?: string;
 }
 
 interface AddFeedModalProps {
@@ -49,59 +47,18 @@ interface DatePickerProps {
   setFormData: React.Dispatch<React.SetStateAction<NewFeedItem>>;
 }
 
-const DatePickerWithCalendar: React.FC<DatePickerProps> = ({ formData, setFormData }) => {
-  const dateValue: Date | null = formData.created_at
-    ? new Date(formData.created_at)
-    : null;
-
-  const handleDateChange = (value: CalendarValue, event: React.MouseEvent<HTMLButtonElement, MouseEvent> | undefined) => {
-    const selectedValue = value as Date | Date[] | null;
-
-    const date: Date | null = Array.isArray(selectedValue)
-      ? selectedValue[0]
-      : (selectedValue as Date | null);
-
-    setFormData((prevData: NewFeedItem) => ({
-      ...prevData,
-      created_at: date ? date.toISOString() : "",
-    }));
-  };
-
-  return (
-    <div className="custom-calendar-container">
-      <Box
-        bg="gray.700"
-        borderColor="white"
-        borderWidth="1px"
-        borderRadius="md"
-        p="10px"
-      >
-        <Calendar
-          onChange={handleDateChange}
-          value={dateValue}
-          view="month"
-          selectRange={false}
-          showNavigation={true}
-          maxDetail="month"
-          prevLabel={
-            <Button ml="10px" mr="10px" bg="gray.700">&lt;</Button>
-          }
-          nextLabel={
-            <Button ml="10px" mr="10px" bg="gray.700">&gt;</Button>
-          }
-          prev2Label={<Button bg="gray.700">&laquo;</Button>}
-          next2Label={<Button bg="gray.700">&raquo;</Button>}
-        />
-      </Box>
-    </div>
-  );
-};
-
 export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
   { externalFeedId, isOpen, onClose, onFeedAdded, isCentered }
 ) => {
+  var title_label: string
+  const useWallabagExtractor = process.env.NEXT_PUBLIC_USE_WALLABAG_EXTRACTOR === "true";
+  if (useWallabagExtractor){
+    title_label = "Title"
+  } else {
+    title_label = "Title*"
+  }
   const [formData, setFormData] = useState<NewFeedItem>(
-    { title: "", description: "", link: "", content: "" }
+    { title: "", description: "", link: "", content: "", image_url: "" }
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
@@ -112,18 +69,6 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-
-    if (!formData.title) {
-      toast({
-        title: "Validation Error.",
-        description: "Title is required.",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-      });
-      setIsSubmitting(false);
-      return;
-    }
 
     if (!formData.link) {
       toast({
@@ -137,20 +82,13 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
       return;
     }
 
-    if (!formData.description) {
-      toast({
-        title: "Validation Error.",
-        description: "Description is required.",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
-      await axios.post(`/api/v1/feeds/${externalFeedId}/feed_items`, formData);
+      const token = Cookies.get("token");
+      await axios.post(`/api/v1/feeds/${externalFeedId}/feed_items`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
       toast({
         title: "Feed Item Added.",
         description: `${formData.title} was successfully created.`,
@@ -183,9 +121,9 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
       />
       <ModalContent
         top="100px"
-        left="35%"
-        width="30%"
-        maxW="1800px"
+        width={{ base: "90%", md: "40%" }}
+        maxW="3000px"
+        mx="auto"
         bg="#161519"
         border="1px solid"
         borderColor="white"
@@ -203,8 +141,8 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
         />
 
         <ModalBody p={30}>
-          <FormControl isRequired mb={4}>
-            <FormLabel color="white">Link</FormLabel>
+          <FormControl mb={4}>
+            <FormLabel color="white">Link*</FormLabel>
             <Input
               name="link"
               placeholder="Url"
@@ -214,7 +152,7 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
               color="white"
               _placeholder={{ color: "gray.400" }}
             />
-            <FormLabel color="white" mt={10}>Title</FormLabel>
+            <FormLabel color="white" mt={10}>{title_label}</FormLabel>
             <Input
               name="title"
               placeholder="Title"
@@ -244,15 +182,16 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
               color="white"
               _placeholder={{ color: "gray.400" }}
             />
-            <FormLabel color="white" mt={10}>Timestamp</FormLabel>
-            <Box position="relative" color="white">
-              <DatePickerWithCalendar formData={formData} setFormData={setFormData}/>
-            </Box>
-            {formData.created_at && (
-              <Text color="gray.400" fontSize="sm" mt={2}>
-                {format(new Date(formData.created_at), "PPPp")}
-              </Text>
-            )}
+            <FormLabel color="white" mt={10}>Image URL</FormLabel>
+            <Input
+              name="image_url"
+              placeholder="Image URL"
+              value={formData.image_url}
+              onChange={handleChange}
+              bg="gray.700"
+              color="white"
+              _placeholder={{ color: "gray.400" }}
+            />
           </FormControl>
         </ModalBody>
 

@@ -130,13 +130,34 @@ export default function FeedItemPage() {
                 font-weight: normal !important;
             }
 
+            .article-container h1 {
+                font-size: 1.3rem !important;
+                margin-bottom: 0.3em !important;
+                font-weight: bold !important;
+                color: #5e4066 !important;
+            }
+
+            .article-container h2 {
+                font-size: 1.3rem !important;
+                margin-bottom: 0.3em !important;
+                font-weight: bold !important;
+                color: #5e4066 !important;
+            }
+
+            .article-container h3 {
+                font-size: 1.3rem !important;
+                margin-bottom: 0.3em !important;
+                font-weight: bold !important;
+                color: #7DCDE8 !important;
+            }
+
             .article-container div {
                 margin-bottom: 1em !important;
                 font-weight: 0.5em !important;
             }
 
             .h1 {
-                font-size: 1.5rem !important;
+                font-size: 1.8rem !important;
                 font-weight: bold !important;
                 margin-bottom: 0.6em !important;
                 line-height: 1.3 !important;
