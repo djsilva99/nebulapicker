@@ -32,6 +32,10 @@ class WallabagExtractor(ExtractorPort):
                 title = fix_text(entry_data["title"])
             except Exception:
                 title = entry_data["title"]
+            if entry_data["preview_picture"]:
+                image_url = entry_data["preview_picture"]
+            else:
+                image_url = None
             if len(entry_data["content"]) < MINIMUM_CONTENT_LEN:
                 content = "<p> Nebulapicker was not able to parse the content. </p>"
                 reading_time = 0
@@ -57,7 +61,8 @@ class WallabagExtractor(ExtractorPort):
             return FeedItemContent(
                 title=title,
                 content=content,
-                reading_time=reading_time
+                reading_time=reading_time,
+                image_url=image_url
             )
         except Exception:
             return None

@@ -44,19 +44,20 @@ class FeedItem(BaseModel):
 
 class FeedItemRequest(BaseModel):
     link: str
-    title: str
-    description: str
     feed_id: int
     author: str = ""
     created_at: datetime | None = None
+    title: str = ""
+    description: str = ""
     content: str = ""
-    reading_time: int | None = None
+    reading_time: int = 0
     image_url: str | None = None
 
 
 class FeedItemContent(BaseModel):
     title: str
     content: str | None = None
+    image_url: str | None = None
     reading_time: int | None = None
 
 

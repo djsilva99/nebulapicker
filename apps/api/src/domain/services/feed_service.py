@@ -8,15 +8,20 @@ from bs4 import BeautifulSoup
 from ebooklib import epub
 from feedgenerator import Rss201rev2Feed
 from src.adapters.entrypoints.v1.models.feeds import ExportFileType
+from src.configs.settings import Settings
 from src.domain.models.feed import (
     DetailedFeed,
     Feed,
     FeedItem,
     FeedItemRequest,
     FeedRequest,
+    GetFeedItemContentRequest,
     UpdateFeedRequest,
 )
 from src.domain.ports.feeds_port import FeedsPort
+from src.domain.services.extractor_service import ExtractorService
+
+settings: Settings = Settings()
 
 MAX_NUMBER_OF_ITEMS = 250
 MAX_NUMBER_OF_ITEMS_IN_RSS = 50
@@ -24,8 +29,9 @@ HOURS_TO_COMPARE = 24
 
 
 class FeedService:
-    def __init__(self, feeds_port: FeedsPort):
+    def __init__(self, feeds_port: FeedsPort, extractor_service: ExtractorService):
         self.feeds_port = feeds_port
+        self.extractor_service = extractor_service
 
     def create_feed(self, feed_request: FeedRequest) -> Feed:
         return self.feeds_port.create_feed(feed_request)
@@ -103,7 +109,24 @@ class FeedService:
             return feeds_to_return
         return feed_items
 
-    def create_feed_item(self, feed_item_request: FeedItemRequest):
+    def create_feed_item(self, feed_item_request: FeedItemRequest) -> FeedItem | None:
+        if settings.WALLABAG_ENABLED:
+            try:
+                feed_item_data = self.extractor_service.extract_feed_item_content(
+                    GetFeedItemContentRequest(
+                        url=feed_item_request.link
+                    )
+                )
+                feed_item_request.reading_time = feed_item_data.reading_time
+                if feed_item_request.title == "":
+                    feed_item_request.title = feed_item_data.title
+                if feed_item_request.content == "":
+                    feed_item_request.content = feed_item_data.content
+                if feed_item_request.image_url == "":
+                    feed_item_request.image_url = feed_item_data.image_url
+                return self.feeds_port.create_feed_item(feed_item_request)
+            except Exception:
+                return None
         return self.feeds_port.create_feed_item(feed_item_request)
 
     def delete_feed_item(self, feed_item_id: int) -> bool:
