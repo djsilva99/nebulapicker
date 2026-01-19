@@ -2,9 +2,12 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from src.adapters.entrypoints.v1.models.picker import FullFeedPickerResponse
+from src.configs.settings import Settings
 from src.domain.models.feed import DetailedFeed, Feed, FeedItem, FeedRequest
+
+settings: Settings = Settings()
 
 
 class ExportFileType(str, Enum):
@@ -84,7 +87,14 @@ class CreateFeedItemRequest(BaseModel):
     title: str
     description: str
     content: str
+    image_url: str
     created_at: datetime | None = None
+
+    @field_validator("title")
+    def title_must_not_be_empty_in_test(cls, v: str):  # noqa: N805
+        if not settings.WALLABAG_ENABLED and len(v.strip()) == 0:
+            raise ValueError("title must not be empty")
+        return v
 
 
 class ExportFeedItemsRequest(BaseModel):

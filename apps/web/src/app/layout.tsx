@@ -140,7 +140,7 @@ const ChakraRootLayoutContent = ({ children }: { children: React.ReactNode }) =>
 
       {/* MAIN WINDOW */}
       <Box
-        p={6}
+        p={{ base: 3, md: 6 }}
         w="full"
         pt={{ base: MOBILE_HEADER_HEIGHT, md: 8 }}
       >
@@ -167,7 +167,7 @@ export default function RootLayout(
       </Head>
       <body
         style={
-          { backgroundColor: 'black', color: 'white', minHeight: '100vh' }
+          { backgroundColor: 'black', color: 'white', minHeight: '100vh', margin: 0, padding: 0 }
         }
       >
         <ChakraProvider value={defaultSystem}>

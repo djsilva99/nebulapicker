@@ -159,7 +159,7 @@ export default function FeedPage() {
         mb={6}
       >
         <Heading as="h1" size="lg">
-          {data?.name} ({data?.feed_items?.length})
+          {data?.name} 
         </Heading>
         <Box mr="0px">
           <Box>
@@ -173,7 +173,6 @@ export default function FeedPage() {
               color="white"
               _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
               mr="2"
-              display="none"
             >
               <FiPlus />
             </Button>

@@ -3,12 +3,14 @@ from src.adapters.repositories.feeds_repository import FeedsRepository
 from src.adapters.repositories.filters_repository import FiltersRepository
 from src.adapters.repositories.pickers_repository import PickersRepository
 from src.adapters.repositories.sources_repository import SourcesRepository
+from src.adapters.wallabag_extractor import WallabagExtractor
 from src.configs.dependencies.repositories import (
     get_feeds_repository,
     get_filters_repository,
     get_pickers_repository,
     get_sources_repository,
 )
+from src.domain.services.extractor_service import ExtractorService
 from src.domain.services.feed_service import FeedService
 from src.domain.services.filter_service import FilterService
 from src.domain.services.job_service import JobService
@@ -22,10 +24,21 @@ def get_source_service(
     return SourceService(source_port=repository)
 
 
+def get_wallabag_extractor() -> WallabagExtractor: # noqa: B008
+    return WallabagExtractor()
+
+
+def get_extractor_service(
+    extractor: WallabagExtractor = Depends(get_wallabag_extractor) # noqa: B008
+) -> ExtractorService:
+    return ExtractorService(extractor_port=extractor)
+
+
 def get_feed_service(
-    repository: FeedsRepository = Depends(get_feeds_repository)  # noqa: B008
+    repository: FeedsRepository = Depends(get_feeds_repository), # noqa: B008
+    extractor_service: ExtractorService = Depends(get_extractor_service) # noqa: B008
 ) -> FeedService:
-    return FeedService(feeds_port=repository)
+    return FeedService(feeds_port=repository, extractor_service=extractor_service)
 
 
 def get_filter_service(

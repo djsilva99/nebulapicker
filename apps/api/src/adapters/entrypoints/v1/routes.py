@@ -531,7 +531,8 @@ def create_feed_item(
             author=ADDED,
             content=create_feed_item_request.content,
             created_at=created_at,
-            reading_time=0
+            reading_time=0,
+            image_url=create_feed_item_request.image_url
         )
     )
     return map_feed_item_to_create_feed_item_response(feed_item)
