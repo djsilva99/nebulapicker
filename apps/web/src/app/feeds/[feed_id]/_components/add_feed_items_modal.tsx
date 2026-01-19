@@ -50,7 +50,7 @@ interface DatePickerProps {
 export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
   { externalFeedId, isOpen, onClose, onFeedAdded, isCentered }
 ) => {
-  var title_label: string
+  let title_label: string
   const useWallabagExtractor = process.env.NEXT_PUBLIC_USE_WALLABAG_EXTRACTOR === "true";
   if (useWallabagExtractor){
     title_label = "Title"
