@@ -7,6 +7,7 @@ import {
   Button,
   Flex,
   useDisclosure,
+  Pagination
 } from "@chakra-ui/react";
 import { useToast } from "@chakra-ui/toast";
 import { useState, useEffect } from "react";
@@ -42,41 +43,40 @@ function timeDeltaFromNow(dateString: string): string {
   return `${seconds}s`;
 }
 
-
 export default function Feeds() {
   const [data, setData] = useState<Feed[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const { open: isAddModalOpen, onOpen: onAddModalOpen, onClose: onAddModalClose } = useDisclosure();
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(1);
   const toast = useToast();
 
-  const [selectedFeedId, setSelectedFeedId] = useState<string | null>(null);
-
-const fetchData = async () => {
-  setIsLoading(true);
-  try {
-    const token = Cookies.get("token");
-    const res = await axios.get("/api/v1/feeds", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    setData(res.data.feeds);
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error)) {
-      if (error.response?.status === 401) {
-        Cookies.remove("token");
-        window.location.href = "/login";
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const token = Cookies.get("token");
+      const res = await axios.get("/api/v1/feeds", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setData(res.data.feeds);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Cookies.remove("token");
+          window.location.href = "/login";
+        } else {
+          console.error("Axios error:", error.message);
+        }
       } else {
-        console.error("Axios error:", error.message);
+        console.error("Unexpected error:", error);
       }
-    } else {
-      console.error("Unexpected error:", error);
+    } finally {
+      setIsLoading(false);
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     fetchData();
@@ -122,14 +122,23 @@ const fetchData = async () => {
 
   if (isLoading) {
     return (
-      <Box p={6}>
+      <Box ml={3} mt={{base:"-6", md:"3"}}>
         <p>Loading feeds...</p>
       </Box>
     );
   }
 
+  const sortedFeedItems = data
+  ?.slice()
+  .sort((a, b) => a.name.localeCompare(b.name)) ?? [];
+  const totalItems = sortedFeedItems.length;
+  const paginatedItems = sortedFeedItems.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
+
   return (
-    <Box p={0}>
+    <Box p={2} mt={{base:"-9", md:"5"}}>
 
       {/* HEADER AND CREATE FEED BUTTON */}
       <Flex
@@ -137,7 +146,7 @@ const fetchData = async () => {
         alignItems="center"
         mb={6}
       >
-        <Heading as="h1" size="xl">
+        <Heading as="h1" size="xl" color='#b893c1'>
           Feeds
         </Heading>
 
@@ -154,6 +163,19 @@ const fetchData = async () => {
         </Button>
       </Flex>
 
+      <Flex
+        justify="center"
+        align="center"
+        mt={0}
+        px={2}
+        mb={4}
+        fontSize="sm"
+        color="gray.500"
+      >
+        Showing {(page - 1) * PAGE_SIZE + 1}–
+        {Math.min(page * PAGE_SIZE, totalItems)} of {totalItems}
+      </Flex>
+
       {/* TABLE */}
       <Table.Root size="sm" variant="outline">
         <Table.Header>
@@ -166,7 +188,7 @@ const fetchData = async () => {
         </Table.Header>
 
         <Table.Body>
-          {data.map((item: Feed) => (
+          {paginatedItems.map((item: Feed) => (
             <Table.Row key={item.external_id} cursor="pointer" _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
               <Table.Cell width={{ base: "50%", md: "60%" }}>
                 <Link href={`/feeds/${item.external_id}`} passHref legacyBehavior>
@@ -263,6 +285,50 @@ const fetchData = async () => {
           ))}
         </Table.Body>
       </Table.Root>
+
+      <Flex
+        justify="center"
+        align="center"
+        mt={4}
+        px={2}
+        mb={4}
+        fontSize="sm"
+        color="gray.500"
+      >
+        Showing {(page - 1) * PAGE_SIZE + 1}–
+        {Math.min(page * PAGE_SIZE, totalItems)} of {totalItems}
+      </Flex>
+
+      <Flex justify="center" align="center" mt={4} mb={4}>
+        <Pagination.Root
+          count={totalItems}
+          pageSize={PAGE_SIZE}
+          page={page}
+          onPageChange={(details) => setPage(details.page)}
+        >
+          <Pagination.Items
+            render={(item) => (
+              <Pagination.Item
+                key={item.value}
+                value={item.value}
+                type={item.type}
+                asChild
+              >
+                <Button
+                  size="xs"
+                  color={item.type === "page" && item.value === page ? "white" : "white"}
+                  bg={item.type === "page" && item.value === page ? "#6b4078" : "transparent"}
+                  variant="outline"
+                  m={1}
+                  _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
+                >
+                  {item.type === "page" ? item.value : "…"}
+                </Button>
+              </Pagination.Item>
+            )}
+          />
+        </Pagination.Root>
+      </Flex>
 
       <AddFeedModal
         isOpen={isAddModalOpen}
