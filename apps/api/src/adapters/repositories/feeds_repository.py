@@ -18,7 +18,7 @@ class FeedsRepository(FeedsPort):
         sql = text(
             "INSERT INTO feeds (name) "
             "VALUES (:name) "
-            "RETURNING id, name, external_id, created_at"
+            "RETURNING id, name, external_id, created_at, updated_at"
         )
         result = self.db.execute(
             sql,
@@ -33,6 +33,7 @@ class FeedsRepository(FeedsPort):
             name=data["name"],
             external_id=data["external_id"],
             created_at=data["created_at"],
+            updated_at=data["updated_at"]
         )
 
 
@@ -51,7 +52,7 @@ class FeedsRepository(FeedsPort):
             UPDATE feeds
             SET {set_clauses}
             WHERE id = :id
-            RETURNING id, external_id, name, created_at
+            RETURNING id, external_id, name, created_at, updated_at
         """)
         values["id"] = feed_id
         result = self.db.execute(sql, values).mappings().first()
@@ -65,6 +66,7 @@ class FeedsRepository(FeedsPort):
             external_id=result["external_id"],
             name=result["name"],
             created_at=result["created_at"],
+            updated_at=result["updated_at"]
         )
 
     def delete_feed(self, feed_id: int) -> bool:
@@ -74,7 +76,7 @@ class FeedsRepository(FeedsPort):
         return result is not None
 
     def get_all_feeds(self) -> list[Feed]:
-        sql = text("SELECT id, external_id, name, created_at FROM feeds")
+        sql = text("SELECT id, external_id, name, created_at, updated_at FROM feeds")
         result = self.db.execute(sql)
 
         return [
@@ -83,7 +85,7 @@ class FeedsRepository(FeedsPort):
 
     def get_feed_by_external_id(self, external_id: UUID) -> Feed | None:
         sql = text(
-            "SELECT id, name, external_id, created_at "
+            "SELECT id, name, external_id, created_at, updated_at "
             "FROM feeds WHERE external_id = :external_id;"
         )
         result = self.db.execute(sql, {"external_id": external_id}).mappings().first()
@@ -94,7 +96,7 @@ class FeedsRepository(FeedsPort):
 
     def get_feed_by_id(self, id: int) -> Feed | None:
         sql = text(
-            "SELECT id, name, external_id, created_at "
+            "SELECT id, name, external_id, created_at, updated_at "
             "FROM feeds WHERE id = :id;"
         )
         result = self.db.execute(sql, {"id": id}).mappings().first()
@@ -108,8 +110,7 @@ class FeedsRepository(FeedsPort):
             "SELECT id, feed_id, external_id, link, title, description, author, created_at, "
             "content, reading_time, image_url "
             "FROM feed_items WHERE feed_id = :feed_id "
-            "ORDER BY created_at DESC "
-            "LIMIT 200;"
+            "ORDER BY created_at DESC;"
         )
         result = self.db.execute(
             sql,
@@ -124,8 +125,7 @@ class FeedsRepository(FeedsPort):
             "content, reading_time, image_url "
             "FROM feed_items "
             "WHERE feed_id = :feed_id  AND is_active = TRUE "
-            "ORDER BY created_at DESC "
-            "LIMIT 200;"
+            "ORDER BY created_at DESC;"
         )
         result = self.db.execute(
             sql,
@@ -202,7 +202,7 @@ class FeedsRepository(FeedsPort):
         sql = text("""
             SELECT COUNT(*)
             FROM feed_items
-            WHERE feed_id = :feed_id
+            WHERE feed_id = :feed_id AND is_active = true;
         """)
 
         result = self.db.execute(sql, {"feed_id": feed_id}).scalar()
@@ -216,5 +216,16 @@ class FeedsRepository(FeedsPort):
             "RETURNING id"
         )
         result = self.db.execute(sql, {"id": feed_item_id}).first()
+        self.db.commit()
+        return result is not None
+
+    def set_updated_at(self, feed_id: int) -> datetime:
+        sql = text(
+            "UPDATE feeds "
+            "SET updated_at = CURRENT_TIMESTAMP "
+            "WHERE id = :id "
+            "RETURNING updated_at"
+        )
+        result = self.db.execute(sql, {"id": feed_id}).first()
         self.db.commit()
         return result is not None

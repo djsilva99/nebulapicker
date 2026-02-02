@@ -34,6 +34,7 @@ def mock_services():
         "source_service": MagicMock(),
         "feed_service": MagicMock(),
         "extractor_service": MagicMock(),
+        "feeds_port": MagicMock(),
     }
 
 
@@ -45,6 +46,7 @@ def setup_job_service(mock_services):
     source_service = mock_services["source_service"]
     feed_service = mock_services["feed_service"]
     extractor_service = mock_services["extractor_service"]
+    feeds_repository = mock_services["feeds_port"]
 
     app.state.job_service = JobService(
         scheduler=scheduler,
@@ -52,7 +54,8 @@ def setup_job_service(mock_services):
         filter_service=filter_service,
         source_service=source_service,
         feed_service=feed_service,
-        extractor_service=extractor_service
+        extractor_service=extractor_service,
+        feeds_port=feeds_repository
     )
     return
 

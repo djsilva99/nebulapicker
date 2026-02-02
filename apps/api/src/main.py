@@ -65,7 +65,8 @@ def startup():
         picker_service=picker_service,
         filter_service=filter_service,
         scheduler=scheduler_adapter,
-        extractor_service=extractor_service
+        extractor_service=extractor_service,
+        feeds_port=feed_repository
     )
     app.state.job_service = job_service
     scheduler_adapter.start()

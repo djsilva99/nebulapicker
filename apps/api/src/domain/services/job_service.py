@@ -19,6 +19,7 @@ from src.domain.models.feed import (
 from src.domain.models.filter import Operation
 from src.domain.models.job import Job
 from src.domain.models.picker import Picker
+from src.domain.ports.feeds_port import FeedsPort
 from src.domain.ports.scheduler_port import SchedulerPort
 from src.domain.services.extractor_service import ExtractorService
 from src.domain.services.feed_service import FeedService
@@ -37,7 +38,8 @@ class JobService:
         filter_service: FilterService,
         source_service: SourceService,
         feed_service: FeedService,
-        extractor_service: ExtractorService
+        extractor_service: ExtractorService,
+        feeds_port: FeedsPort
     ):
         self.scheduler = scheduler
         self.picker_service = picker_service
@@ -45,6 +47,7 @@ class JobService:
         self.source_service = source_service
         self.feed_service = feed_service
         self.extractor_service = extractor_service
+        self.feeds_port = feeds_port
 
     def add_cronjob(self, picker: Picker):
         job = Job(
@@ -193,4 +196,6 @@ class JobService:
                         reading_time=reading_time,
                         image_url=image_url
                     )
-                    self.feed_service.create_feed_item(feed_item_request)
+                    feed_item = self.feed_service.create_feed_item(feed_item_request)
+                    self.feeds_port.set_updated_at(picker.feed_id)
+                    return feed_item

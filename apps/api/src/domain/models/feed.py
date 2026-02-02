@@ -17,6 +17,7 @@ class Feed(BaseModel):
     external_id: UUID
     name: str | None
     created_at: datetime
+    updated_at: datetime
 
 
 class DetailedFeed(BaseModel):

@@ -2,7 +2,7 @@ import datetime
 import secrets
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from src.adapters.entrypoints.v1.models.authentication import LoginRequest
@@ -450,6 +450,11 @@ def get_feed_rss(
 )
 def get_feed(
     external_id: UUID,
+    title: str | None = Query(None),
+    last_day: bool | None = Query(None),
+    rss_items: bool | None = Query(None),
+    feed_items_limit: int | None = Query(None, ge=1),
+    feed_items_offset: int | None= Query(None, ge=0),
     _: str = Depends(authenticate),  # noqa: B008
     feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
     filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
@@ -477,14 +482,32 @@ def get_feed(
             )
         )
 
-    feed_items = feed_service.get_feed_items(feed.id)
-    external_feed_items = [map_feed_item_to_external_feed_item(fi) for fi in feed_items]
+    query_title = title if title is not None else ""
+    feed_items = feed_service.get_feed_items(
+        feed.id,
+        query_title=query_title,
+        last_day=last_day,
+        rss_items=rss_items
+    )
+    total_feed_items_count = len(feed_items)
+    if not feed_items_offset:
+        feed_items_offset = 0
+    if not feed_items_limit:
+        feed_items_limit = total_feed_items_count
+    external_feed_items = [
+        map_feed_item_to_external_feed_item(fi) for fi in feed_items[
+            feed_items_offset:(feed_items_offset+feed_items_limit)
+        ]
+    ]
 
     return FullCompleteFeed(
         name=feed.name,
         external_id=feed.external_id,
         created_at=feed.created_at,
         pickers=picker_items,
+        feed_items_total_count=total_feed_items_count,
+        feed_items_offset=feed_items_offset,
+        feed_items_limit=feed_items_limit,
         feed_items=external_feed_items,
     )
 

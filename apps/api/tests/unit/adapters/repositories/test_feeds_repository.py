@@ -41,7 +41,8 @@ def db_session(setup_test_db):
                 id SERIAL PRIMARY KEY,
                 name TEXT NOT NULL,
                 external_id UUID NOT NULL DEFAULT gen_random_uuid(),
-                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE feed_items (
                 id SERIAL PRIMARY KEY,
