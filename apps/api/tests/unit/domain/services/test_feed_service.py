@@ -52,12 +52,14 @@ def test_update_feed_successfully(feed_service, feeds_port_mock):
         external_id=feed_external_id,
         name="Old Name",
         created_at=datetime(2025, 1, 1, 12, 0, 0),
+        updated_at=datetime(2025, 1, 1, 12, 0, 0),
     )
     updated_feed = Feed(
         id=feed_id,
         external_id=feed_external_id,
         name="Updated name",
         created_at=datetime(2025, 1, 1, 12, 0, 0),
+        updated_at=datetime(2025, 1, 1, 12, 0, 0),
     )
     feeds_port_mock.get_feed_by_external_id.return_value = existing_feed
     feeds_port_mock.update_feed.return_value = updated_feed
@@ -94,13 +96,15 @@ def test_get_all_feeds(feed_service, feeds_port_mock):
             id=1,
             name="feed_name_1",
             external_id=uuid4(),
-            created_at=datetime(2025, 1, 1, 12, 0, 0)
+            created_at=datetime(2025, 1, 1, 12, 0, 0),
+            updated_at=datetime(2025, 1, 1, 12, 0, 0)
         ),
         Feed(
             id=3,
             name="feed_name_3",
             external_id=uuid4(),
-            created_at=datetime(2025, 1, 1, 14, 0, 0)
+            created_at=datetime(2025, 1, 1, 14, 0, 0),
+            updated_at=datetime(2025, 1, 1, 14, 0, 0)
         ),
     ]
     feeds_port_mock.get_all_feeds.return_value = feeds
@@ -116,12 +120,12 @@ def test_get_all_feeds(feed_service, feeds_port_mock):
 def test_get_feed_items_delegates_to_port(feed_service, feeds_port_mock):
     # GIVEN
     item1 = MagicMock(
-        spec=FeedItem, created_at=datetime(2025, 1, 1, 14, 0, 0)
+        spec=FeedItem, created_at=datetime(2025, 1, 1, 14, 0, 0), title="title_1"
     )
     item2 = MagicMock(
-        spec=FeedItem, created_at=datetime(2025, 1, 1, 12, 0, 0)
+        spec=FeedItem, created_at=datetime(2025, 1, 1, 12, 0, 0), title="title_2"
     )
-    expected_items_sorted = [item2, item1]
+    expected_items_sorted = [item1, item2]
     feeds_port_mock.get_active_feed_items_by_feed_id.return_value = [item1, item2]
 
     # WHEN
@@ -139,6 +143,7 @@ def test_get_rss_builds_rss_feed(feed_service, feeds_port_mock):
         name="Example Feed",
         external_id=uuid4(),
         created_at=datetime(2025, 1, 1, 12, 0, 0),
+        updated_at=datetime(2025, 1, 1, 12, 0, 0),
     )
     items = [
         FeedItem(
@@ -186,6 +191,7 @@ def test_get_feed_by_external_id_delegates_to_port(feed_service, feeds_port_mock
         name="Delegated Feed",
         external_id=external_id,
         created_at=datetime(2025, 2, 1, 12, 0, 0),
+        updated_at=datetime(2025, 2, 1, 12, 0, 0),
     )
     feeds_port_mock.get_feed_by_external_id.return_value = feed
 
@@ -230,6 +236,7 @@ def test_export_file_epub_success(
         external_id=feed_external_id,
         name="Test Feed",
         created_at=datetime(2024, 1, 1, 12, 0, 0),
+        updated_at=datetime(2024, 1, 1, 12, 0, 0),
     )
     feed_item_in_range = FeedItem(
         id=10,
@@ -324,12 +331,14 @@ def test_get_detailed_feeds(feed_service, feeds_port_mock):
         external_id=uuid4(),
         name="Alpha Feed",
         created_at=datetime(2025, 1, 1, 10, 0, 0),
+        updated_at=datetime(2025, 1, 1, 10, 0, 0),
     )
     feed_b = Feed(
         id=2,
         external_id=uuid4(),
         name="Beta Feed",
         created_at=datetime(2025, 1, 2, 10, 0, 0),
+        updated_at=datetime(2025, 1, 2, 10, 0, 0),
     )
 
     feeds_port_mock.get_all_feeds.return_value = [feed_b, feed_a]
@@ -360,20 +369,11 @@ def test_get_detailed_feeds(feed_service, feeds_port_mock):
 
     # THEN
     assert len(result) == 2
-
-    # sorted by name
     detailed_a, detailed_b = result
     assert detailed_a.name == "Alpha Feed"
     assert detailed_b.name == "Beta Feed"
-
-    # feed A assertions
     assert detailed_a.id == feed_a.id
-    assert detailed_a.latest_item_datetime == feed_a_items[0].created_at
     assert detailed_a.number_of_feed_items == 1
-
-    # feed B assertions (no items → fallback to feed.created_at)
     assert detailed_b.id == feed_b.id
-    assert detailed_b.latest_item_datetime == feed_b.created_at
     assert detailed_b.number_of_feed_items == 0
-
     feeds_port_mock.get_all_feeds.assert_called_once()

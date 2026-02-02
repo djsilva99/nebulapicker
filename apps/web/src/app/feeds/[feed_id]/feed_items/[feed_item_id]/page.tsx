@@ -84,7 +84,7 @@ export default function FeedItemPage() {
 
   if (isLoading) {
     return (
-      <Box p={6}>
+      <Box ml={3} mt={{base:"-6", md:"3"}}>
         <p>Loading feed item...</p>
       </Box>
     );
@@ -92,7 +92,7 @@ export default function FeedItemPage() {
 
   return (
 
-    <Box p={1}>
+    <Box p={1} mt={{base:"-9", md:"5"}}>
       <Box maxW="600px" mx="auto">
         <Global
           styles={`
@@ -134,14 +134,14 @@ export default function FeedItemPage() {
                 font-size: 1.3rem !important;
                 margin-bottom: 0.3em !important;
                 font-weight: bold !important;
-                color: #5e4066 !important;
+                color: #7DCDE8 !important;
             }
 
             .article-container h2 {
                 font-size: 1.3rem !important;
                 margin-bottom: 0.3em !important;
                 font-weight: bold !important;
-                color: #5e4066 !important;
+                color: #7DCDE8 !important;
             }
 
             .article-container h3 {

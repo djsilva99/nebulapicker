@@ -24,7 +24,6 @@ import { useEffect, useState } from 'react';
 import { Feed, Picker } from '@/types/Feed';
 import { AddPickerModal } from '@/app/feeds/[feed_id]/edit/_components/add-picker-modal';
 
-
 export default function FeedPage() {
   const params = useParams();
   const feedId = params.feed_id as string;
@@ -122,7 +121,11 @@ export default function FeedPage() {
   };
 
   if (isLoading) {
-    return <Box p={6}><p>Loading feed settings...</p></Box>;
+    return (
+      <Box ml={3} mt={{base:"-6", md:"3"}}>
+        <p>Loading feed settings...</p>
+      </Box>
+    )
   }
 
   const handleDelete = async (externalId: string) => {
@@ -171,7 +174,7 @@ export default function FeedPage() {
   };
 
   return (
-    <Box p={0}>
+    <Box p={2} mt={{base:"-9", md:"5"}}>
       <Flex justifyContent="space-between" alignItems="flex-start" p={0}>
         <Box>
           <Heading as="h2" size="lg" mt={0} mb={4}>

@@ -79,6 +79,9 @@ class FullCompleteFeed(BaseModel):
     external_id: UUID
     created_at: datetime
     pickers: list[FullFeedPickerResponse]
+    feed_items_total_count: int
+    feed_items_offset: int
+    feed_items_limit: int
     feed_items: list[ExternalFeedItem]
 
 

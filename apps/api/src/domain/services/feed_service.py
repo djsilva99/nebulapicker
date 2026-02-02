@@ -59,9 +59,8 @@ class FeedService:
         feeds = self.feeds_port.get_all_feeds()
         detailed_feeds = []
         for feed in feeds:
-            feed_items = self.feeds_port.get_active_feed_items_by_feed_id(feed.id)
             number_of_feed_items = self.feeds_port.get_number_of_feed_items_by_feed_id(feed.id)
-            latest_item_datetime = max((i.created_at for i in feed_items), default=feed.created_at)
+            latest_item_datetime = feed.updated_at
             detailed_feeds.append(
                 DetailedFeed(
                     id=feed.id,
@@ -84,16 +83,33 @@ class FeedService:
         self,
         feed_id: int,
         title: str | None = None,
-        all_items: bool = False
+        all_items: bool = False,
+        query_title: str = "",
+        last_day: bool = False,
+        rss_items: bool = False
     ) -> list[FeedItem]:
         if all_items:
+            raw_feed_items = self.feeds_port.get_all_feed_items_by_feed_id(feed_id)
+            if rss_items:
+                raw_feed_items = raw_feed_items[0:MAX_NUMBER_OF_ITEMS_IN_RSS]
             feed_items = sorted(
-                self.feeds_port.get_all_feed_items_by_feed_id(feed_id),
+                (
+                    item
+                    for item in raw_feed_items
+                    if query_title.lower() in item.title.lower()
+                ),
                 key=lambda item: item.created_at
             )
         else:
+            raw_feed_items = self.feeds_port.get_active_feed_items_by_feed_id(feed_id)
+            if rss_items:
+                raw_feed_items = raw_feed_items[0:MAX_NUMBER_OF_ITEMS_IN_RSS]
             feed_items = sorted(
-                self.feeds_port.get_active_feed_items_by_feed_id(feed_id),
+                (
+                    item
+                    for item in raw_feed_items
+                    if query_title.lower() in item.title.lower()
+                ),
                 key=lambda item: item.created_at
             )
         if title:
@@ -107,6 +123,16 @@ class FeedService:
                 ):
                     feeds_to_return.append(feed_item)
             return feeds_to_return
+        if last_day:
+            now = datetime.datetime.now(datetime.UTC)
+            cutoff = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            if now.hour < 3:
+                cutoff -= datetime.timedelta(days=1)
+            feed_items = [
+                item for item in feed_items
+                if item.created_at.replace(tzinfo=datetime.UTC) > cutoff
+            ]
+        feed_items.reverse()
         return feed_items
 
     def create_feed_item(self, feed_item_request: FeedItemRequest) -> FeedItem | None:
@@ -124,7 +150,9 @@ class FeedService:
                     feed_item_request.content = feed_item_data.content
                 if feed_item_request.image_url == "":
                     feed_item_request.image_url = feed_item_data.image_url
-                return self.feeds_port.create_feed_item(feed_item_request)
+                feed_item = self.feeds_port.create_feed_item(feed_item_request)
+                self.feeds_port.set_updated_at(feed_item_request.feed_id)
+                return feed_item
             except Exception:
                 return None
         return self.feeds_port.create_feed_item(feed_item_request)

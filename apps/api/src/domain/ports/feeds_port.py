@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from uuid import UUID
 
 from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest, UpdateFeedRequest
@@ -63,4 +64,8 @@ class FeedsPort(ABC):
 
     @abstractmethod
     def set_feed_item_as_inactive(self, feed_item_id: int) -> bool:
+        pass
+
+    @abstractmethod
+    def set_updated_at(self, feed_id: int) -> datetime:
         pass
