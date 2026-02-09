@@ -12,7 +12,6 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
-
 from src.adapters.entrypoints.v1.models.welcome import WELCOME_MESSAGE
 from src.adapters.scheduler import Scheduler
 from src.configs.dependencies.repositories import get_db
