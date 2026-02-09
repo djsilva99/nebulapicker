@@ -39,6 +39,7 @@ from src.adapters.entrypoints.v1.models.source import (
     map_source_list_to_get_all_sources_response,
     map_source_to_create_source_response,
 )
+from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
 from src.configs.dependencies.services import (
     get_feed_service,
     get_filter_service,
@@ -75,6 +76,21 @@ def authenticate(token: str = Depends(oauth2_scheme)):
 
 
 router = APIRouter(prefix="/v1")
+
+
+@router.get(
+    "",
+    summary="Welcome nebulapicker",
+    description="Return Nebulapicker welcome message.",
+    response_model=WelcomeResponse,
+    responses={
+        200: {
+            "description": "welcome message",
+        }
+    }
+)
+def welcome() -> WelcomeResponse:
+    return WelcomeResponse()
 
 
 @router.post("/login")
