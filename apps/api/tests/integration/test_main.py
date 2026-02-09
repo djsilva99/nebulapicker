@@ -12,6 +12,8 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
+
+from src.adapters.entrypoints.v1.models.welcome import WELCOME_MESSAGE
 from src.adapters.scheduler import Scheduler
 from src.configs.dependencies.repositories import get_db
 from src.domain.services.job_service import JobService
@@ -118,7 +120,7 @@ def test_welcome(caplog):
 
     # THEN
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"message": "Welcome to NebulaPicker"}
+    assert response.json() == {"message": WELCOME_MESSAGE}
 
 
 def test_read_sources_empty(
