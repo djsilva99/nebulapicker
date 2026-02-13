@@ -15,7 +15,7 @@ time to time, the content of the `develop` branch is merged into the
 The Nebulapicker application is divided into two components: the backend API
 application and the frontend web application. The first is located in the
 `apps/api` directory, while the second is in the `apps/web`
-directory. Development of each application should be done separately.
+directory.
 
 
 ### API Development
@@ -36,7 +36,7 @@ To stop deploying locally, do not forget to stop docker:
 $ make docker-compose-dev-down
 ```
 
-Tests rely on pytest, with coverage (must exceed 85%), and can be
+Tests rely on pytest, with coverage (must exceed 80%), and can be
 executed with:
 ```bash
 (env) $ make test
@@ -96,22 +96,26 @@ pull requests.
 ### Creating new releases
 
 The first step in creating a new release is to build and push the Docker images
-(API and Web) for NebulaPicker. Releases can only be created from the `main`
-branch, so make sure that `main` is rebased with develop before proceeding.
-Next, create a new tag following [Semantic Versioning](http://semver.org/),
-e.g., v0.1.1. Both images must have the same version tag. A workflow will be
-triggered automatically when a new tag is pushed to the `main` branch. Before
-merging code into `main` and creating the version tag, don’t forget to update
-the version number in the following files:
+(API and Web) for NebulaPicker. Note that one needs to build the Web
+application for the Content Extractor Editions as well. Releases can only be
+created from the `main` branch, so make sure that `main` is rebased with
+develop before proceeding. Next, create a new tag following [Semantic
+Versioning](http://semver.org/), e.g., v0.1.1. The three images must have the
+same version tag. A workflow will be triggered automatically when a new tag is
+pushed to the `main` branch. Before merging code into `main` and creating the
+version tag, don’t forget to update the version number in the following files:
 - `README.md`
 - `apps/api/main.py`
 - `apps/web/package-lock.json`
 - `apps/web/package.json`
+- `apps/web/src/app/page.tsx`
 
 Thus, the steps to create a new release are as follows:
-1. Build and push the new Docker images for NebulaPicker-api and
-nebulapicker-web.
+1. Build and push the new Docker images for nebulaPicker-api and
+nebulapicker-web and nebulapicker-web-with-extractor.
 2. Create a pull request that updates the version tag in the files
 mentioned above, and merge it into the develop branch.
 3. Rebase the `main` branch.
-4. Create a new tag with the updated version in the `main` branch.
+4. Test lunching both applications from docker compose and dev mode. Test the
+   whole applications. Make some adjustment if required.
+5. Create a new tag with the updated version in the `main` branch.

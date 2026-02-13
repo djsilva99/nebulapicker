@@ -41,10 +41,8 @@ docker-compose-dev: ## Docker compose the dev mode
 	@poetry env use python
 	@poetry install --no-root
 	@docker-compose up -d
-	@echo "Local deployment"
-	@poetry run uvicorn src.main:app --env-file .env.dev --port=8080 --reload
 
-.PHONY: docker-compose-dev
+.PHONY: docker-compose-dev-down
 docker-compose-dev-down: ## Docker compose down the dev mode
 	@docker-compose -f docker-compose.yaml down
 
