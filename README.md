@@ -48,20 +48,24 @@ reading and knowledge-management experience.
 ## Example
 Original Edition:
 
-<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_settings.png" alt="Original Edition" style="width: 100%; height: auto;"/>
+<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/original.gif" alt="Original Edition" style="width: 100%; height: auto;"/>
 
 <p align="center">
-  <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_settings.png"
+  <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/original_mobile.gif"
        alt="Original Edition for mobile"
        style="width: 35%; height: auto;" />
 </p>
 
-
 Content Extractor Edition:
 
-<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/content_extractor.gif" alt="Content Extractor Edition" style="width: 100%; height: auto;"/>
+<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/content_extractor.gif" alt="Original Edition" style="width: 100%; height: auto;"/>
 
-<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/content_extractor_mobile.gif" alt="Content Extractor Edition for mobile" style="width: 35%; height: auto;"/>
+<p align="center">
+  <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/content_extractor_mobile.gif"
+       alt="Original Edition for mobile"
+       style="width: 35%; height: auto;" />
+</p>
+
 
 ## Run the Original Edition using docker compose
 To run the API without setting up a local environment, start the full
@@ -103,5 +107,5 @@ docker-compose -f docker-compose-with-extractor.yaml down
 ## Contributing
 
 Feel free to actively contribute to this project by opening pull requests. They
-will all be considered.To make it easier, please visit the [contributing
+will all be considered. To make it easier, please visit the [contributing
 documentation](https://github.com/djsilva99/nebulapicker/blob/main/CONTRIBUTING.md).
