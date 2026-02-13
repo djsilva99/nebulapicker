@@ -38,21 +38,19 @@ through standard RSS readers or integrated into other workflows.
 **Available Editions**
 
 Currently, NebulaPicker is available in two flavors:
-
-_Original Edition_: focuses exclusively on managing and filtering RSS feed
+- _Original Edition_: focuses exclusively on managing and filtering RSS feed
 items. This lightweight version is ideal for users who want simple aggregation
 and filtering without additional processing.
-
-_Content Extractor Edition_: integrates with Wallabag to extract and store full
+- _Content Extractor Edition_: integrates with Wallabag to extract and store full
 article content for offline reading and long-term archiving, enabling a richer
 reading and knowledge-management experience.
 
 ## Example
 Original Edition:
 
-<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/original.gif" alt="Original Edition" style="width: 100%; height: auto;"/>
+<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_settings.png" alt="Original Edition" style="width: 100%; height: auto;"/>
 
-<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/original_mobile.gif" alt="Original Edition for mobile" style="width: 35%; height: auto;"/>
+<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_settings.png" alt="Original Edition for mobile" style="width: 35%; height: auto;"/>
 
 Content Extractor Edition:
 
