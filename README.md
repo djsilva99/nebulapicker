@@ -50,7 +50,12 @@ Original Edition:
 
 <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_settings.png" alt="Original Edition" style="width: 100%; height: auto;"/>
 
-<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_settings.png" alt="Original Edition for mobile" style="width: 35%; height: auto;"/>
+<p align="center">
+  <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/feed_settings.png"
+       alt="Original Edition for mobile"
+       style="width: 35%; height: auto;" />
+</p>
+
 
 Content Extractor Edition:
 
