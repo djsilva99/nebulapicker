@@ -26,7 +26,7 @@ apply-lint: ## Apply lint
 .PHONY: local-deployment
 local-deployment: ## Deploy app locally
 	@echo "Local deployment"
-	@poetry run uvicorn src.main:app --env-file .env.dev --port=8080 --reload
+	@poetry run uvicorn src.main:app --env-file .env.dev --port=8081 --reload
 
 .PHONY: apply-migrations
 apply-migrations: ## Apply migrations

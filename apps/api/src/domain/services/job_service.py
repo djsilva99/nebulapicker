@@ -196,6 +196,5 @@ class JobService:
                         reading_time=reading_time,
                         image_url=image_url
                     )
-                    feed_item = self.feed_service.create_feed_item(feed_item_request)
+                    self.feed_service.create_feed_item(feed_item_request)
                     self.feeds_port.set_updated_at(picker.feed_id)
-                    return feed_item

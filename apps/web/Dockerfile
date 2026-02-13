@@ -35,7 +35,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # Inject API_URL environment variable during the build.
-ENV API_URL=${API_DESTINATION}
+#ENV API_URL=${API_DESTINATION}
 
 # Run the Next.js build command
 RUN npm run build
@@ -56,6 +56,7 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/package.json ./package.json
 
 # Set environment variables for runtime
+ENV API_URL=http://api:8000
 ENV NODE_ENV production
 # Set the production port (3000 is standard for Next.js)
 ENV PORT 3000
