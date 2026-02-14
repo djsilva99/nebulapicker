@@ -53,7 +53,7 @@ Original Edition:
 <p align="center">
   <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/original_mobile.gif"
        alt="Original Edition for mobile"
-       style="width: 60%; height: auto;" />
+       style="width: 80%; height: auto;" />
 </p>
 
 Content Extractor Edition:
@@ -63,7 +63,7 @@ Content Extractor Edition:
 <p align="center">
   <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/content_extractor_mobile.gif"
        alt="Original Edition for mobile"
-       style="width: 60%; height: auto;" />
+       style="width: 80%; height: auto;" />
 </p>
 
 
