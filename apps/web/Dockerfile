@@ -34,9 +34,6 @@ COPY . .
 # Disable Next.js telemetry during the build
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# Inject API_URL environment variable during the build.
-#ENV API_URL=${API_DESTINATION}
-
 # Run the Next.js build command
 RUN npm run build
 

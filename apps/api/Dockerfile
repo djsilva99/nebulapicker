@@ -7,13 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     POETRY_VIRTUALENVS_CREATE=false \
     POETRY_NO_INTERACTION=1 \
-    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/nebulapicker" \
-    WALLABAG_ENABLED=False
-    WALLABAG_URL= \
-    WALLABAG_CLIENT_ID= \
-    WALLABAG_CLIENT_SECRET= \
-    WALLABAG_USERNAME= \
-    WALLABAG_password=
+    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/nebulapicker"
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

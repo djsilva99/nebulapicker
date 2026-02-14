@@ -97,8 +97,9 @@ pull requests.
 
 The first step in creating a new release is to build and push the Docker images
 (API and Web) for NebulaPicker. Note that one needs to build the Web
-application for the Content Extractor Editions as well. Releases can only be
-created from the `main` branch, so make sure that `main` is rebased with
+application for the Content Extractor Editions as well (with the environment
+variable `NEXT_PUBLIC_USE_WALLABAG_EXTRACTOR` set to `true`). Releases can only
+be created from the `main` branch, so make sure that `main` is rebased with
 develop before proceeding. Next, create a new tag following [Semantic
 Versioning](http://semver.org/), e.g., v0.1.1. The three images must have the
 same version tag. A workflow will be triggered automatically when a new tag is
