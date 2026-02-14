@@ -1,0 +1,42 @@
+version: '3.3'
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nebulapicker
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    image: djsilva99/nebulapicker-api:latest
+    container_name: nebulapicker-api
+    depends_on:
+      - db
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    restart: always
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn src.main:app --host 0.0.0.0 --port 8000"
+
+  web:
+    image: djsilva99/nebulapicker-web:latest
+    container_name: nebulapicker-web
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    restart: always
+    env_file:
+      - .env
+
+volumes:
+  pgdata:

@@ -1,0 +1,54 @@
+version: '3.3'
+
+services:
+  extractor:
+    image: wallabag/wallabag:2.6.14
+    container_name: wallabag
+    environment:
+      - SYMFONY__ENV__DATABASE_DRIVER=pdo_sqlite
+      - SYMFONY__ENV__DOMAIN_NAME=http://localhost:8081
+      - WALLABAG_USER_NAME=wallabag
+      - WALLABAG_USER_PASSWORD=wallabag
+    ports:
+      - "8081:80"
+    volumes:
+      - ./data:/var/www/wallabag/data
+    restart: always
+
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nebulapicker
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    image: djsilva99/nebulapicker-api:latest
+    container_name: nebulapicker-api
+    depends_on:
+      - db
+    env_file:
+      - .env.with_extractor
+    ports:
+      - "8000:8000"
+    restart: always
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn src.main:app --host 0.0.0.0 --port 8000"
+
+  web:
+    image: djsilva99/nebulapicker-web-with-extractor:latest
+    container_name: nebulapicker-web
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    restart: always
+
+volumes:
+  pgdata:

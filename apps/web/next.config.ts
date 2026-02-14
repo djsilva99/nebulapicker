@@ -1,12 +1,9 @@
 import type { NextConfig } from "next";
 
-const API_DESTINATION = process.env.API_URL || "http://127.0.0.1:8081";
+// Force the default to be the Docker service name 'api'
+const API_DESTINATION = process.env.API_URL || "http://api:8000";
 
 const nextConfig: NextConfig = {
-  env: {
-    API_URL: process.env.API_URL,
-  },
-
   async rewrites() {
     return [
       {
@@ -17,4 +14,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

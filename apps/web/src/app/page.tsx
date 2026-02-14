@@ -36,11 +36,8 @@ export default function Home() {
 
   return (
     <Box p={8} textAlign="center">
-      <Heading mb={4}>NebulaPicker v1.0</Heading>
-
+      <Heading mb={4}>NebulaPicker v1.0.0</Heading>
       <Box textAlign="left">{renderParagraphs()}</Box>
-
-      <Box flex="1" minH="calc(100vh - 200px)" />
     </Box>
   );
 }
