@@ -8,7 +8,6 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        // Scenario B: Keep the /api prefix for the backend
         destination: `${API_DESTINATION}/:path*`,
       },
     ];
