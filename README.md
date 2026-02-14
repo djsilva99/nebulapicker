@@ -19,7 +19,7 @@ It aggregates entries from external RSS feeds, applies user-defined filtering
 rules, and publishes a curated output that can be consumed by any RSS reader or
 integrated into automated workflows.
 
-✨ **Core Features**
+✨ **Features**
 - Automatically fetches content from multiple RSS sources using CRON jobs
 - Custom filtering rules to remove unwanted noise
 - Generates clean, focused RSS feeds
@@ -34,35 +34,28 @@ _Content Extractor Edition_ — integrates with Wallabag to archive and read ful
 articles.
 
 
-## 🎬 Example
+## 🎬 Demo
 
 **Original Edition:**
 
 <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/original.gif" alt="Original Edition" style="width: 100%; height: auto;"/>
 
-<p align="center">
-  <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/original_mobile.gif"
-       alt="Original Edition for mobile"
-       style="width: 80%; height: auto;" />
-</p>
-
 **Content Extractor Edition:**
 
-<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/content_extractor.gif" alt="Original Edition" style="width: 100%; height: auto;"/>
+<img src="https://github.com/djsilva99/nebulapicker/blob/main/img/content_extractor.gif" alt="Content Extractor Edition" style="width: 100%; height: auto;"/>
 
 <p align="center">
   <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/content_extractor_mobile.gif"
-       alt="Original Edition for mobile"
+       alt="Content Extractor Edition for mobile"
        style="width: 80%; height: auto;" />
 </p>
 
 
 ## 🚀 Quick Start (Docker Compose)
 
-NebulaPicker can be started instantly using Docker Compose — no local setup
-required.
+NebulaPicker can be started without local setup using Docker Compose.
 
-### Original Edition
+### ▶️  Original Edition
 Runs the API, database, and web interface:
 ```bash
 docker-compose up -d
@@ -79,7 +72,7 @@ Stop the application:
 docker-compose down
 ```
 
-### Content Extractor Edition
+### 📰 Content Extractor Edition
 Includes Wallabag integration for full article extraction.
 
 Start the stack:
@@ -90,13 +83,13 @@ docker-compose -f docker-compose-with-extractor.yaml up -d
 Configure Wallabag:
 1. Open http://localhost:8081
 2. Login with:
-   - username: wallabag
-   - password: wallabag
+   - username: `wallabag`
+   - password: `wallabag`
 3. Go to My Account → API Clients Management
 4. Create a client and copy:
    - Client ID
    - Client Secret
-5. Add them to .env.with_extractor:
+5. Add them to `.env.with_extractor`:
    - `WALLABAG_CLIENT_ID=`
    - `WALLABAG_CLIENT_SECRET=`
 
