@@ -9,6 +9,9 @@
     <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/nebulapicker.png" alt="Drawing" height="30"/> nebulapicker v1.0.0
 </p>
 
+🚀 Stay informed without drowning in noise. NebulaPicker lets you shape your
+own RSS feeds by filtering and refining content from the sources you trust.
+
 NebulaPicker is a self-hosted web application for content curation, designed to
 streamline and automate the process of filtering online information. It acts as
 a personalized feed generator that helps users stay focused on relevant content
