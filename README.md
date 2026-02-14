@@ -41,9 +41,9 @@ Currently, NebulaPicker is available in two flavors:
 - _Original Edition_: focuses exclusively on managing and filtering RSS feed
 items. This lightweight version is ideal for users who want simple aggregation
 and filtering without additional processing.
-- _Content Extractor Edition_: integrates with Wallabag to extract and store full
-article content for offline reading and long-term archiving, enabling a richer
-reading and knowledge-management experience.
+- _Content Extractor Edition_: integrates with Wallabag to extract and store
+full article content, enabling a richer reading and knowledge-management
+experience.
 
 ## Example
 Original Edition:
@@ -53,7 +53,7 @@ Original Edition:
 <p align="center">
   <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/original_mobile.gif"
        alt="Original Edition for mobile"
-       style="width: 35%; height: auto;" />
+       style="width: 80%; height: auto;" />
 </p>
 
 Content Extractor Edition:
@@ -63,7 +63,7 @@ Content Extractor Edition:
 <p align="center">
   <img src="https://github.com/djsilva99/nebulapicker/blob/main/img/content_extractor_mobile.gif"
        alt="Original Edition for mobile"
-       style="width: 35%; height: auto;" />
+       style="width: 80%; height: auto;" />
 </p>
 
 
@@ -81,19 +81,20 @@ docker-compose down
 
 ## Run the Content Extractor Edition using docker compose
 The Content Extractor Edition can be started as well using Docker Compose
-(Wallabag + API + database + WEB) using Docker Compose:
+(Wallabag + API + database + WEB):
 ```bash
 docker-compose -f docker-compose-with-extractor.yaml up -d
 ```
 
-To use wallabag as an extractor an aditional step is required to create a
-wallabag client. After lunching the application with docker compose, you need
-to go to login the [fontend wallabag](http:localhost:8081) using the
-credentials `wallabag` and password `wallabag`. In "My Account", chose "API
-clients management". Create a new client and copy the client id and client
-secret. Past both values to the environment variables `WALLABAG_CLIENT_ID` and
-`WALLABAG_CLIENT_SECRET` of the `.env.with_extractor` file. Finally relunch
-the application:
+To use Wallabag as a content extractor, you first need to create a Wallabag API
+client. After launching the application with Docker Compose, log in to the
+[Wallabag frontend](http://localhost:8081) using the username `wallabag` and
+password `wallabag`. In "My Account", select "API Clients Management". Create a
+new client and copy the generated Client ID and Client Secret. Paste these
+values into the environment variables `WALLABAG_CLIENT_ID` and
+`WALLABAG_CLIENT_SECRET` in the `.env.with_extractor` file.
+
+Finally, relaunch the application:
 ```bash
 docker-compose -f docker-compose-with-extractor.yaml up -d
 ```
