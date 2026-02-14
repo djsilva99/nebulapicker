@@ -74,6 +74,10 @@ application (API + database + WEB) using Docker Compose:
 docker-compose up -d
 ```
 
+Currently, NebulaPicker comes with basic authentication. The default username
+and password are both `nebulapicker`. To change them, update the corresponding
+variables in the `.env` file.
+
 To stop the Original Edition with docker compose:
 ```bash
 docker-compose down
@@ -98,6 +102,9 @@ Finally, relaunch the application:
 ```bash
 docker-compose -f docker-compose-with-extractor.yaml up -d
 ```
+
+The default username and password are again both `nebulapicker`. To change
+them, update the corresponding variables in the `.env.with_extractor` file.
 
 To stop the Content Extractor Edition with docker compose:
 ```bash
