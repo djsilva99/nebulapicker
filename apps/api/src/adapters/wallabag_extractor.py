@@ -1,3 +1,5 @@
+import html
+
 import requests
 from ftfy import fix_text
 from src.configs.settings import Settings
@@ -42,6 +44,7 @@ class WallabagExtractor(ExtractorPort):
             else:
                 try:
                     content = fix_text(entry_data["content"])
+                    content = html.unescape(content)
                 except Exception:
                     content = entry_data["content"]
                 reading_time = entry_data.get("reading_time")
