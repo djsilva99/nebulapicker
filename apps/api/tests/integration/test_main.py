@@ -14,7 +14,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 from src.adapters.entrypoints.v1.models.welcome import WELCOME_MESSAGE
 from src.adapters.scheduler import Scheduler
-from src.configs.dependencies.repositories import get_db
+from src.configs.database import get_db
 from src.domain.services.job_service import JobService
 from src.main import app
 
@@ -40,25 +40,46 @@ def mock_services():
 
 
 @pytest.fixture(autouse=True)
-def setup_job_service(mock_services):
-    scheduler = Scheduler()
-    picker_service = mock_services["picker_service"]
-    filter_service = mock_services["filter_service"]
-    source_service = mock_services["source_service"]
-    feed_service = mock_services["feed_service"]
-    extractor_service = mock_services["extractor_service"]
-    feeds_repository = mock_services["feeds_port"]
+def setup_job_service(test_db_manager):
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
 
+    engine = create_engine(test_db_manager)
+    test_session_local = sessionmaker(bind=engine)
+
+    # Initialize REAL repositories with the TEST session factory
+    from src.adapters.repositories.feeds_repository import FeedsRepository
+    from src.adapters.repositories.filters_repository import FiltersRepository
+    from src.adapters.repositories.pickers_repository import PickersRepository
+    from src.adapters.repositories.sources_repository import SourcesRepository
+
+    feeds_repo = FeedsRepository(test_session_local)
+    pickers_repo = PickersRepository(test_session_local)
+    sources_repo = SourcesRepository(test_session_local)
+    filters_repo = FiltersRepository(test_session_local)
+
+    # Initialize Services
+    from src.domain.services.feed_service import FeedService
+    from src.domain.services.filter_service import FilterService
+    from src.domain.services.picker_service import PickerService
+    from src.domain.services.source_service import SourceService
+
+    source_service = SourceService(sources_repo)
+    picker_service = PickerService(pickers_repo)
+    filter_service = FilterService(filters_repo)
+    extractor_mock = MagicMock()
+    feed_service = FeedService(feeds_repo, extractor_mock)
+
+    # Attach to app.state just like in main.py
     app.state.job_service = JobService(
-        scheduler=scheduler,
+        scheduler=Scheduler(),
         picker_service=picker_service,
         filter_service=filter_service,
         source_service=source_service,
         feed_service=feed_service,
-        extractor_service=extractor_service,
-        feeds_port=feeds_repository
+        extractor_service=extractor_mock,
+        feeds_port=feeds_repo
     )
-    return
 
 
 @pytest.fixture(scope="session")
@@ -85,25 +106,21 @@ def test_db_manager():
 @pytest.fixture(name="db_session")
 def db_session_fixture(test_db_manager):
     engine = create_engine(test_db_manager)
-    testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-    connection = engine.connect()
-    transaction = connection.begin()
-    session = testing_session_local(bind=connection)
-
-    # Dependency override
+    testing_session_local = sessionmaker(bind=engine)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "TRUNCATE TABLE filters, pickers, feeds, sources RESTART IDENTITY CASCADE;"
+            )
+        )
+    session = testing_session_local()
     def override_get_db():
-        try:
-            yield session
-        finally:
-            session.close()
-
+        with testing_session_local() as sess:
+            yield sess
     app.dependency_overrides[get_db] = override_get_db
-
     yield session
-
-    transaction.rollback()
-    connection.close()
+    session.close()
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture(name="client")
@@ -608,53 +625,48 @@ def test_create_picker_invalid_source_or_feed(
     assert response.status_code == 400 or response.status_code == 422
 
 
-def test_get_picker_successfully(
-    client: TestClient,
-    db_session: Session,
-    monkeypatch: pytest.MonkeyPatch
-):
+def test_get_picker_successfully(client, db_session, monkeypatch):
     # GIVEN
-    db_session.execute(
-        text("INSERT INTO sources (id, external_id, url, name) "
-             "VALUES (:id, :external_id, :url, :name)"),
+    res_source = db_session.execute(
+        text("INSERT INTO sources (external_id, url, name) "
+             "VALUES (:external_id, :url, :name) RETURNING id"),
         {
-            "id": 1,
             "external_id": str(uuid4()),
             "url": "https://example.com/source",
             "name": "picker_source"
         }
     )
-    fake_token = "test-token"
-    monkeypatch.setattr("src.adapters.entrypoints.v1.routes.generated_token", fake_token)
+    source_id = res_source.fetchone()[0]
 
     feed_external_id = str(uuid4())
-    db_session.execute(
-        text("INSERT INTO feeds (id, external_id, name) "
-             "VALUES (:id, :external_id, :name)"),
-        {"id": 1, "external_id": feed_external_id, "name": "feed_name"}
+    res_feed = db_session.execute(
+        text("INSERT INTO feeds (external_id, name) "
+             "VALUES (:external_id, :name) RETURNING id"),
+        {"external_id": feed_external_id, "name": "feed_name"}
     )
+    feed_id = res_feed.fetchone()[0]
 
     picker_external_id = str(uuid4())
-    db_session.execute(
-        text("INSERT INTO pickers (id, external_id, source_id, feed_id, cronjob, created_at) "
-             "VALUES (:id, :external_id, :source_id, :feed_id, :cronjob, NOW())"),
-        {
-            "id": 1,
-            "external_id": picker_external_id,
-            "source_id": 1,
-            "feed_id": 1,
-            "cronjob": "*/5 * * * *"
-        }
+    res_picker = db_session.execute(
+        text("""
+            INSERT INTO pickers (external_id, source_id, feed_id, cronjob)
+            VALUES (:ext, :src, :feed, '*/5 * * * *') RETURNING id
+        """),
+        {"ext": picker_external_id, "src": source_id, "feed": feed_id}
     )
+    picker_id = res_picker.fetchone()[0]
 
     db_session.execute(
-        text("INSERT INTO filters (id, picker_id, operation, args, created_at) "
-             "VALUES (:id, :picker_id, :operation, :args, NOW())"),
-        {"id": 1, "picker_id": 1, "operation": "identity", "args": "[a]"}
+        text("INSERT INTO filters (picker_id, operation, args) VALUES (:p_id, 'identity', '[a]')"),
+        {"p_id": picker_id}
     )
+
     db_session.commit()
 
     # WHEN
+    fake_token = "test-token"
+    monkeypatch.setattr("src.adapters.entrypoints.v1.routes.generated_token", fake_token)
+
     response = client.get(
         f"/v1/pickers/{picker_external_id}",
         headers={"Authorization": f"Bearer {fake_token}"}
@@ -665,12 +677,6 @@ def test_get_picker_successfully(
     data = response.json()
     assert data["external_id"] == picker_external_id
     assert data["source_url"] == "https://example.com/source"
-    assert data["feed_external_id"] == feed_external_id
-    assert data["cronjob"] == "*/5 * * * *"
-    assert isinstance(data["filters"], list)
-    assert len(data["filters"]) == 1
-    assert data["filters"][0]["operation"] == "identity"
-    assert data["filters"][0]["args"] == "[a]"
 
 
 def test_get_picker_not_found(

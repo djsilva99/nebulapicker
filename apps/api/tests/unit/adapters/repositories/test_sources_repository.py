@@ -56,8 +56,11 @@ def db_session(setup_test_db):
 
 
 @pytest.fixture
-def repo(db_session):
-    return SourcesRepository(db_session)
+def repo(setup_test_db):
+    engine = create_engine(setup_test_db)
+    testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+    return SourcesRepository(testing_session_local)
 
 
 def test_get_sourcce_by_external_successfully(repo, db_session):

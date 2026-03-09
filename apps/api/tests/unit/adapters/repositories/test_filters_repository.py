@@ -94,8 +94,11 @@ def db_session(setup_test_db):
 
 
 @pytest.fixture
-def filters_repo(db_session):
-    return FiltersRepository(db_session)
+def filters_repo(setup_test_db):
+    engine = create_engine(setup_test_db)
+    testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+    return FiltersRepository(testing_session_local)
 
 
 
@@ -242,7 +245,7 @@ def test_get_filter_by_picker_id_returns_none(db_session, filters_repo):
     assert results == []
 
 
-def test_delete_existing_filter(db_session):
+def test_delete_existing_filter(db_session, filters_repo):
     # GIVEN
     db_session.execute(
         text(
@@ -270,26 +273,22 @@ def test_delete_existing_filter(db_session):
 
     filter_id = db_session.execute(text("SELECT id FROM filters LIMIT 1")).scalar_one()
 
-    repo = FiltersRepository(db_session)
-
     # WHEN
-    deleted = repo.delete_filter(filter_id)
+    deleted = filters_repo.delete_filter(filter_id)
 
     # THEN
     assert deleted is True
-    result = (db_session.execute(
+    db_session.expire_all()
+    result = db_session.execute(
         text("SELECT * FROM filters WHERE id = :id"),
         {"id": filter_id}
-    ).first())
+    ).first()
     assert result is None
 
 
-def test_delete_non_existing_filter(db_session):
-    # GIVEN
-    repo = FiltersRepository(db_session)
-
+def test_delete_non_existing_filter(db_session, filters_repo):
     # WHEN
-    deleted = repo.delete_filter(99999)  # some ID that won’t exist
+    deleted = filters_repo.delete_filter(99999)  # some ID that won’t exist
 
     # THEN
     assert deleted is False
