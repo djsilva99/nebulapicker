@@ -2,7 +2,7 @@ import datetime
 import secrets
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from src.adapters.entrypoints.v1.models.authentication import LoginRequest
@@ -40,22 +40,10 @@ from src.adapters.entrypoints.v1.models.source import (
     map_source_to_create_source_response,
 )
 from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
-from src.configs.dependencies.services import (
-    get_feed_service,
-    get_filter_service,
-    get_job_service,
-    get_picker_service,
-    get_source_service,
-)
 from src.configs.settings import Settings
 from src.domain.models.feed import FeedItemRequest, FeedRequest, UpdateFeedRequest
 from src.domain.models.picker import PickerRequest
 from src.domain.models.source import SourceRequest
-from src.domain.services.feed_service import FeedService
-from src.domain.services.filter_service import FilterService
-from src.domain.services.job_service import JobService
-from src.domain.services.picker_service import PickerService
-from src.domain.services.source_service import SourceService
 
 settings: Settings = Settings()
 
@@ -130,9 +118,11 @@ def login(data: LoginRequest):
     }
 )
 def list_sources(
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    source_service: SourceService = Depends(get_source_service)  # noqa: B008
 ) -> GetAllSourcesResponse:
+    source_service = request.app.state.job_service.source_service
+
     source_list = source_service.get_all_sources()
     return GetAllSourcesResponse(
         sources=map_source_list_to_get_all_sources_response(source_list=source_list)
@@ -161,9 +151,11 @@ def list_sources(
 )
 def create_source(
     create_source_request: ExternalSourceRequest,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    source_service: SourceService = Depends(get_source_service)  # noqa: B008
 ) -> SourceResponse:
+    source_service = request.app.state.job_service.source_service
+
     source_request = SourceRequest(name=create_source_request.name, url=create_source_request.url)
     created_source = source_service.create_source(source_request)
     return map_source_to_create_source_response(created_source)
@@ -192,9 +184,11 @@ def create_source(
 )
 def get_source(
     source_external_id: UUID,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    source_service: SourceService = Depends(get_source_service)  # noqa: B008
 ) -> SourceResponse:
+    source_service = request.app.state.job_service.source_service
+
     source = source_service.get_source_by_external_id(
         source_external_id
     )
@@ -227,9 +221,11 @@ def get_source(
 def update_source(
     source_external_id: UUID,
     update_source_request: ExternalSourceRequest,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    source_service: SourceService = Depends(get_source_service),  # noqa: B008
 ) -> SourceResponse:
+    source_service = request.app.state.job_service.source_service
+
     source_request = SourceRequest(
         name=update_source_request.name,
         url=update_source_request.url
@@ -253,12 +249,14 @@ def update_source(
 )
 def delete_source(
     source_external_id: UUID,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    source_service: SourceService = Depends(get_source_service),  # noqa: B008
-    filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
-    picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
-    job_service: JobService = Depends(get_job_service),  # noqa: B008
 ):
+    source_service = request.app.state.job_service.source_service
+    filter_service = request.app.state.job_service.filter_service
+    picker_service = request.app.state.job_service.picker_service
+    job_service = request.app.state.job_service
+
     source = source_service.get_source_by_external_id(
         external_id=source_external_id
     )
@@ -296,9 +294,11 @@ def delete_source(
     }
 )
 def list_feeds(
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
 ) -> ListFeedsResponse:
+    feed_service = request.app.state.job_service.feed_service
+
     detailed_feeds_list = feed_service.get_detailed_feeds()
 
     return map_detailed_feeds_list_to_list_feeds_response(detailed_feeds_list)
@@ -326,9 +326,11 @@ def list_feeds(
 )
 def create_feed(
     create_feed_request: CreateFeedRequest,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
 ) -> FeedResponse:
+    feed_service = request.app.state.job_service.feed_service
+
     feed_request = FeedRequest(name=create_feed_request.name)
     created_feed = feed_service.create_feed(feed_request)
     return map_feed_to_feed_response(created_feed)
@@ -358,9 +360,11 @@ def create_feed(
 def update_feed(
     feed_external_id: UUID,
     update_feed_request: ExternalUpdateFeedRequest,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
 ) -> FeedResponse:
+    feed_service = request.app.state.job_service.feed_service
+
     update_feed_request = UpdateFeedRequest(
         name=update_feed_request.name
     )
@@ -383,12 +387,14 @@ def update_feed(
 )
 def delete_feed(
     feed_external_id: UUID,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
-    filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
-    picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
-    job_service: JobService = Depends(get_job_service),  # noqa: B008
 ):
+    feed_service = request.app.state.job_service.feed_service
+    filter_service = request.app.state.job_service.filter_service
+    picker_service = request.app.state.job_service.picker_service
+    job_service = request.app.state.job_service
+
     feed = feed_service.get_feed_by_external_id(external_id=feed_external_id)
     if not feed:
         raise HTTPException(status_code=404, detail="Feed not found")
@@ -428,12 +434,14 @@ def delete_feed(
 )
 def get_feed_rss(
     external_id: UUID,
-    feed_service: FeedService = Depends(get_feed_service)  # noqa: B008
+    request: Request,
 ):
     """
     Returns raw RSS XML for the requested feed.
     The response content type is `application/rss+xml`.
     """
+    feed_service = request.app.state.job_service.feed_service
+
     feeds_rss = feed_service.get_rss(external_id)
     if feeds_rss:
         return Response(
@@ -465,6 +473,7 @@ def get_feed_rss(
     }
 )
 def get_feed(
+    request: Request,
     external_id: UUID,
     title: str | None = Query(None),
     last_day: bool | None = Query(None),
@@ -472,11 +481,12 @@ def get_feed(
     feed_items_limit: int | None = Query(None, ge=1),
     feed_items_offset: int | None= Query(None, ge=0),
     _: str = Depends(authenticate),  # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
-    filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
-    picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
-    source_service: SourceService = Depends(get_source_service),  # noqa: B008
 ) -> FullCompleteFeed:
+    feed_service = request.app.state.job_service.feed_service
+    filter_service = request.app.state.job_service.filter_service
+    picker_service = request.app.state.job_service.picker_service
+    source_service = request.app.state.job_service.source_service
+
     feed = feed_service.get_feed_by_external_id(external_id)
     if not feed:
         raise HTTPException(status_code=404, detail="Feed not found")
@@ -552,9 +562,11 @@ def get_feed(
 def create_feed_item(
     feed_external_id: UUID,
     create_feed_item_request: CreateFeedItemRequest,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
 ) -> CreateFeedItemResponse:
+    feed_service = request.app.state.job_service.feed_service
+
     feed = feed_service.get_feed_by_external_id(feed_external_id)
     if not feed:
         raise HTTPException(status_code=400, detail="Feed not found")
@@ -600,9 +612,11 @@ def create_feed_item(
 def get_feed_item(
     feed_external_id: UUID,
     feed_item_external_id: UUID,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
 ) -> GetFeedItemResponse:
+    feed_service = request.app.state.job_service.feed_service
+
     feed_item = feed_service.get_feed_item_by_external_id(feed_item_external_id)
     if not feed_item:
         raise HTTPException(status_code=400, detail="Feed item not found")
@@ -620,9 +634,11 @@ def get_feed_item(
 def delete_feed_item(
     feed_external_id: UUID,
     feed_item_external_id: UUID,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
 ):
+    feed_service = request.app.state.job_service.feed_service
+
     feed_item = feed_service.get_feed_item_by_external_id(
         feed_item_external_id=feed_item_external_id
     )
@@ -649,9 +665,11 @@ def delete_feed_item(
 def export_feed_items(
     feed_external_id: UUID,
     export_feed_items_request: ExportFeedItemsRequest,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
 ):
+    feed_service = request.app.state.job_service.feed_service
+
     buffer = feed_service.export_file(
         feed_external_id,
         export_feed_items_request.file_type,
@@ -692,13 +710,14 @@ def export_feed_items(
 )
 def add_picker(
     create_full_picker_request: CreateFullPickerRequest,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
-    picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
-    source_service: SourceService = Depends(get_source_service),  # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
-    job_service: JobService = Depends(get_job_service),  # noqa: B008
 ) -> FullPickerResponse:
+    feed_service = request.app.state.job_service.feed_service
+    filter_service = request.app.state.job_service.filter_service
+    picker_service = request.app.state.job_service.picker_service
+    source_service = request.app.state.job_service.source_service
+    job_service = request.app.state.job_service
 
     feed_name = None
     if create_full_picker_request.feed_name:
@@ -797,12 +816,14 @@ def add_picker(
 )
 def get_picker(
     picker_external_id: UUID,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
-    picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
-    feed_service: FeedService = Depends(get_feed_service),  # noqa: B008
-    source_service: SourceService = Depends(get_source_service),  # noqa: B008
 ) -> FullPickerResponse | None:
+    feed_service = request.app.state.job_service.feed_service
+    filter_service = request.app.state.job_service.filter_service
+    picker_service = request.app.state.job_service.picker_service
+    source_service = request.app.state.job_service.source_service
+
     picker = picker_service.get_picker_by_external_id(external_id=picker_external_id)
     if not picker:
         raise HTTPException(status_code=404, detail="Picker not found")
@@ -832,11 +853,13 @@ def get_picker(
 )
 def delete_picker(
     picker_external_id: UUID,
+    request: Request,
     _: str = Depends(authenticate),  # noqa: B008
-    filter_service: FilterService = Depends(get_filter_service),  # noqa: B008
-    picker_service: PickerService = Depends(get_picker_service),  # noqa: B008
-    job_service: JobService = Depends(get_job_service),  # noqa: B008
 ):
+    filter_service = request.app.state.job_service.filter_service
+    picker_service = request.app.state.job_service.picker_service
+    job_service = request.app.state.job_service
+
     picker = picker_service.get_picker_by_external_id(external_id=picker_external_id)
     if not picker:
         raise HTTPException(status_code=404, detail="Picker not found")

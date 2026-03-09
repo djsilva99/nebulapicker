@@ -1,15 +1,15 @@
 from uuid import UUID
 
 from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 from src.domain.models.source import Source, SourceRequest
 from src.domain.ports.sources_port import SourcePort
 
 
 class SourcesRepository(SourcePort):
 
-    def __init__(self, db: Session):
-        self.db = db
+    def __init__(self, session_factory: sessionmaker):
+        self.session_factory = session_factory
 
     def create_source(self, source_request: SourceRequest) -> Source:
         sql = text(
@@ -17,23 +17,23 @@ class SourcesRepository(SourcePort):
             "VALUES (:url, :name) "
             "RETURNING id, external_id, url, name, created_at"
         )
-        result = self.db.execute(
-            sql,
-            {
-                "url": source_request.url,
-                "name": source_request.name
-            }
-        ).mappings().first()
+        with self.session_factory() as session:
+            result = session.execute(
+                sql,
+                {
+                    "url": source_request.url,
+                    "name": source_request.name
+                }
+            ).mappings().first()
+            session.commit()
 
-        self.db.commit()
-
-        return Source(
-            id=result["id"],
-            external_id=result["external_id"],
-            url=result["url"],
-            name=result["name"],
-            created_at=result["created_at"],
-        )
+            return Source(
+                id=result["id"],
+                external_id=result["external_id"],
+                url=result["url"],
+                name=result["name"],
+                created_at=result["created_at"],
+            )
 
     def update_source(self, source_id: int, source_request: SourceRequest) -> Source:
         sql = text(
@@ -42,76 +42,78 @@ class SourcesRepository(SourcePort):
             "WHERE id = :id "
             "RETURNING id, external_id, url, name, created_at"
         )
-        result = self.db.execute(
-            sql,
-            {
-                "id": source_id,
-                "url": source_request.url,
-                "name": source_request.name
-            }
-        ).mappings().first()
-        self.db.commit()
+        with self.session_factory() as session:
+            result = session.execute(
+                sql,
+                {
+                    "id": source_id,
+                    "url": source_request.url,
+                    "name": source_request.name
+                }
+            ).mappings().first()
+            session.commit()
 
-        return Source(
-            id=result["id"],
-            external_id=result["external_id"],
-            url=result["url"],
-            name=result["name"],
-            created_at=result["created_at"],
-        )
+            return Source(
+                id=result["id"],
+                external_id=result["external_id"],
+                url=result["url"],
+                name=result["name"],
+                created_at=result["created_at"],
+            )
 
     def delete_source(self, source_id: int) -> bool:
         sql = text("DELETE FROM sources WHERE id = :id RETURNING id")
-        result = self.db.execute(sql, {"id": source_id}).first()
-        self.db.commit()
-        return result is not None
+        with self.session_factory() as session:
+            result = session.execute(sql, {"id": source_id}).first()
+            session.commit()
+            return result is not None
 
     def get_all_sources(self) -> list[Source]:
         sql = text("SELECT id, external_id, url, name, created_at FROM sources")
-        result = self.db.execute(sql)
-
-        if result:
-            return [
-                Source(**item._mapping) for item in result
-            ]
-        return []
+        with self.session_factory() as session:
+            result = session.execute(sql)
+            if result:
+                return [
+                    Source(**item._mapping) for item in result
+                ]
+            return []
 
     def get_source_by_external_id(self, external_id: UUID) -> Source | None:
         sql = text(
             "SELECT id, external_id, url, name, created_at "
             "FROM sources WHERE external_id = :external_id;"
         )
-        result = self.db.execute(sql, {"external_id": str(external_id)}).mappings().first()
-
-        if result:
-            return Source(**result)
-        return None
+        with self.session_factory() as session:
+            result = session.execute(sql, {"external_id": str(external_id)}).mappings().first()
+            if result:
+                return Source(**result)
+            return None
 
     def get_source_by_url(self, url: str) -> Source | None:
         sql = text(
             "SELECT id, external_id, url, name, created_at "
             "FROM sources WHERE url = :url;"
         )
-        result = self.db.execute(sql, {"url": url}).mappings().first()
+        with self.session_factory() as session:
+            result = session.execute(sql, {"url": url}).mappings().first()
+            if result is None:
+                return None
 
-        if result is None:
-            return None
-
-        return Source(
-            id=result["id"],
-            external_id=result["external_id"],
-            url=result["url"],
-            name=result["name"],
-            created_at=result["created_at"],
-        )
+            return Source(
+                id=result["id"],
+                external_id=result["external_id"],
+                url=result["url"],
+                name=result["name"],
+                created_at=result["created_at"],
+            )
 
     def get_source_by_id(self, id: int) -> Source | None:
         sql = text(
             "SELECT id, external_id, url, name, created_at "
             "FROM sources WHERE id = :id;"
         )
-        result = self.db.execute(sql, {"id": str(id)}).mappings().first()
-
-        if result:
-            return Source(**result)
-        return None
+        with self.session_factory() as session:
+            result = session.execute(sql, {"id": id}).mappings().first()
+            if result:
+                return Source(**result)
+            return None

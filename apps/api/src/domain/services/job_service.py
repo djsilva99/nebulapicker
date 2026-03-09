@@ -52,7 +52,7 @@ class JobService:
     def add_cronjob(self, picker: Picker):
         job = Job(
             func_name='process_filters',
-            args=[str(picker.id), self],
+            args=[str(picker.id)],
             schedule=picker.cronjob
         )
         self.scheduler.add_job(job)
@@ -60,7 +60,7 @@ class JobService:
     def delete_cronjob(self, picker: Picker):
         job_to_delete = Job(
             func_name='process_filters',
-            args=[str(picker.id), self],
+            args=[str(picker.id)],
             schedule=picker.cronjob
         )
         self.scheduler.delete_job(job_to_delete)
@@ -71,7 +71,7 @@ class JobService:
         for picker in pickers:
             job = Job(
                 func_name='process_filters',
-                args=[str(picker.id), self],
+                args=[str(picker.id)],
                 schedule=picker.cronjob
             )
             jobs.append(job)
