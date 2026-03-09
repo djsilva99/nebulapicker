@@ -75,8 +75,11 @@ def db_session(setup_test_db):
 
 
 @pytest.fixture
-def pickers_repo(db_session):
-    return PickersRepository(db_session)
+def pickers_repo(setup_test_db):
+    engine = create_engine(setup_test_db)
+    testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+    return PickersRepository(testing_session_local)
 
 
 
@@ -172,7 +175,7 @@ def test_get_picker_by_external_id_returns_none(db_session, pickers_repo):
     assert results is None
 
 
-def test_delete_picker_for_existing_picker(db_session):
+def test_delete_picker_for_existing_picker(db_session, pickers_repo):
     # GIVEN
     db_session.execute(
         text(
@@ -194,10 +197,8 @@ def test_delete_picker_for_existing_picker(db_session):
 
     picker_id = db_session.execute(text("SELECT id FROM pickers LIMIT 1")).scalar_one()
 
-    repo = PickersRepository(db_session)
-
     # WHEN
-    deleted = repo.delete_picker(picker_id)
+    deleted = pickers_repo.delete_picker(picker_id)
 
     # THEN
     assert deleted is True
@@ -208,11 +209,9 @@ def test_delete_picker_for_existing_picker(db_session):
     assert result is None
 
 
-def test_delete_picker_for_non_existing_picker(db_session):
-    repo = PickersRepository(db_session)
-
+def test_delete_picker_for_non_existing_picker(db_session, pickers_repo):
     # WHEN
-    deleted = repo.delete_picker(99999)
+    deleted = pickers_repo.delete_picker(99999)
 
     # THEN
     assert deleted is False
@@ -423,7 +422,7 @@ def test_get_all_pickers_that_returns_multiple(pickers_repo, db_session):
     assert {p.cronjob for p in pickers} == {"0 * * * *", "30 * * * *"}
 
 
-def test_get_all_pickers_that_returns_empty_list(pickers_repo):
+def test_get_all_pickers_that_returns_empty_list(db_session, pickers_repo):
     # WHEN
     pickers = pickers_repo.get_all_pickers()
 

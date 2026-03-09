@@ -77,8 +77,11 @@ def db_session(setup_test_db):
 
 
 @pytest.fixture
-def repo(db_session):
-    return FeedsRepository(db_session)
+def repo(setup_test_db):
+    engine = create_engine(setup_test_db)
+    testing_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+    return FeedsRepository(testing_session_local)
 
 
 def test_create_feed_successfully(repo, db_session):
