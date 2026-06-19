@@ -125,14 +125,15 @@ def test_get_feed_items_delegates_to_port(feed_service, feeds_port_mock):
     item2 = MagicMock(
         spec=FeedItem, created_at=datetime(2025, 1, 1, 12, 0, 0), title="title_2"
     )
-    expected_items_sorted = [item1, item2]
+    expected_items_sorted = [item1, item2], 2
     feeds_port_mock.get_active_feed_items_by_feed_id.return_value = [item1, item2]
+    feeds_port_mock.count_active_feed_items_by_feed_id.return_value = 2
 
     # WHEN
     result = feed_service.get_feed_items(feed_id=42)
 
     # THEN
-    feeds_port_mock.get_active_feed_items_by_feed_id.assert_called_once_with(42)
+    feeds_port_mock.get_active_feed_items_by_feed_id.assert_called_once()
     assert result == expected_items_sorted
 
 
@@ -180,7 +181,7 @@ def test_get_rss_builds_rss_feed(feed_service, feeds_port_mock):
     assert "<description>Desc 2</description>" in rss_xml
 
     feeds_port_mock.get_feed_by_external_id.assert_called_once_with(feed.external_id)
-    feeds_port_mock.get_active_feed_items_by_feed_id.assert_called_once_with(feed.id)
+    feeds_port_mock.get_active_feed_items_by_feed_id.assert_called_once_with(feed.id, limit=50)
 
 
 def test_get_feed_by_external_id_delegates_to_port(feed_service, feeds_port_mock):
@@ -294,7 +295,7 @@ def test_export_file_epub_success(
     feeds_port_mock.get_feed_by_external_id.assert_called_once_with(
         feed_external_id
     )
-    feeds_port_mock.get_active_feed_items_by_feed_id.assert_called_once_with(feed.id)
+    feeds_port_mock.get_active_feed_items_by_feed_id.assert_called_once_with(feed.id, limit=None)
     assert len(mock_beautifulsoup.call_args_list) == 1
     assert feed_item_in_range.content in mock_beautifulsoup.call_args[0]
     assert mock_epub_book.set_title.call_args[0][0].endswith("(5m)")
