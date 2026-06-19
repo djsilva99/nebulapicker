@@ -40,7 +40,24 @@ class FeedsPort(ABC):
         pass
 
     @abstractmethod
-    def get_active_feed_items_by_feed_id(self, feed_id: int) -> list[FeedItem]:
+    def get_active_feed_items_by_feed_id(
+        self,
+        feed_id: int,
+        title_search: str = '',
+        limit: int | None = 20,
+        offset: int = 0,
+        last_day: bool = False,
+        rss_items: bool = False
+    ) -> list[FeedItem]:
+        pass
+
+    @abstractmethod
+    def count_active_feed_items_by_feed_id(
+        self,
+        feed_id: int,
+        title_search: str,
+        last_day: bool = False,
+    ) -> int:
         pass
 
     @abstractmethod

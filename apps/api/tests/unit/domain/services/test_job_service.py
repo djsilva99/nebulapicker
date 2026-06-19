@@ -98,7 +98,7 @@ def test_process_adds_new_entry(mock_parse, job_service, mock_services):
     filter_mock = MagicMock(operation=Operation.identity)
     filter_mock.args = "[]"
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
-    mock_services["feed_service"].get_feed_items.return_value = []
+    mock_services["feed_service"].get_feed_items.return_value = [], 0
     mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
         url="http://example.com/feed", name="Example Source"
     )
@@ -135,7 +135,7 @@ def test_process_skips_existing_entry(mock_parse, job_service, mock_services):
     mock_services["filter_service"].get_filters_by_picker_id.return_value = []
     mock_services["feed_service"].get_feed_items.return_value = [
         SimpleNamespace(link="http://example.com/article1")
-    ]
+    ], 1
     mock_services["source_service"].get_source_by_id.return_value = SimpleNamespace(
         url="http://example.com/feed", name="Example Source"
     )
@@ -166,7 +166,7 @@ def test_process_with_identity_filter(mock_parse, job_service, mock_services):
     filter_mock = MagicMock(operation=Operation.identity)
     filter_mock.args = "[]"
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
-    mock_services["feed_service"].get_feed_items.return_value = []
+    mock_services["feed_service"].get_feed_items.return_value = [], 0
     mock_services["source_service"].get_source_by_id.return_value = AttrDict(
         url="http://example.com/feed", name="Example Source"
     )
@@ -196,7 +196,7 @@ def test_process_with_title_contains_filter(mock_parse, job_service, mock_servic
     mock_services["picker_service"].get_picker_by_id.return_value = picker
     filter_mock = MagicMock(operation=Operation.title_contains, args="['Article', 1]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
-    mock_services["feed_service"].get_feed_items.return_value = []
+    mock_services["feed_service"].get_feed_items.return_value = [], 0
     mock_services["source_service"].get_source_by_id.return_value = AttrDict(
         url="http://example.com/feed", name="Example Source"
     )
@@ -226,7 +226,7 @@ def test_process_with_link_contains_filter(mock_parse, job_service, mock_service
     mock_services["picker_service"].get_picker_by_id.return_value = picker
     filter_mock = MagicMock(operation=Operation.link_contains, args="['example.com', 1]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
-    mock_services["feed_service"].get_feed_items.return_value = []
+    mock_services["feed_service"].get_feed_items.return_value = [], 0
     mock_services["source_service"].get_source_by_id.return_value = AttrDict(
         url="http://example.com/feed", name="Example Source"
     )
@@ -255,7 +255,7 @@ def test_process_with_description_contains_filter_fails(mock_parse, job_service,
     mock_services["picker_service"].get_picker_by_id.return_value = picker
     filter_mock = MagicMock(operation=Operation.description_contains, args="['banana', 2]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
-    mock_services["feed_service"].get_feed_items.return_value = []
+    mock_services["feed_service"].get_feed_items.return_value = [], 0
     mock_services["source_service"].get_source_by_id.return_value = AttrDict(
         url="http://feed", name="Example Source"
     )
@@ -286,7 +286,7 @@ def test_process_with_title_does_not_contain_filter(mock_parse, job_service, moc
     mock_services["picker_service"].get_picker_by_id.return_value = picker
     filter_mock = MagicMock(operation=Operation.title_does_not_contain, args="['spam', 1]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
-    mock_services["feed_service"].get_feed_items.return_value = []
+    mock_services["feed_service"].get_feed_items.return_value = [], 0
     mock_services["source_service"].get_source_by_id.return_value = AttrDict(
         url="http://feed", name="Example Source"
     )
@@ -317,7 +317,7 @@ def test_process_with_link_does_not_contain_filter(mock_parse, job_service, mock
     mock_services["picker_service"].get_picker_by_id.return_value = picker
     filter_mock = MagicMock(operation=Operation.link_does_not_contain, args="['item', 1]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
-    mock_services["feed_service"].get_feed_items.return_value = []
+    mock_services["feed_service"].get_feed_items.return_value = [], 0
     mock_services["source_service"].get_source_by_id.return_value = AttrDict(
         url="http://feed", name="Example Source"
     )
@@ -342,7 +342,7 @@ def test_process_with_description_does_not_contain_filter(mock_parse, job_servic
     mock_services["picker_service"].get_picker_by_id.return_value = picker
     filter_mock = MagicMock(operation=Operation.description_does_not_contain, args="['error', 1]")
     mock_services["filter_service"].get_filters_by_picker_id.return_value = [filter_mock]
-    mock_services["feed_service"].get_feed_items.return_value = []
+    mock_services["feed_service"].get_feed_items.return_value = [], 0
     mock_services["source_service"].get_source_by_id.return_value = AttrDict(
         url="http://feed", name="Example Source"
     )

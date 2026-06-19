@@ -41,6 +41,7 @@ class FeedItem(BaseModel):
     content: str | None = None
     reading_time: int | None = None
     image_url: str | None = None
+    read: bool = False
 
 
 class FeedItemRequest(BaseModel):

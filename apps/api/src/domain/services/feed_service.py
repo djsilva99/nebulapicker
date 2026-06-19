@@ -86,8 +86,25 @@ class FeedService:
         all_items: bool = False,
         query_title: str = "",
         last_day: bool = False,
-        rss_items: bool = False
-    ) -> list[FeedItem]:
+        rss_items: bool = False,
+        feed_items_limit: int = 20,
+        feed_items_offset: int = 0
+    ) -> tuple[list[FeedItem], int]:
+        if title:
+            feed_items = self.feeds_port.get_active_feed_items_by_feed_id(
+                feed_id,
+                limit=None
+            )
+            feeds_to_return = []
+            for feed_item in feed_items:
+                if (
+                    feed_item.title == title and
+                    feed_item.created_at >= (
+                        datetime.datetime.now() - datetime.timedelta(hours=HOURS_TO_COMPARE)
+                    )
+                ):
+                    feeds_to_return.append(feed_item)
+            return feeds_to_return, len(feeds_to_return)
         if all_items:
             raw_feed_items = self.feeds_port.get_all_feed_items_by_feed_id(feed_id)
             if rss_items:
@@ -100,40 +117,24 @@ class FeedService:
                 ),
                 key=lambda item: item.created_at
             )
+            total_count = len(feed_items)
         else:
-            raw_feed_items = self.feeds_port.get_active_feed_items_by_feed_id(feed_id)
-            if rss_items:
-                raw_feed_items = raw_feed_items[0:MAX_NUMBER_OF_ITEMS_IN_RSS]
-            feed_items = sorted(
-                (
-                    item
-                    for item in raw_feed_items
-                    if query_title.lower() in item.title.lower()
-                ),
-                key=lambda item: item.created_at
+            feed_items = self.feeds_port.get_active_feed_items_by_feed_id(
+                feed_id,
+                limit=feed_items_limit,
+                offset=feed_items_offset,
+                title_search=query_title,
+                last_day=last_day,
+                rss_items=rss_items
             )
-        if title:
-            feeds_to_return = []
-            for feed_item in feed_items:
-                if (
-                    feed_item.title == title and
-                    feed_item.created_at >= (
-                        datetime.datetime.now() - datetime.timedelta(hours=HOURS_TO_COMPARE)
-                    )
-                ):
-                    feeds_to_return.append(feed_item)
-            return feeds_to_return
-        if last_day:
-            now = datetime.datetime.now(datetime.UTC)
-            cutoff = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            if now.hour < 3:
-                cutoff -= datetime.timedelta(days=1)
-            feed_items = [
-                item for item in feed_items
-                if item.created_at.replace(tzinfo=datetime.UTC) > cutoff
-            ]
-        feed_items.reverse()
-        return feed_items
+            total_count = self.feeds_port.count_active_feed_items_by_feed_id(
+                feed_id,
+                query_title,
+                last_day
+            )
+            if rss_items and total_count > MAX_NUMBER_OF_ITEMS_IN_RSS:
+                total_count = MAX_NUMBER_OF_ITEMS_IN_RSS
+        return feed_items, total_count
 
     def create_feed_item(self, feed_item_request: FeedItemRequest) -> FeedItem | None:
         if settings.WALLABAG_ENABLED:
@@ -167,14 +168,17 @@ class FeedService:
         feed = self.feeds_port.get_feed_by_external_id(feed_external_id)
         if not feed:
             return None
-        feed_items = self.feeds_port.get_active_feed_items_by_feed_id(feed.id)
+        feed_items = self.feeds_port.get_active_feed_items_by_feed_id(
+            feed.id,
+            limit=MAX_NUMBER_OF_ITEMS_IN_RSS
+        )
         feed_object = Rss201rev2Feed(
             title=feed.name,
             link="http://127.0.0.1:8080/" + str(feed.external_id),
             description=feed.name,
             language="en",
         )
-        for feed_item in feed_items[:MAX_NUMBER_OF_ITEMS_IN_RSS]:
+        for feed_item in feed_items:
             feed_object.add_item(
                 title=feed_item.title,
                 link=feed_item.link,
@@ -199,7 +203,7 @@ class FeedService:
         start_time = start_time.astimezone(datetime.UTC)
         end_time = end_time.astimezone(datetime.UTC)
         feed = self.feeds_port.get_feed_by_external_id(feed_external_id)
-        feed_items = self.feeds_port.get_active_feed_items_by_feed_id(feed.id)
+        feed_items = self.feeds_port.get_active_feed_items_by_feed_id(feed.id, limit=None)
         feed_items_to_export = [
             item for item in feed_items if
             item.created_at.replace(

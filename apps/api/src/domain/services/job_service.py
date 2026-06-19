@@ -3,6 +3,7 @@ import ast
 import feedparser
 from src.configs.settings import Settings
 from src.domain.handlers.operations import (
+    author_does_not_contain,
     description_contains,
     description_does_not_contain,
     identity,
@@ -80,7 +81,7 @@ class JobService:
     def process(self, picker_id: int):  # noqa: C901
         picker = self.picker_service.get_picker_by_id(picker_id)
         filters = self.filter_service.get_filters_by_picker_id(picker_id)
-        feed_items = self.feed_service.get_feed_items(picker.feed_id, all_items=True)
+        feed_items, _ = self.feed_service.get_feed_items(picker.feed_id, all_items=True)
         source = self.source_service.get_source_by_id(picker.source_id)
         source_name = source.name if source.name else ""
         source_set = feedparser.parse(source.url)
@@ -160,13 +161,22 @@ class JobService:
                         int(args[1])
                     )
 
+                # link_does_not_contain operation
+                if filter.operation is Operation.author_does_not_contain:
+                    to_add = author_does_not_contain(
+                        to_add,
+                        entry.author,
+                        args[0],
+                        int(args[1])
+                    )
+
             if to_add:
                 # this condition makes sure that feed_items are not duplicated
                 # when processing pickers
                 if not self.feed_service.get_feed_items(
                     feed_id=picker.feed_id,
                     title=entry.title
-                ):
+                )[0]:
                     content = None
                     image_url = None
                     if settings.WALLABAG_ENABLED:

@@ -408,7 +408,7 @@ def delete_feed(
         picker_service.delete_picker(picker_id=picker.id)
         job_service.delete_cronjob(picker)
 
-    feed_items = feed_service.get_feed_items(feed.id)
+    feed_items, _ = feed_service.get_feed_items(feed.id)
     for feed_item in feed_items:
         feed_service.delete_feed_item(feed_item.id)
     feed_service.delete_feed(feed.id)
@@ -509,23 +509,23 @@ def get_feed(
         )
 
     query_title = title if title is not None else ""
-    feed_items = feed_service.get_feed_items(
+    last_day = last_day if last_day is not None else False
+    rss_items = rss_items if rss_items is not None else False
+    feed_items, total_feed_items_count = feed_service.get_feed_items(
         feed.id,
         query_title=query_title,
         last_day=last_day,
-        rss_items=rss_items
+        rss_items=rss_items,
+        feed_items_limit=feed_items_limit,
+        feed_items_offset=feed_items_offset
     )
-    total_feed_items_count = len(feed_items)
+    external_feed_items = [
+        map_feed_item_to_external_feed_item(fi) for fi in feed_items
+    ]
     if not feed_items_offset:
         feed_items_offset = 0
     if not feed_items_limit:
         feed_items_limit = total_feed_items_count
-    external_feed_items = [
-        map_feed_item_to_external_feed_item(fi) for fi in feed_items[
-            feed_items_offset:(feed_items_offset+feed_items_limit)
-        ]
-    ]
-
     return FullCompleteFeed(
         name=feed.name,
         external_id=feed.external_id,

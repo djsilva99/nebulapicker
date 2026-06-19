@@ -60,3 +60,13 @@ def link_does_not_contain(
     if link.lower().count(expression.lower()) >= count:
         return False
     return to_add
+
+def author_does_not_contain(
+    to_add: bool,
+    author: str,
+    expression: str,
+    count: int
+):
+    if author.lower().count(expression.lower()) >= count:
+        return False
+    return to_add
