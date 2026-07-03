@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Heading,
   Box,
   Link
 } from "@chakra-ui/react";
@@ -32,6 +31,15 @@ export default function FeedItemPage() {
         }
       });
       setData(feedRes.data);
+            await axios.patch(
+        `/api/v1/feeds/${feedId}/feed_items/${feedItemId}`, 
+        { read: true },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
+        }
+      );
     } catch (error: unknown) {
       console.error("Error fetching data:", error);
       if (axios.isAxiosError(error)) {
@@ -56,7 +64,7 @@ export default function FeedItemPage() {
   const fetchFeed = async () => {
     try {
       const token = Cookies.get("token");
-      const feedRes = await axios.get("/api/v1/feeds/" + feedId, {
+      const feedRes = await axios.get("/api/v1/feeds/" + feedId + "?title=&feed_items_limit=20&feed_items_offset=0", {
         headers: {
           Authorization: `Bearer ${token}`,
         }
@@ -126,12 +134,12 @@ export default function FeedItemPage() {
             .article-container p {
                 margin-bottom: 1em !important;
                 line-height: 1.7 !important;
-                font-size: 0.9rem !important;
+                font-size: 1.1rem !important;
                 font-weight: normal !important;
             }
 
             .article-container h1 {
-                font-size: 1.3rem !important;
+                font-size: 1.5rem !important;
                 margin-bottom: 0.3em !important;
                 font-weight: bold !important;
                 color: #7DCDE8 !important;
