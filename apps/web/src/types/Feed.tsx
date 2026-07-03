@@ -20,6 +20,7 @@ export interface FeedItem {
     content?: string
     reading_time?: string
     image_url?: string
+    read: boolean
 }
 
 export interface Feed {
@@ -29,5 +30,6 @@ export interface Feed {
     pickers?: Picker[];
     feed_items?: FeedItem[]
     latest_item_datetime?: string,
-    number_of_feed_items?: string
+    number_of_feed_items?: string,
+    number_of_unread_items?: string
 }

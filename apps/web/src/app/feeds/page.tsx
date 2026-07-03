@@ -18,10 +18,11 @@ import {
   FiPlus,
   FiTrash,
   FiRss,
-  FiSettings,
+  FiSettings
 } from "react-icons/fi";
 import Link from "next/link";
 import { AddFeedModal } from "@/app/feeds/_components/add-feeds-modal";
+import { readFile } from "node:fs";
 
 function timeDeltaFromNow(dateString: string): string {
   const now = new Date();
@@ -44,6 +45,8 @@ function timeDeltaFromNow(dateString: string): string {
 }
 
 export default function Feeds() {
+  const useWallabagExtractor =
+    process.env.NEXT_PUBLIC_USE_WALLABAG_EXTRACTOR === "true";
   const [data, setData] = useState<Feed[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -189,19 +192,11 @@ export default function Feeds() {
 
         <Table.Body>
           {paginatedItems.map((item: Feed) => (
-            <Table.Row key={item.external_id} cursor="pointer" _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+            <Table.Row key={item.external_id} cursor="pointer" _hover={{ bg: 'gray.800'}} color={useWallabagExtractor && Number(item.number_of_unread_items) > 0 ? "#7DCDE8" : 'white'}>
               <Table.Cell width={{ base: "50%", md: "60%" }}>
                 <Link href={`/feeds/${item.external_id}`} passHref legacyBehavior>
                   <Box>
                     <Box fontWeight="bold">{item.name}</Box>
-                  </Box>
-                </Link>
-              </Table.Cell>
-
-              <Table.Cell width={{ base: "30%", md: "15%" }}>
-                <Link href={`/feeds/${item.external_id}`} passHref legacyBehavior>
-                  <Box>
-                    <Box fontWeight="bold">{item.number_of_feed_items}</Box>
                     <Box
                       fontSize="xs"
                       color="gray.500"
@@ -210,6 +205,38 @@ export default function Feeds() {
                     >
                       <Flex align="center" gap={1}>
                         {timeDeltaFromNow(item.latest_item_datetime as string)} ago
+                      </Flex>
+                    </Box>
+                  </Box>
+                </Link>
+              </Table.Cell>
+
+              <Table.Cell 
+                width={{ base: "30%", md: "15%" }}
+                color={useWallabagExtractor && Number(item.number_of_unread_items) > 0 ? "#7DCDE8" : 'white'}
+              >
+                <Link href={`/feeds/${item.external_id}`} passHref legacyBehavior>
+                  <Box>
+                    <Box
+                      fontWeight="bold"
+                      display={{ base: 'none', md: 'block' }}
+                    >
+                      {item.number_of_feed_items} {useWallabagExtractor && Number(item.number_of_unread_items) > 0 ? '(' + item.number_of_unread_items + ')' : ''}
+                    </Box>
+                    <Box
+                      fontWeight="bold"
+                      display={{ base: 'block', md: 'none' }}
+                    >
+                      {item.number_of_feed_items}
+                    </Box>
+                    <Box
+                      fontSize="xs"
+                      color="gray.500"
+                      mt={0.5}
+                      display={{ base: 'block', md: 'none' }}
+                    >
+                      <Flex align="center" gap={1}>
+                        {useWallabagExtractor && Number(item.number_of_unread_items) > 0 ? '(' + item.number_of_unread_items + ')' : ''}
                       </Flex>
                     </Box>
                   </Box>
@@ -233,7 +260,7 @@ export default function Feeds() {
                     aria-label={`Delete ${item.name}`}
                     size="xs"
                     colorScheme="red"
-                    color="white"
+                    color={useWallabagExtractor && Number(item.number_of_unread_items) > 0 ? "#7DCDE8" : 'white'}
                     _hover={{ bg: 'gray.700', color: '#7DCDE8' }}
                     variant="ghost"
                     onClick={(e) => {
@@ -250,7 +277,7 @@ export default function Feeds() {
                     aria-label={`Delete ${item.name}`}
                     size="xs"
                     colorScheme="red"
-                    color="white"
+                    color={useWallabagExtractor && Number(item.number_of_unread_items) > 0 ? "#7DCDE8" : 'white'}
                     _hover={{ bg: 'gray.700', color: 'red' }}
                     variant="ghost"
                     onClick={(e) => {
@@ -267,7 +294,7 @@ export default function Feeds() {
                     aria-label={`Download RSS for ${item.name}`}
                     size="xs"
                     colorScheme="blue"
-                    color="white"
+                    color={useWallabagExtractor && Number(item.number_of_unread_items) > 0 ? "#7DCDE8" : 'white'}
                     _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
                     variant="ghost"
                     onClick={(e) => {

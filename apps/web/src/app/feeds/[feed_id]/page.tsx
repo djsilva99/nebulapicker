@@ -31,9 +31,11 @@ import {
   FiClock,
   FiSearch,
   FiGlobe,
+  FiBookOpen
 } from "react-icons/fi";
 import { useToast } from "@chakra-ui/toast";
 import { AddFeedItemModal } from "./_components/add_feed_items_modal";
+import { Text as ChakraText } from "@chakra-ui/react";
 
 
 function timeDeltaFromNow(dateString: string): string {
@@ -69,10 +71,12 @@ export default function FeedPage() {
   const [page, setPage] = useState(1);
   const feed_items_offset = (page - 1) * PAGE_SIZE;
   const [search, setSearch] = useState("");
+  const [unreadItems, setUnreadItems] = useState(false);
   const [lastDay, setLastDay] = useState(false);
   const [rssItems, setRssItems] = useState(false);
   const feedItems = data?.feed_items ?? [];
   const [totalItems, setTotalItems] = useState(0);
+  const [totalUnreadItems, setTotalUnreadItems] = useState(0);
   const toast = useToast();
 
   // FETCH DATA
@@ -87,6 +91,7 @@ export default function FeedPage() {
         params: {
           title: search,
           last_day: lastDay || undefined,
+          only_unread_items: unreadItems || undefined,
           rss_items: rssItems || undefined,
           feed_items_limit: PAGE_SIZE,
           feed_items_offset,
@@ -94,6 +99,7 @@ export default function FeedPage() {
       });
       setData(feedRes.data);
       setTotalItems(feedRes.data.feed_items_total_count ?? 0);
+      setTotalUnreadItems(feedRes.data.unread_feed_items_total_count ?? 0);
 
     } catch (error: unknown) {
       console.error("Error fetching data:", error);
@@ -117,7 +123,11 @@ export default function FeedPage() {
     if (isInitialLoading) return;
 
     fetchData();
-  }, [feedId, page, search, lastDay, rssItems]);
+  }, [feedId, page, search, lastDay, unreadItems, rssItems]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [page]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -158,6 +168,50 @@ export default function FeedPage() {
       });
     } finally {
       setIsDeleting(null);
+    }
+  };
+
+  const handleCatchup = async (externalId: string) => {
+    try {
+      const token = Cookies.get("token");
+      await axios.patch(
+        `/api/v1/feeds/${externalId}/feed_items/`,
+        { "read": true },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchData();
+    } catch (error: unknown) {
+      console.error("Error marking all as read", error);
+      toast({
+        title: "Error.",
+        description: `Failed to mark all items as read for feed ${externalId}.`,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+    }
+  };
+
+  const handleReadItem = async (externalId: string, externalItemId: string, read: boolean) => {
+    try {
+      const token = Cookies.get("token");
+      await axios.patch(
+        `/api/v1/feeds/${externalId}/feed_items/${externalItemId}`,
+        { "read": read },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchData();
+    } catch (error: unknown) {
+      console.error("Error marking item as read", error);
+      toast({
+        title: "Error.",
+        description: `Failed to mark item ${externalItemId} as read for feed ${externalId}.`,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
     }
   };
 
@@ -230,61 +284,41 @@ export default function FeedPage() {
       </Flex>
 
       {/* SEARCH + SWITCHES */}
-      <Flex mb={4} px={0} align="center" gap={4}>
+      {!useWallabagExtractor && (
+        <Flex mb={4} px={0} align="center" gap={0}>
 
-        {/* SEARCH */}
-        <Box position="relative" maxW="300px" width="100%">
-          <Box position="absolute" left="0.75rem" top="50%" transform="translateY(-50%)" pointerEvents="none">
-            <FiSearch color="gray.400" />
+          {/* SEARCH */}
+          <Box
+            position="relative"
+            width="75%"
+          >
+            <Box
+              position="absolute"
+              top="50%"
+              transform="translateY(-50%)"
+              pointerEvents="none"
+            >
+              <FiSearch color="gray.400" />
+            </Box>
+            <Input
+              placeholder="Search by title"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleKeyDown}
+              bg="gray.900"
+              borderColor="white"
+              color="white"
+              ps="1rem"
+              _placeholder={{ color: "gray.500" }}
+              _focus={{ borderColor: "#562565" }}
+              borderWidth="1px"
+            />
           </Box>
-          <Input
-            placeholder="Search by title"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={handleKeyDown}
-            bg="gray.900"
-            borderColor="white"
-            color="white"
-            ps="1rem"
-            _placeholder={{ color: "gray.500" }}
-            _focus={{ borderColor: "#562565" }}
-            borderWidth="1px"
-          />
-        </Box>
 
-        <Spacer />
-
-        {/* FILTERS */}
-        <Flex align="center" gap={4}>
-          {useWallabagExtractor && (
-            <FormControl>
-              <Flex direction="column" align="center" gap={1}>
-                <FormLabel
-                  htmlFor="last-day"
-                  mb="0"
-                  fontSize="xs"
-                  color="gray.400"
-                >
-                  24h
-                </FormLabel>
-                <Switch.Root
-                  id="last-day"
-                  checked={lastDay}
-                  onCheckedChange={(details) => {
-                    setLastDay(details.checked);
-                    setPage(1);
-                  }}
-                  colorPalette='purple'
-                >
-                  <Switch.HiddenInput />
-                  <Switch.Control />
-                </Switch.Root>
-              </Flex>
-            </FormControl>
-          )}
-
+          <Spacer />
+        
           <FormControl>
-            <Flex direction="column" align="center" gap={1}>
+            <Flex direction="column" align="center" gap={1} mr="15px">
               <FormLabel
                 htmlFor="rss_items"
                 mb="0"
@@ -309,7 +343,144 @@ export default function FeedPage() {
           </FormControl>
 
         </Flex>
+      )}
+      {useWallabagExtractor && (
+        <Flex mb={4} px={0} align="center" gap={0}>
 
+          {/* SEARCH */}
+          <Box
+            position="relative"
+            width="100%"
+          >
+            <Box
+              position="absolute"
+              top="50%"
+              transform="translateY(-50%)"
+              pointerEvents="none"
+            >
+              <FiSearch color="gray.400" />
+            </Box>
+            <Input
+              placeholder="Search by title"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleKeyDown}
+              bg="gray.900"
+              borderColor="white"
+              color="white"
+              ps="1rem"
+              _placeholder={{ color: "gray.500" }}
+              _focus={{ borderColor: "#562565" }}
+              borderWidth="1px"
+            />
+          </Box>
+          <Spacer />
+        </Flex>
+      )}
+      <Flex w="86%" mb={4} px={0} align="center" justify="space-between" ml="7%" mr="7%">
+
+        {useWallabagExtractor && (
+          <FormControl>
+            <Flex direction="column" align="center" gap={1}>
+              <FormLabel
+                htmlFor="catchup"
+                mb="0"
+                fontSize="xs"
+                color="gray.400"
+              >
+                catchup
+              </FormLabel>
+              <FiBookOpen style={{ cursor: 'pointer' }}
+              onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleCatchup(data?.external_id || "");
+                }}
+              />
+            </Flex>
+          </FormControl>
+        )}
+
+        {useWallabagExtractor && (
+          <FormControl>
+            <Flex direction="column" align="center" gap={1}>
+              <FormLabel
+                htmlFor="unread-items"
+                mb="0"
+                fontSize="xs"
+                color="gray.400"
+              >
+                unread
+              </FormLabel>
+              <Switch.Root
+                id="unread-items"
+                checked={unreadItems}
+                onCheckedChange={(details) => {
+                  setUnreadItems(details.checked);
+                  setPage(1);
+                }}
+                colorPalette='purple'
+              >
+                <Switch.HiddenInput />
+                <Switch.Control />
+              </Switch.Root>
+            </Flex>
+          </FormControl>
+        )}
+
+        {useWallabagExtractor && (
+          <FormControl>
+            <Flex direction="column" align="center" gap={1}>
+              <FormLabel
+                htmlFor="last-day"
+                mb="0"
+                fontSize="xs"
+                color="gray.400"
+              >
+                24h
+              </FormLabel>
+              <Switch.Root
+                id="last-day"
+                checked={lastDay}
+                onCheckedChange={(details) => {
+                  setLastDay(details.checked);
+                  setPage(1);
+                }}
+                colorPalette='purple'
+              >
+                <Switch.HiddenInput />
+                <Switch.Control />
+              </Switch.Root>
+            </Flex>
+          </FormControl>
+        )}
+
+        {useWallabagExtractor && (
+          <FormControl>
+            <Flex direction="column" align="center" gap={1}>
+              <FormLabel
+                htmlFor="rss_items"
+                mb="0"
+                fontSize="xs"
+                color="gray.400"
+              >
+                RSS
+              </FormLabel>
+              <Switch.Root
+                id="rss-items"
+                checked={rssItems}
+                onCheckedChange={(details) => {
+                  setRssItems(details.checked);
+                  setPage(1);
+                }}
+                colorPalette="purple"
+              >
+                <Switch.HiddenInput />
+                <Switch.Control />
+              </Switch.Root>
+            </Flex>
+          </FormControl>
+        )}
       </Flex>
 
       <Flex
@@ -322,7 +493,38 @@ export default function FeedPage() {
         color="gray.500"
       >
         Showing {(page - 1) * PAGE_SIZE + 1}–
-        {Math.min(page * PAGE_SIZE, totalItems)} of {totalItems}
+        {Math.min(page * PAGE_SIZE, totalItems)} of {totalItems} {useWallabagExtractor ? '(' + String(totalUnreadItems) + ')' : ''}
+      </Flex>
+
+      <Flex justify="center" align="center" mt={4} mb={4}>
+        <Pagination.Root
+          count={totalItems}
+          pageSize={PAGE_SIZE}
+          page={page}
+          onPageChange={(details) => setPage(details.page)}
+        >
+          <Pagination.Items
+            render={(item) => (
+              <Pagination.Item
+                key={item.value}
+                value={item.value}
+                type={item.type}
+                asChild
+              >
+                <Button
+                  size="xs"
+                  color={item.type === "page" && item.value === page ? "white" : "white"}
+                  bg={item.type === "page" && item.value === page ? "#6b4078" : "transparent"}
+                  variant="outline"
+                  m={1}
+                  _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
+                >
+                  {item.type === "page" ? item.value : "…"}
+                </Button>
+              </Pagination.Item>
+            )}
+          />
+        </Pagination.Root>
       </Flex>
 
       {/* TABLE */}
@@ -344,30 +546,31 @@ export default function FeedPage() {
               key={item.external_id}
               cursor="pointer"
               color="gray.400"
-              _hover={{ bg: 'gray.800', color: '#AC7DBA' }}
+              _hover={{ bg: '#3c3652', color: '#AC7DBA' }}
             >
               <Table.Cell
                 borderLeft="none"
                 borderRight="none"
                 cursor="pointer"
-                width={{ base: "100%", md: "60%" }}
+                width={{ base: "100%", md: "55%" }}
                 color="gray.400"
                 role="group"
-                _hover={{ bg: 'gray.800', color: '#AC7DBA' }}
+                _hover={{ bg: '#3c3652', color: '#AC7DBA' }}
               >
                 <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
                   color="gray.400"
                   _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
-                  <Box>
+                  <Box _hover={{ bg: '#3c3652', color: '#AC7DBA'}}>
                     <Flex align="center" gap={3}>
                       <Box
                         width="80px"
                         height="60px"
-                        bg="gray.900"
+                        bg="transparent"
                         overflow="hidden"
                         flexShrink={0}
                       >
                         <Image
+                          bg="transparent"
                           src={item.image_url ?? "/nebulapicker.png"}
                           width="100%"
                           height="100%"
@@ -375,7 +578,10 @@ export default function FeedPage() {
                           pointerEvents="none"
                         />
                       </Box>
-                      <Box fontWeight="medium" color="#7DCDE8">
+                      <Box 
+                        fontWeight="medium"
+                        color={item.read ? "white" : '#7DCDE8'}
+                      >
                         {item.title}
                       </Box>
                     </Flex>
@@ -388,9 +594,28 @@ export default function FeedPage() {
                   display={{ base: 'block', md: 'none' }}
                 >
                   <Flex align="center" gap={1}>
-                    {item.author.length > 17 ? `${item.author.slice(0, 17)}…` : item.author} &nbsp;&nbsp;
-                    {timeDeltaFromNow(item.created_at)} ago &nbsp;&nbsp;
-                    <FiClock/> {item.reading_time}m
+                    <Box
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleReadItem(data?.external_id || "", item.external_id, !item.read);
+                      }}
+                    >
+                      {item.author.length > 17 ? `${item.author.slice(0, 17)}…` : item.author} &nbsp;&nbsp;
+                      {timeDeltaFromNow(item.created_at)} ago &nbsp;&nbsp;
+                      <Flex
+                        as="span"
+                        display="inline-flex"
+                        alignItems="center"
+                        gap="4px"
+                        verticalAlign="middle"
+                      >
+                        <FiClock size={16}/> 
+                        <ChakraText as="span" lineHeight="1">
+                          {item.reading_time}m
+                        </ChakraText>
+                      </Flex>
+                    </Box>
                     <Spacer/>
                     <Box minW="80px">
                       <Button
@@ -431,35 +656,51 @@ export default function FeedPage() {
               </Table.Cell>
               <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "15%" }}>
                 <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
-                  color="gray.400"
-                  _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+                  color={item.read ? "white" : '#7DCDE8'}
+                  _hover={{ bg: '#3c3652' }}>
                   <Box>{item.author}</Box>
                 </Link>
               </Table.Cell>
 
               <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "10%" }}>
                 <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
-                  color="gray.400"
-                  _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+                  color={item.read ? "white" : '#7DCDE8'}
+                  _hover={{ bg: '#3c3652' }}>
                   <Box>{timeDeltaFromNow(item.created_at)} ago</Box>
                 </Link>
               </Table.Cell>
 
               <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "5%" }}>
                 <Link href={`/feeds/${feedId}/feed_items/${item.external_id}`} cursor="pointer"
-                  color="gray.400"
-                  _hover={{ bg: 'gray.800', color: '#AC7DBA' }}>
+                  color={item.read ? "white" : '#7DCDE8'}
+                  _hover={{ bg: '#3c3652' }}>
                   <Box>{item.reading_time}m</Box>
                 </Link>
               </Table.Cell>
 
-              <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "10%" }}>
+              <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "15%" }}>
                 <Box minW="80px">
+                  <Button
+                    aria-label={`Delete ${item.title}`}
+                    size="xs"
+                    colorScheme="red"
+                    color={item.read ? "white" : '#7DCDE8'}
+                    _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleReadItem(data?.external_id || "", item.external_id, !item.read);
+                    }}
+                    loading={isDeleting === item.external_id}
+                  >
+                    <FiBookOpen />
+                  </Button>
                   <Button
                     aria-label={`Go to ${item.link}`}
                     size="xs"
                     colorScheme="red"
-                    color="white"
+                    color={item.read ? "white" : '#7DCDE8'}
                     _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
                     variant="ghost"
                     onClick={(e) => {
@@ -471,22 +712,42 @@ export default function FeedPage() {
                   >
                     <FiGlobe />
                   </Button>
-                  <Button
-                    aria-label={`Delete ${item.title}`}
-                    size="xs"
-                    colorScheme="red"
-                    color="white"
-                    _hover={{ bg: 'gray.700', color: 'red' }}
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDelete(data?.external_id || "", item.external_id);
-                    }}
-                    loading={isDeleting === item.external_id}
-                  >
-                    <FiTrash />
-                  </Button>
+                  {useWallabagExtractor && (
+                    <Button
+                      aria-label={`Delete ${item.title}`}
+                      size="xs"
+                      colorScheme="red"
+                      color={item.read ? "white" : '#7DCDE8'}
+                      _hover={{ bg: 'gray.700', color: 'red' }}
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDelete(data?.external_id || "", item.external_id);
+                      }}
+                      loading={isDeleting === item.external_id}
+                    >
+                      <FiTrash />
+                    </Button>
+                  )}
+                  {!useWallabagExtractor && (
+                    <Button
+                      aria-label={`Delete ${item.title}`}
+                      size="xs"
+                      colorScheme="red"
+                      color="white"
+                      _hover={{ bg: 'gray.700', color: 'red' }}
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDelete(data?.external_id || "", item.external_id);
+                      }}
+                      loading={isDeleting === item.external_id}
+                    >
+                      <FiTrash />
+                    </Button>
+                  )}
                 </Box>
               </Table.Cell>
             </Table.Row>
@@ -523,7 +784,7 @@ export default function FeedPage() {
                   color="gray.400"
                 >
                   <Box>
-                    <Box fontWeight="medium" color="#7DCDE8">
+                    <Box fontWeight="medium" color="white">
                       {item.title}
                     </Box>
                     <Box
@@ -561,22 +822,40 @@ export default function FeedPage() {
 
               <Table.Cell borderLeft="none" borderRight="none" width={{ base: "20%", md: "10%" }}>
                 <Box minW="40px">
-                  <Button
-                    aria-label={`Delete ${item.title}`}
-                    size="xs"
-                    colorScheme="red"
-                    color="white"
-                    _hover={{ bg: 'gray.700', color: 'red' }}
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDelete(data?.external_id || "", item.external_id);
-                    }}
-                    loading={isDeleting === item.external_id}
-                  >
-                    <FiTrash />
-                  </Button>
+                  {useWallabagExtractor && (
+                    <Button
+                      aria-label={`Delete ${item.title}`}
+                      size="xs"
+                      color={item.read ? "white" : '#7DCDE8'}
+                      _hover={{ bg: 'gray.700', color: 'red' }}
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDelete(data?.external_id || "", item.external_id);
+                      }}
+                      loading={isDeleting === item.external_id}
+                    >
+                      <FiTrash />
+                    </Button>
+                  )}
+                  {!useWallabagExtractor && (
+                    <Button
+                      aria-label={`Delete ${item.title}`}
+                      size="xs"
+                      color="white"
+                      _hover={{ bg: 'gray.700', color: 'red' }}
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDelete(data?.external_id || "", item.external_id);
+                      }}
+                      loading={isDeleting === item.external_id}
+                    >
+                      <FiTrash />
+                    </Button>
+                  )}
                 </Box>
               </Table.Cell>
             </Table.Row>
@@ -595,7 +874,7 @@ export default function FeedPage() {
         color="gray.500"
       >
         Showing {(page - 1) * PAGE_SIZE + 1}–
-        {Math.min(page * PAGE_SIZE, totalItems)} of {totalItems}
+        {Math.min(page * PAGE_SIZE, totalItems)} of {totalItems} {useWallabagExtractor ? '(' + String(totalUnreadItems) + ')' : ''}
       </Flex>
 
       <Flex justify="center" align="center" mt={4} mb={4}>
