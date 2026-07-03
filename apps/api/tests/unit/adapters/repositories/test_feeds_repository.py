@@ -56,7 +56,8 @@ def db_session(setup_test_db):
                 external_id UUID NOT NULL DEFAULT gen_random_uuid(),
                 created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 image_url TEXT DEFAULT NULL,
-                is_active BOOLEAN DEFAULT TRUE
+                is_active BOOLEAN DEFAULT TRUE,
+                read BOOLEAN DEFAULT FALSE
             );
         """))
 

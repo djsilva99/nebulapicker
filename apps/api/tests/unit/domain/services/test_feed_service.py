@@ -125,7 +125,7 @@ def test_get_feed_items_delegates_to_port(feed_service, feeds_port_mock):
     item2 = MagicMock(
         spec=FeedItem, created_at=datetime(2025, 1, 1, 12, 0, 0), title="title_2"
     )
-    expected_items_sorted = [item1, item2], 2
+    expected_items_sorted = [item1, item2], 2, 2
     feeds_port_mock.get_active_feed_items_by_feed_id.return_value = [item1, item2]
     feeds_port_mock.count_active_feed_items_by_feed_id.return_value = 2
 

@@ -11,6 +11,9 @@ from src.adapters.entrypoints.v1.models.feeds import (
     CreateFeedItemResponse,
     CreateFeedRequest,
     ExportFeedItemsRequest,
+    ExternalFeedItem,
+    ExternalUpdateFeedItemRequest,
+    ExternalUpdateFeedItemsRequest,
     ExternalUpdateFeedRequest,
     FeedResponse,
     FullCompleteFeed,
@@ -41,7 +44,13 @@ from src.adapters.entrypoints.v1.models.source import (
 )
 from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
 from src.configs.settings import Settings
-from src.domain.models.feed import FeedItemRequest, FeedRequest, UpdateFeedRequest
+from src.domain.models.feed import (
+    FeedItemRequest,
+    FeedRequest,
+    UpdateFeedItemRequest,
+    UpdateFeedItemsRequest,
+    UpdateFeedRequest,
+)
 from src.domain.models.picker import PickerRequest
 from src.domain.models.source import SourceRequest
 
@@ -408,7 +417,7 @@ def delete_feed(
         picker_service.delete_picker(picker_id=picker.id)
         job_service.delete_cronjob(picker)
 
-    feed_items, _ = feed_service.get_feed_items(feed.id)
+    feed_items, _, _ = feed_service.get_feed_items(feed.id, feed_items_limit=None)
     for feed_item in feed_items:
         feed_service.delete_feed_item(feed_item.id)
     feed_service.delete_feed(feed.id)
@@ -478,6 +487,7 @@ def get_feed(
     title: str | None = Query(None),
     last_day: bool | None = Query(None),
     rss_items: bool | None = Query(None),
+    only_unread_items: bool | None = Query(None),
     feed_items_limit: int | None = Query(None, ge=1),
     feed_items_offset: int | None= Query(None, ge=0),
     _: str = Depends(authenticate),  # noqa: B008
@@ -511,13 +521,17 @@ def get_feed(
     query_title = title if title is not None else ""
     last_day = last_day if last_day is not None else False
     rss_items = rss_items if rss_items is not None else False
-    feed_items, total_feed_items_count = feed_service.get_feed_items(
-        feed.id,
-        query_title=query_title,
-        last_day=last_day,
-        rss_items=rss_items,
-        feed_items_limit=feed_items_limit,
-        feed_items_offset=feed_items_offset
+    only_unread_items = only_unread_items if only_unread_items is not None else False
+    feed_items, total_feed_items_count, total_unread_feed_items_count = (
+        feed_service.get_feed_items(
+            feed.id,
+            query_title=query_title,
+            last_day=last_day,
+            only_unread_items=only_unread_items,
+            rss_items=rss_items,
+            feed_items_limit=feed_items_limit,
+            feed_items_offset=feed_items_offset
+        )
     )
     external_feed_items = [
         map_feed_item_to_external_feed_item(fi) for fi in feed_items
@@ -532,6 +546,7 @@ def get_feed(
         created_at=feed.created_at,
         pickers=picker_items,
         feed_items_total_count=total_feed_items_count,
+        unread_feed_items_total_count=total_unread_feed_items_count,
         feed_items_offset=feed_items_offset,
         feed_items_limit=feed_items_limit,
         feed_items=external_feed_items,
@@ -589,6 +604,34 @@ def create_feed_item(
     return map_feed_item_to_create_feed_item_response(feed_item)
 
 
+@router.patch(
+    "/feeds/{feed_external_id}/feed_items",
+    status_code=status.HTTP_200_OK,
+    summary="Update all feed items of a feed",
+    description="Update all feed items of a feed.",
+    tags=["Feeds"],
+    responses={
+        200: {"description": "All feed items of a feed updated"},
+        400: {"description": "Bad request / validation error"}
+    }
+)
+def update_feed_items(
+    feed_external_id: UUID,
+    update_feed_items_request: ExternalUpdateFeedItemsRequest,
+    request: Request,
+    _: str = Depends(authenticate),  # noqa: B008
+) -> None:
+    feed_service = request.app.state.job_service.feed_service
+
+    update_feed_items_request = UpdateFeedItemsRequest(
+        read=update_feed_items_request.read
+    )
+    return feed_service.update_feed_items(
+        feed_external_id,
+        update_feed_items_request
+    )
+
+
 @router.get(
     "/feeds/{feed_external_id}/feed_items/{feed_item_external_id}",
     summary="Get full feed data",
@@ -621,6 +664,47 @@ def get_feed_item(
     if not feed_item:
         raise HTTPException(status_code=400, detail="Feed item not found")
     return map_feed_item_to_get_feed_item_response(feed_item)
+
+
+@router.patch(
+    "/feeds/{feed_external_id}/feed_items/{feed_item_external_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Update feed item",
+    description="Update fields of an existing feed item.",
+    tags=["Feeds"],
+    responses={
+        200: {
+            "description": "Feed item updated",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/FeedItemResponse"
+                    }
+                }
+            }
+        },
+        400: {"description": "Bad request / validation error"}
+    }
+)
+def update_feed_item(
+    feed_external_id: UUID,
+    feed_item_external_id: UUID,
+    update_feed_item_request: ExternalUpdateFeedItemRequest,
+    request: Request,
+    _: str = Depends(authenticate),  # noqa: B008
+) -> ExternalFeedItem:
+    feed_service = request.app.state.job_service.feed_service
+
+    update_feed_item_request = UpdateFeedItemRequest(
+        read=update_feed_item_request.read
+    )
+    updated_feed_item = feed_service.update_feed_item(
+        feed_item_external_id,
+        update_feed_item_request
+    )
+    if updated_feed_item is None:
+        raise HTTPException(status_code=404, detail="Feed item not found")
+    return map_feed_item_to_external_feed_item(updated_feed_item)
 
 
 @router.delete(
