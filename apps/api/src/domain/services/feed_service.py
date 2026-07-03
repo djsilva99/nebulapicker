@@ -16,6 +16,8 @@ from src.domain.models.feed import (
     FeedItemRequest,
     FeedRequest,
     GetFeedItemContentRequest,
+    UpdateFeedItemRequest,
+    UpdateFeedItemsRequest,
     UpdateFeedRequest,
 )
 from src.domain.ports.feeds_port import FeedsPort
@@ -60,6 +62,12 @@ class FeedService:
         detailed_feeds = []
         for feed in feeds:
             number_of_feed_items = self.feeds_port.get_number_of_feed_items_by_feed_id(feed.id)
+            number_of_unread_feed_items = self.feeds_port.count_active_feed_items_by_feed_id(
+                feed.id,
+                "",
+                False,
+                False
+            )
             latest_item_datetime = feed.updated_at
             detailed_feeds.append(
                 DetailedFeed(
@@ -69,6 +77,7 @@ class FeedService:
                     created_at=feed.created_at,
                     latest_item_datetime=latest_item_datetime,
                     number_of_feed_items=number_of_feed_items,
+                    number_of_unread_items=number_of_unread_feed_items
                 )
             )
         return sorted(detailed_feeds, key=lambda item: item.name)
@@ -86,10 +95,11 @@ class FeedService:
         all_items: bool = False,
         query_title: str = "",
         last_day: bool = False,
+        only_unread_items: bool = False,
         rss_items: bool = False,
         feed_items_limit: int = 20,
         feed_items_offset: int = 0
-    ) -> tuple[list[FeedItem], int]:
+    ) -> tuple[list[FeedItem], int, int | None]:
         if title:
             feed_items = self.feeds_port.get_active_feed_items_by_feed_id(
                 feed_id,
@@ -104,7 +114,7 @@ class FeedService:
                     )
                 ):
                     feeds_to_return.append(feed_item)
-            return feeds_to_return, len(feeds_to_return)
+            return feeds_to_return, len(feeds_to_return), None
         if all_items:
             raw_feed_items = self.feeds_port.get_all_feed_items_by_feed_id(feed_id)
             if rss_items:
@@ -118,6 +128,7 @@ class FeedService:
                 key=lambda item: item.created_at
             )
             total_count = len(feed_items)
+            total_unread = None
         else:
             feed_items = self.feeds_port.get_active_feed_items_by_feed_id(
                 feed_id,
@@ -125,16 +136,32 @@ class FeedService:
                 offset=feed_items_offset,
                 title_search=query_title,
                 last_day=last_day,
+                only_unread_items=only_unread_items,
                 rss_items=rss_items
             )
-            total_count = self.feeds_port.count_active_feed_items_by_feed_id(
+            if only_unread_items:
+                total_count = self.feeds_port.count_active_feed_items_by_feed_id(
+                    feed_id,
+                    query_title,
+                    False,
+                    last_day
+                )
+            else:
+                total_count = self.feeds_port.count_active_feed_items_by_feed_id(
+                    feed_id,
+                    query_title,
+                    None,
+                    last_day
+                )
+            total_unread = self.feeds_port.count_active_feed_items_by_feed_id(
                 feed_id,
                 query_title,
+                False,
                 last_day
             )
             if rss_items and total_count > MAX_NUMBER_OF_ITEMS_IN_RSS:
                 total_count = MAX_NUMBER_OF_ITEMS_IN_RSS
-        return feed_items, total_count
+        return feed_items, total_count, total_unread
 
     def create_feed_item(self, feed_item_request: FeedItemRequest) -> FeedItem | None:
         if settings.WALLABAG_ENABLED:
@@ -157,6 +184,27 @@ class FeedService:
             except Exception:
                 return None
         return self.feeds_port.create_feed_item(feed_item_request)
+
+    def update_feed_items(
+        self,
+        feed_external_id: UUID,
+        update_feed_items_request: UpdateFeedItemsRequest
+    ) -> bool:
+        feed = self.get_feed_by_external_id(feed_external_id)
+        if feed is None:
+            raise ValueError(f"Feed with external id {feed_external_id} not found")
+        return self.feeds_port.update_feed_items(feed.id, update_feed_items_request)
+
+
+    def update_feed_item(
+        self,
+        feed_item_external_id: UUID,
+        update_feed_item_request: UpdateFeedItemRequest
+    ) -> FeedItem | None:
+        feed_item = self.get_feed_item_by_external_id(feed_item_external_id)
+        if feed_item is None:
+            return None
+        return self.feeds_port.update_feed_item(feed_item.id, update_feed_item_request)
 
     def delete_feed_item(self, feed_item_id: int) -> bool:
         return self.feeds_port.delete_feed_item(feed_item_id)

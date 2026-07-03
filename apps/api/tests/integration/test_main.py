@@ -857,3 +857,171 @@ def test_get_feed_successfully(
     assert len(data["feed_items"]) == 1
     assert data["feed_items"][0]["title"] == "feed_item_title"
     assert data["feed_items"][0]["link"] == "http://example.com/item1"
+
+
+def test_update_feed_item_successfully(
+        client: TestClient,
+        db_session: Session,
+        monkeypatch: pytest.MonkeyPatch
+):
+    # GIVEN
+    feed_external_id = str(uuid4())
+    feed_item_external_id = str(uuid4())
+    feed_id = 1
+    db_session.execute(
+        text(
+            "INSERT INTO feeds (id, external_id, name) VALUES (:feed_id, "
+            ":external_id, 'Test Feed');"
+        ),
+        {"feed_id": feed_id, "external_id": feed_external_id}
+    )
+    db_session.execute(
+        text(
+            "INSERT INTO feed_items (feed_id, external_id, link, title, "
+            "description, author, reading_time, image_url, read, created_at) "
+            "VALUES (:feed_id, :external_id, 'https://example.com/item', "
+            "'Title', 'Desc', 'Author', 5, 'https://example.com/img.png', "
+            "FALSE, NOW());"
+        ),
+        {
+            "feed_id": feed_id,
+            "external_id": feed_item_external_id,
+        }
+    )
+    db_session.commit()
+    fake_token = "test-token"
+    monkeypatch.setattr(
+        "src.adapters.entrypoints.v1.routes.generated_token",
+        fake_token
+    )
+    update_payload = {
+        "read": True
+    }
+
+    # WHEN
+    response = client.patch(
+        f"/v1/feeds/{feed_external_id}/feed_items/{feed_item_external_id}",
+        json=update_payload,
+        headers={"Authorization": f"Bearer {fake_token}"}
+    )
+
+    # THEN
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["external_id"] == feed_item_external_id
+    assert response_data["read"] is True
+    assert response_data["reading_time"] == 5
+    assert response_data["image_url"] == "https://example.com/img.png"
+
+
+def test_update_feed_item_not_found(
+        client: TestClient,
+        monkeypatch: pytest.MonkeyPatch
+):
+    # GIVEN
+    feed_external_id = str(uuid4())
+    non_existent_item_id = str(uuid4())
+    fake_token = "test-token"
+    monkeypatch.setattr("src.adapters.entrypoints.v1.routes.generated_token", fake_token)
+    update_payload = {
+        "read": True
+    }
+
+    # WHEN
+    response = client.patch(
+        f"/v1/feeds/{feed_external_id}/feed_items/{non_existent_item_id}",
+        json=update_payload,
+        headers={"Authorization": f"Bearer {fake_token}"}
+    )
+
+    # THEN
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "Feed item not found"
+
+
+def test_update_all_feed_items_successfully(
+        client: TestClient,
+        db_session: Session,
+        monkeypatch: pytest.MonkeyPatch
+):
+    # GIVEN
+    feed_external_id = str(uuid4())
+    feed_id = 100
+    db_session.execute(
+        text(
+            "INSERT INTO feeds (id, external_id, name) VALUES "
+            "(:feed_id, :external_id, 'Bulk Update Feed');"
+        ),
+        {"feed_id": feed_id, "external_id": feed_external_id}
+    )
+    db_session.execute(
+        text(
+            "INSERT INTO feed_items (feed_id, external_id, link, title, "
+            "description, author, reading_time, image_url, read, created_at) "
+            "VALUES "
+            "(:feed_id, :ext_1, 'https://example.com/1', 'Title 1', 'Desc 1', "
+            "'Author 1', 2, 'https://example.com/1.png', FALSE, NOW()), "
+            "(:feed_id, :ext_2, 'https://example.com/2', 'Title 2', 'Desc 2', "
+            "'Author 2', 4, 'https://example.com/2.png', FALSE, NOW());"
+        ),
+        {
+            "feed_id": feed_id,
+            "ext_1": str(uuid4()),
+            "ext_2": str(uuid4()),
+        }
+    )
+    db_session.commit()
+    fake_token = "test-token"
+    monkeypatch.setattr("src.adapters.entrypoints.v1.routes.generated_token", fake_token)
+    update_payload = {
+        "read": True
+    }
+
+    # WHEN
+    response = client.patch(
+        f"/v1/feeds/{feed_external_id}/feed_items",
+        json=update_payload,
+        headers={"Authorization": f"Bearer {fake_token}"}
+    )
+
+    # THEN
+    assert response.status_code == status.HTTP_200_OK
+    updated_items = db_session.execute(
+        text("SELECT read FROM feed_items WHERE feed_id = :feed_id;"),
+        {"feed_id": feed_id}
+    ).fetchall()
+    assert len(updated_items) == 2
+    assert all(item[0] is True for item in updated_items)
+
+
+def test_update_all_feed_items_empty_feed(
+        client: TestClient,
+        db_session: Session,
+        monkeypatch: pytest.MonkeyPatch
+):
+    # GIVEN
+    feed_external_id = str(uuid4())
+    feed_id = 101
+    db_session.execute(
+        text(
+            "INSERT INTO feeds (id, external_id, name) VALUES "
+            "(:feed_id, :external_id, 'Empty Feed');"
+        ),
+        {"feed_id": feed_id, "external_id": feed_external_id}
+    )
+    db_session.commit()
+    fake_token = "test-token"
+    monkeypatch.setattr("src.adapters.entrypoints.v1.routes.generated_token", fake_token)
+    update_payload = {
+        "read": True
+    }
+
+    # WHEN
+    response = client.patch(
+        f"/v1/feeds/{feed_external_id}/feed_items",
+        json=update_payload,
+        headers={"Authorization": f"Bearer {fake_token}"}
+    )
+
+    # THEN
+    assert response.status_code == status.HTTP_200_OK

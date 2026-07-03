@@ -33,6 +33,7 @@ class ExternalFeeds(BaseModel):
     created_at: datetime
     latest_item_datetime: datetime
     number_of_feed_items: int
+    number_of_unread_items: int
 
 
 class ListFeedsResponse(BaseModel):
@@ -54,6 +55,21 @@ class ExternalFeedItem(BaseModel):
     reading_time: int
     created_at: datetime
     image_url: str | None
+    read: bool
+
+
+class ExternalUpdateFeedItemRequest(BaseModel):
+    read: bool | None = None
+
+    class Config:
+        extra = "forbid"
+
+
+class ExternalUpdateFeedItemsRequest(BaseModel):
+    read: bool | None = None
+
+    class Config:
+        extra = "forbid"
 
 
 class CreateFeedItemResponse(BaseModel):
@@ -72,6 +88,7 @@ class GetFeedItemResponse(BaseModel):
     content: str
     reading_time: int
     created_at: datetime
+    read: bool
 
 
 class FullCompleteFeed(BaseModel):
@@ -80,6 +97,7 @@ class FullCompleteFeed(BaseModel):
     created_at: datetime
     pickers: list[FullFeedPickerResponse]
     feed_items_total_count: int
+    unread_feed_items_total_count: int
     feed_items_offset: int
     feed_items_limit: int
     feed_items: list[ExternalFeedItem]
@@ -134,7 +152,8 @@ def map_detailed_feeds_list_to_list_feeds_response(
                 external_id=feed.external_id,
                 created_at=feed.created_at,
                 latest_item_datetime=feed.latest_item_datetime,
-                number_of_feed_items=feed.number_of_feed_items
+                number_of_feed_items=feed.number_of_feed_items,
+                number_of_unread_items=feed.number_of_unread_items
             )
             for feed in detailed_feeds_list
         ]
@@ -151,7 +170,8 @@ def map_feed_item_to_external_feed_item(
         author=feed_item.author,
         created_at=feed_item.created_at,
         reading_time=feed_item.reading_time,
-        image_url=feed_item.image_url
+        image_url=feed_item.image_url,
+        read=feed_item.read
     )
 
 
@@ -177,5 +197,21 @@ def map_feed_item_to_get_feed_item_response(
         author=feed_item.author,
         created_at=feed_item.created_at,
         content=feed_item.content,
-        reading_time=feed_item.reading_time
+        reading_time=feed_item.reading_time,
+        read=feed_item.read
+    )
+
+
+def map_feed_item_to_feed_item_response(
+    feed_item: FeedItem
+) -> ExternalFeedItem:
+    return ExternalFeedItem(
+        external_id=feed_item.external_id,
+        link=feed_item.link,
+        title=feed_item.title,
+        author=feed_item.author,
+        created_at=feed_item.created_at,
+        reading_time=feed_item.reading_time,
+        image_url=feed_item.image_url,
+        read=feed_item.read
     )

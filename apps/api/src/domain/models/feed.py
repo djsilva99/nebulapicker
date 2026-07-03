@@ -27,6 +27,7 @@ class DetailedFeed(BaseModel):
     created_at: datetime
     latest_item_datetime: datetime
     number_of_feed_items: int
+    number_of_unread_items: int
 
 
 class FeedItem(BaseModel):
@@ -41,6 +42,15 @@ class FeedItem(BaseModel):
     content: str | None = None
     reading_time: int | None = None
     image_url: str | None = None
+    read: bool = False
+
+
+class UpdateFeedItemRequest(BaseModel):
+    read: bool | None = None
+
+
+class UpdateFeedItemsRequest(BaseModel):
+    read: bool | None = None
 
 
 class FeedItemRequest(BaseModel):

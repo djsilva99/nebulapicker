@@ -3,7 +3,15 @@ from uuid import UUID
 
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
-from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest, UpdateFeedRequest
+from src.domain.models.feed import (
+    Feed,
+    FeedItem,
+    FeedItemRequest,
+    FeedRequest,
+    UpdateFeedItemRequest,
+    UpdateFeedItemsRequest,
+    UpdateFeedRequest,
+)
 from src.domain.ports.feeds_port import FeedsPort
 
 MAX_NUMBER_OF_ITEMS_IN_RSS = 50
@@ -104,7 +112,7 @@ class FeedsRepository(FeedsPort):
     def get_all_feed_items_by_feed_id(self, feed_id: int) -> list[FeedItem]:
         sql = text(
             "SELECT id, feed_id, external_id, link, title, description, author, created_at, "
-            "content, reading_time, image_url "
+            "content, reading_time, image_url, read "
             "FROM feed_items WHERE feed_id = :feed_id "
             "ORDER BY created_at DESC;"
         )
@@ -119,6 +127,7 @@ class FeedsRepository(FeedsPort):
             limit: int | None = 20,
             offset: int = 0,
             last_day: bool = False,
+            only_unread_items: bool = False,
             rss_items: bool = False,
     ) -> list[FeedItem]:
 
@@ -135,6 +144,11 @@ class FeedsRepository(FeedsPort):
             "title_search": title_search,
             "title_pattern": f"%{title_search}%" if title_search else None,
         }
+
+        if only_unread_items is True:
+            where_clauses.append(
+                "read = FALSE"
+            )
 
         # optional filters (no OR in SQL anymore)
         if title_search:
@@ -153,7 +167,7 @@ class FeedsRepository(FeedsPort):
 
         sql = f"""
             SELECT id, feed_id, external_id, link, title, description, author, created_at,
-                   reading_time, image_url, content
+                   reading_time, image_url, content, read
             FROM feed_items
             WHERE {' AND '.join(where_clauses)}
             ORDER BY created_at DESC
@@ -183,7 +197,8 @@ class FeedsRepository(FeedsPort):
             self,
             feed_id: int,
             title_search: str | None = None,
-            last_day: bool = False,
+            read: bool | None = None,
+            last_day: bool = False
     ) -> int:
         title_search = title_search if title_search else None
 
@@ -197,6 +212,10 @@ class FeedsRepository(FeedsPort):
             "title_search": title_search,
             "title_pattern": f"%{title_search}%" if title_search else None,
         }
+
+        if read is not None:
+            where_clauses.append("read = :read")
+            params["read"] = read
 
         if title_search:
             where_clauses.append("title ILIKE :title_pattern")
@@ -227,7 +246,7 @@ class FeedsRepository(FeedsPort):
     ) -> FeedItem | None:
         sql = text(
             "SELECT id, feed_id, external_id, link, title, description, author, created_at, "
-            "content, reading_time "
+            "content, reading_time, read "
             "FROM feed_items WHERE external_id = :external_id;"
         )
         with self.session_factory() as session:
@@ -239,16 +258,26 @@ class FeedsRepository(FeedsPort):
             ).mappings().first()
             return FeedItem(**result) if result else None
 
+    def get_feed_item_by_id(self, id: int) -> FeedItem | None:
+        sql = text(
+            "SELECT id, feed_id, external_id, link, title, description, author, created_at, "
+            "content, reading_time, read "
+            "FROM feeds WHERE id = :id;"
+        )
+        with self.session_factory() as session:
+            result = session.execute(sql, {"id": id}).mappings().first()
+            return FeedItem(**result) if result else None
+
     def create_feed_item(self, feed_item_request: FeedItemRequest) -> FeedItem:
         if feed_item_request.created_at is None:
             feed_item_request.created_at = datetime.datetime.now()
         sql = text(
             "INSERT INTO feed_items (feed_id, link, title, description, author, content, "
-            "reading_time, created_at, image_url) "
+            "reading_time, created_at, image_url, read) "
             "VALUES (:feed_id, :link, :title, :description, :author, :content, "
-            ":reading_time, :created_at, :image_url) "
+            ":reading_time, :created_at, :image_url, FALSE) "
             "RETURNING id, feed_id, external_id, link, title, author, description, content, "
-            "reading_time, created_at, image_url"
+            "reading_time, created_at, image_url, read"
         )
         with self.session_factory() as session:
             result = session.execute(
@@ -278,8 +307,80 @@ class FeedsRepository(FeedsPort):
                 content=data["content"],
                 reading_time=data["reading_time"],
                 created_at=data["created_at"],
-                image_url=data["image_url"]
+                image_url=data["image_url"],
+                read=data["read"]
             )
+
+    def update_feed_item(
+            self,
+            feed_item_id: int,
+            update_feed_item_request: UpdateFeedItemRequest
+    ) -> FeedItem:
+        values = update_feed_item_request.model_dump(exclude_unset=True)
+        values = {k: v for k, v in values.items() if v is not None}
+        if not values:
+            return self.get_feed_item_by_id(id=feed_item_id)
+
+        set_clauses = ", ".join([f"{key} = :{key}" for key in values.keys()])
+        sql = text(f"""
+            UPDATE feed_items
+            SET {set_clauses}
+            WHERE id = :id
+            RETURNING id, feed_id, external_id, link, title, author,
+            description, content, reading_time, created_at, image_url,
+            read
+        """)
+        values["id"] = feed_item_id
+
+        with self.session_factory() as session:
+            result = session.execute(sql, values).mappings().first()
+            session.commit()
+
+            if not result:
+                raise ValueError(f"Feed item with id {feed_item_id} not found")
+
+            return FeedItem(
+                id=result["id"],
+                feed_id=result["feed_id"],
+                external_id=result["external_id"],
+                link=result["link"],
+                title=result["title"],
+                description=result["description"],
+                author=result["author"],
+                content=result["content"],
+                reading_time=result["reading_time"],
+                created_at=result["created_at"],
+                image_url=result["image_url"],
+                read=result["read"]
+            )
+
+    def update_feed_items(
+            self,
+            feed_id: int,
+            update_feed_items_request: UpdateFeedItemsRequest
+    ) -> bool:
+        values = update_feed_items_request.model_dump(exclude_unset=True)
+        values = {k: v for k, v in values.items() if v is not None}
+        if not values:
+            return False
+
+        set_clauses = ", ".join([f"{key} = :{key}" for key in values.keys()])
+        sql = text(f"""
+            UPDATE feed_items
+            SET {set_clauses}
+            WHERE feed_id = :feed_id
+            RETURNING id
+        """)
+        values["feed_id"] = feed_id
+
+        with self.session_factory() as session:
+            result = session.execute(sql, values).mappings().first()
+            session.commit()
+
+            if not result:
+                return False
+
+            return True
 
     def delete_feed_item(self, feed_item_id: int) -> bool:
         sql = text("DELETE FROM feed_items WHERE id = :id RETURNING id")

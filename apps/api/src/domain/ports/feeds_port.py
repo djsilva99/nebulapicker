@@ -2,7 +2,15 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from uuid import UUID
 
-from src.domain.models.feed import Feed, FeedItem, FeedItemRequest, FeedRequest, UpdateFeedRequest
+from src.domain.models.feed import (
+    Feed,
+    FeedItem,
+    FeedItemRequest,
+    FeedRequest,
+    UpdateFeedItemRequest,
+    UpdateFeedItemsRequest,
+    UpdateFeedRequest,
+)
 
 
 class FeedsPort(ABC):
@@ -47,6 +55,7 @@ class FeedsPort(ABC):
         limit: int | None = 20,
         offset: int = 0,
         last_day: bool = False,
+        only_unread_items: bool = False,
         rss_items: bool = False
     ) -> list[FeedItem]:
         pass
@@ -56,6 +65,7 @@ class FeedsPort(ABC):
         self,
         feed_id: int,
         title_search: str,
+        read: bool | None = None,
         last_day: bool = False,
     ) -> int:
         pass
@@ -68,7 +78,27 @@ class FeedsPort(ABC):
         pass
 
     @abstractmethod
+    def get_feed_item_by_id(self, id: int) -> FeedItem | None:
+        pass
+
+    @abstractmethod
     def create_feed_item(self, feed_item_request: FeedItemRequest) -> FeedItem:
+        pass
+
+    @abstractmethod
+    def update_feed_item(
+        self,
+        feed_item_external_id: int,
+        update_feed_item_request: UpdateFeedItemRequest
+    ) -> FeedItem:
+        pass
+
+    @abstractmethod
+    def update_feed_items(
+        self,
+        feed_id: int,
+        update_feed_items_request: UpdateFeedItemsRequest
+    ) -> bool:
         pass
 
     @abstractmethod
