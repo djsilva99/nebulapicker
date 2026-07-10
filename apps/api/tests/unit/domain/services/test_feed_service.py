@@ -370,7 +370,7 @@ def test_get_detailed_feeds(feed_service, feeds_port_mock):
 
     # THEN
     assert len(result) == 2
-    detailed_a, detailed_b = result
+    detailed_a, detailed_b = result[0]
     assert detailed_a.name == "Alpha Feed"
     assert detailed_b.name == "Beta Feed"
     assert detailed_a.id == feed_a.id

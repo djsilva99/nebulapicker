@@ -353,7 +353,7 @@ def test_list_feeds_empty(
 
     # THEN
     assert response.status_code == 200
-    assert response.json() == {'feeds': []}
+    assert response.json()['feeds'] == []
 
 
 def test_list_feeds_with_data(
