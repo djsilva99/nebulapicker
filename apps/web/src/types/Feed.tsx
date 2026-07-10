@@ -21,6 +21,7 @@ export interface FeedItem {
     reading_time?: string
     image_url?: string
     read: boolean
+    is_starred: boolean
 }
 
 export interface Feed {

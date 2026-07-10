@@ -31,8 +31,10 @@ import {
   FiClock,
   FiSearch,
   FiGlobe,
-  FiBookOpen
+  FiBookOpen,
+  FiStar
 } from "react-icons/fi";
+import { FaStar } from "react-icons/fa";
 import { useToast } from "@chakra-ui/toast";
 import { AddFeedItemModal } from "./_components/add_feed_items_modal";
 import { Text as ChakraText } from "@chakra-ui/react";
@@ -72,7 +74,7 @@ export default function FeedPage() {
   const feed_items_offset = (page - 1) * PAGE_SIZE;
   const [search, setSearch] = useState("");
   const [unreadItems, setUnreadItems] = useState(false);
-  const [lastDay, setLastDay] = useState(false);
+  const [starred, setStarred] = useState(false);
   const [rssItems, setRssItems] = useState(false);
   const feedItems = data?.feed_items ?? [];
   const [totalItems, setTotalItems] = useState(0);
@@ -90,7 +92,7 @@ export default function FeedPage() {
         },
         params: {
           title: search,
-          last_day: lastDay || undefined,
+          only_starred_items: starred || undefined,
           only_unread_items: unreadItems || undefined,
           rss_items: rssItems || undefined,
           feed_items_limit: PAGE_SIZE,
@@ -123,7 +125,7 @@ export default function FeedPage() {
     if (isInitialLoading) return;
 
     fetchData();
-  }, [feedId, page, search, lastDay, unreadItems, rssItems]);
+  }, [feedId, page, search, starred, unreadItems, rssItems]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -199,6 +201,28 @@ export default function FeedPage() {
       await axios.patch(
         `/api/v1/feeds/${externalId}/feed_items/${externalItemId}`,
         { "read": read },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchData();
+    } catch (error: unknown) {
+      console.error("Error marking item as read", error);
+      toast({
+        title: "Error.",
+        description: `Failed to mark item ${externalItemId} as read for feed ${externalId}.`,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+    }
+  };
+
+    const handleStarItem = async (externalId: string, externalItemId: string, star: boolean) => {
+    try {
+      const token = Cookies.get("token");
+      await axios.patch(
+        `/api/v1/feeds/${externalId}/feed_items/${externalItemId}`,
+        { "is_starred": star },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       fetchData();
@@ -428,7 +452,7 @@ export default function FeedPage() {
           </FormControl>
         )}
 
-        {useWallabagExtractor && (
+        {(useWallabagExtractor && data?.name != "Stared") && (
           <FormControl>
             <Flex direction="column" align="center" gap={1}>
               <FormLabel
@@ -437,13 +461,13 @@ export default function FeedPage() {
                 fontSize="xs"
                 color="gray.400"
               >
-                24h
+                starred
               </FormLabel>
               <Switch.Root
                 id="last-day"
-                checked={lastDay}
+                checked={starred}
                 onCheckedChange={(details) => {
-                  setLastDay(details.checked);
+                  setStarred(details.checked);
                   setPage(1);
                 }}
                 colorPalette='purple'
@@ -455,7 +479,7 @@ export default function FeedPage() {
           </FormControl>
         )}
 
-        {useWallabagExtractor && (
+        {(useWallabagExtractor && data?.name != "Stared") && (
           <FormControl>
             <Flex direction="column" align="center" gap={1}>
               <FormLabel
@@ -601,7 +625,7 @@ export default function FeedPage() {
                         handleReadItem(data?.external_id || "", item.external_id, !item.read);
                       }}
                     >
-                      {item.author.length > 17 ? `${item.author.slice(0, 17)}…` : item.author} &nbsp;&nbsp;
+                      {item.author.length > 15 ? `${item.author.slice(0, 15)}…` : item.author} &nbsp;&nbsp;
                       {timeDeltaFromNow(item.created_at)} ago &nbsp;&nbsp;
                       <Flex
                         as="span"
@@ -618,6 +642,22 @@ export default function FeedPage() {
                     </Box>
                     <Spacer/>
                     <Box minW="80px">
+                      <Button
+                        aria-label={`Go to ${item.link}`}
+                        size="xs"
+                        colorScheme="red"
+                        color={item.is_starred ? '#AC7DBA' : "gray.500"}
+                        _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleStarItem(data?.external_id || "", item.external_id, !item.is_starred);
+                        }}
+                        loading={isDeleting === item.external_id}
+                      >
+                        {item.is_starred ? <FaStar /> : <FiStar />}
+                      </Button>
                       <Button
                         aria-label={`Go to ${item.link}`}
                         size="xs"
@@ -680,6 +720,22 @@ export default function FeedPage() {
 
               <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "15%" }}>
                 <Box minW="80px">
+                  <Button
+                    aria-label={`Go to ${item.link}`}
+                    size="xs"
+                    colorScheme="red"
+                    color={item.is_starred ? '#AC7DBA' : "gray.500"}
+                    _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleStarItem(data?.external_id || "", item.external_id, !item.is_starred);
+                    }}
+                    loading={isDeleting === item.external_id}
+                  >
+                    {item.is_starred ? <FaStar /> : <FiStar />}
+                  </Button>
                   <Button
                     aria-label={`Delete ${item.title}`}
                     size="xs"
