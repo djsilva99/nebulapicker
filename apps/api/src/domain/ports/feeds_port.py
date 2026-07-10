@@ -56,6 +56,7 @@ class FeedsPort(ABC):
         offset: int = 0,
         last_day: bool = False,
         only_unread_items: bool = False,
+        only_starred_items: bool = False,
         rss_items: bool = False
     ) -> list[FeedItem]:
         pass
@@ -67,6 +68,7 @@ class FeedsPort(ABC):
         title_search: str,
         read: bool | None = None,
         last_day: bool = False,
+        is_starred: bool = False
     ) -> int:
         pass
 

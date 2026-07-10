@@ -38,6 +38,7 @@ class ExternalFeeds(BaseModel):
 
 class ListFeedsResponse(BaseModel):
     feeds: list[ExternalFeeds]
+    stared: ExternalFeeds
 
 
 class ExternalUpdateFeedRequest(BaseModel):
@@ -56,10 +57,12 @@ class ExternalFeedItem(BaseModel):
     created_at: datetime
     image_url: str | None
     read: bool
+    is_starred: bool
 
 
 class ExternalUpdateFeedItemRequest(BaseModel):
     read: bool | None = None
+    is_starred: bool | None = None
 
     class Config:
         extra = "forbid"
@@ -143,7 +146,8 @@ def map_feed_to_feed_response(
 
 
 def map_detailed_feeds_list_to_list_feeds_response(
-    detailed_feeds_list: list[DetailedFeed]
+    detailed_feeds_list: list[DetailedFeed],
+    starred_feed: DetailedFeed
 ) -> ListFeedsResponse:
     return ListFeedsResponse(
         feeds=[
@@ -156,13 +160,21 @@ def map_detailed_feeds_list_to_list_feeds_response(
                 number_of_unread_items=feed.number_of_unread_items
             )
             for feed in detailed_feeds_list
-        ]
+        ],
+        stared=ExternalFeeds(
+            name='starred',
+            external_id=UUID('00000000-0000-0000-0000-000000000000'),
+            created_at=datetime.now(),
+            latest_item_datetime=datetime.now(),
+            number_of_feed_items=starred_feed.number_of_feed_items,
+            number_of_unread_items=starred_feed.number_of_unread_items
+        )
     )
 
 
 def map_feed_item_to_external_feed_item(
     feed_item: FeedItem
-):
+) -> ExternalFeedItem:
     return ExternalFeedItem(
         external_id=feed_item.external_id,
         link=feed_item.link,
@@ -171,7 +183,8 @@ def map_feed_item_to_external_feed_item(
         created_at=feed_item.created_at,
         reading_time=feed_item.reading_time,
         image_url=feed_item.image_url,
-        read=feed_item.read
+        read=feed_item.read,
+        is_starred=feed_item.is_starred
     )
 
 

@@ -308,9 +308,12 @@ def list_feeds(
 ) -> ListFeedsResponse:
     feed_service = request.app.state.job_service.feed_service
 
-    detailed_feeds_list = feed_service.get_detailed_feeds()
+    detailed_feeds_list, starred_feed = feed_service.get_detailed_feeds()
 
-    return map_detailed_feeds_list_to_list_feeds_response(detailed_feeds_list)
+    return map_detailed_feeds_list_to_list_feeds_response(
+        detailed_feeds_list,
+        starred_feed
+    )
 
 
 @router.post(
@@ -488,6 +491,7 @@ def get_feed(
     last_day: bool | None = Query(None),
     rss_items: bool | None = Query(None),
     only_unread_items: bool | None = Query(None),
+    only_starred_items: bool | None = Query(None),
     feed_items_limit: int | None = Query(None, ge=1),
     feed_items_offset: int | None= Query(None, ge=0),
     _: str = Depends(authenticate),  # noqa: B008
@@ -496,6 +500,41 @@ def get_feed(
     filter_service = request.app.state.job_service.filter_service
     picker_service = request.app.state.job_service.picker_service
     source_service = request.app.state.job_service.source_service
+
+    query_title = title if title is not None else ""
+    last_day = last_day if last_day is not None else False
+    rss_items = rss_items if rss_items is not None else False
+    if external_id == UUID('00000000-0000-0000-0000-000000000000'):
+        feed_items, total_feed_items_count, total_unread_feed_items_count = (
+            feed_service.get_feed_items(
+                0,
+                query_title=query_title,
+                last_day=last_day,
+                only_unread_items=only_unread_items,
+                only_starred_items=True,
+                rss_items=False,
+                feed_items_limit=feed_items_limit,
+                feed_items_offset=feed_items_offset
+            )
+        )
+        external_feed_items = [
+            map_feed_item_to_external_feed_item(fi) for fi in feed_items
+        ]
+        if not feed_items_offset:
+            feed_items_offset = 0
+        if not feed_items_limit:
+            feed_items_limit = total_feed_items_count
+        return FullCompleteFeed(
+            name='Stared',
+            external_id=UUID('00000000-0000-0000-0000-000000000000'),
+            created_at=datetime.datetime.now(),
+            pickers=[],
+            feed_items_total_count=total_feed_items_count,
+            unread_feed_items_total_count=total_unread_feed_items_count,
+            feed_items_offset=feed_items_offset,
+            feed_items_limit=feed_items_limit,
+            feed_items=external_feed_items,
+        )
 
     feed = feed_service.get_feed_by_external_id(external_id)
     if not feed:
@@ -518,16 +557,15 @@ def get_feed(
             )
         )
 
-    query_title = title if title is not None else ""
-    last_day = last_day if last_day is not None else False
-    rss_items = rss_items if rss_items is not None else False
     only_unread_items = only_unread_items if only_unread_items is not None else False
+    only_starred_items = only_starred_items if only_starred_items is not None else False
     feed_items, total_feed_items_count, total_unread_feed_items_count = (
         feed_service.get_feed_items(
             feed.id,
             query_title=query_title,
             last_day=last_day,
             only_unread_items=only_unread_items,
+            only_starred_items=only_starred_items,
             rss_items=rss_items,
             feed_items_limit=feed_items_limit,
             feed_items_offset=feed_items_offset
@@ -696,7 +734,8 @@ def update_feed_item(
     feed_service = request.app.state.job_service.feed_service
 
     update_feed_item_request = UpdateFeedItemRequest(
-        read=update_feed_item_request.read
+        read=update_feed_item_request.read,
+        is_starred=update_feed_item_request.is_starred
     )
     updated_feed_item = feed_service.update_feed_item(
         feed_item_external_id,

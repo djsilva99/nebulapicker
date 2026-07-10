@@ -57,7 +57,8 @@ def db_session(setup_test_db):
                 created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 image_url TEXT DEFAULT NULL,
                 is_active BOOLEAN DEFAULT TRUE,
-                read BOOLEAN DEFAULT FALSE
+                read BOOLEAN DEFAULT FALSE,
+                is_starred BOOLEAN DEFAULT FALSE
             );
         """))
 
@@ -382,7 +383,8 @@ def test_get_active_feed_items(repo, db_session):
                 description,
                 author,
                 created_at,
-                is_active
+                is_active,
+                is_starred
             )
             VALUES
                 (
@@ -394,7 +396,8 @@ def test_get_active_feed_items(repo, db_session):
                     'Desc 1',
                     'author 1',
                     '2025-09-16T10:00:00',
-                    TRUE
+                    TRUE,
+                    FALSE
                 ),
                 (
                     2,
@@ -405,7 +408,8 @@ def test_get_active_feed_items(repo, db_session):
                     'Desc 3',
                     'author 1',
                     '2025-09-16T11:00:00',
-                    TRUE
+                    TRUE,
+                    FALSE
                 ),
                 (
                     3,
@@ -416,7 +420,8 @@ def test_get_active_feed_items(repo, db_session):
                     'Desc 2',
                     'author 1',
                     '2025-09-16T12:00:00',
-                    TRUE
+                    TRUE,
+                    FALSE
                 )
         """)
     )

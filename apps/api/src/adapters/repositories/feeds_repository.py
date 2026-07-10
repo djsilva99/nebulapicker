@@ -128,26 +128,36 @@ class FeedsRepository(FeedsPort):
             offset: int = 0,
             last_day: bool = False,
             only_unread_items: bool = False,
+            only_starred_items: bool = False,
             rss_items: bool = False,
     ) -> list[FeedItem]:
 
         title_search = title_search if title_search else None
 
         where_clauses = [
-            "feed_id = :feed_id",
             "is_active = TRUE",
         ]
 
         params = {
-            "feed_id": feed_id,
             "offset": offset,
             "title_search": title_search,
             "title_pattern": f"%{title_search}%" if title_search else None,
         }
 
+        if feed_id != 0:
+            where_clauses.append(
+                "feed_id = :feed_id"
+            )
+            params['feed_id'] = feed_id
+
         if only_unread_items is True:
             where_clauses.append(
                 "read = FALSE"
+            )
+
+        if only_starred_items is True:
+            where_clauses.append(
+                "is_starred = TRUE"
             )
 
         # optional filters (no OR in SQL anymore)
@@ -167,7 +177,7 @@ class FeedsRepository(FeedsPort):
 
         sql = f"""
             SELECT id, feed_id, external_id, link, title, description, author, created_at,
-                   reading_time, image_url, content, read
+                   reading_time, image_url, content, read, is_starred
             FROM feed_items
             WHERE {' AND '.join(where_clauses)}
             ORDER BY created_at DESC
@@ -198,20 +208,25 @@ class FeedsRepository(FeedsPort):
             feed_id: int,
             title_search: str | None = None,
             read: bool | None = None,
-            last_day: bool = False
+            last_day: bool = False,
+            is_starred: bool = False
     ) -> int:
         title_search = title_search if title_search else None
 
         where_clauses = [
-            "feed_id = :feed_id",
+            #"feed_id = :feed_id",
             "is_active = TRUE",
         ]
 
         params = {
-            "feed_id": feed_id,
+            #"feed_id": feed_id,
             "title_search": title_search,
             "title_pattern": f"%{title_search}%" if title_search else None,
         }
+
+        if feed_id != 0:
+            where_clauses.append("feed_id = :feed_id")
+            params['feed_id'] = feed_id
 
         if read is not None:
             where_clauses.append("read = :read")
@@ -230,6 +245,9 @@ class FeedsRepository(FeedsPort):
                 END
                 AND created_at <= NOW()
             """)
+
+        if is_starred:
+            where_clauses.append("is_starred = TRUE")
 
         sql = text(f"""
             SELECT COUNT(*)
@@ -317,6 +335,7 @@ class FeedsRepository(FeedsPort):
             update_feed_item_request: UpdateFeedItemRequest
     ) -> FeedItem:
         values = update_feed_item_request.model_dump(exclude_unset=True)
+        #breakpoint()
         values = {k: v for k, v in values.items() if v is not None}
         if not values:
             return self.get_feed_item_by_id(id=feed_item_id)
@@ -328,7 +347,7 @@ class FeedsRepository(FeedsPort):
             WHERE id = :id
             RETURNING id, feed_id, external_id, link, title, author,
             description, content, reading_time, created_at, image_url,
-            read
+            read, is_starred
         """)
         values["id"] = feed_item_id
 
@@ -351,7 +370,8 @@ class FeedsRepository(FeedsPort):
                 reading_time=result["reading_time"],
                 created_at=result["created_at"],
                 image_url=result["image_url"],
-                read=result["read"]
+                read=result["read"],
+                is_starred=result["is_starred"]
             )
 
     def update_feed_items(
@@ -365,10 +385,16 @@ class FeedsRepository(FeedsPort):
             return False
 
         set_clauses = ", ".join([f"{key} = :{key}" for key in values.keys()])
+        feed_id_sql_str = ""
+        if feed_id != 0:
+            feed_id_sql_str = "WHERE feed_id = :feed_id"
+        else:
+            feed_id_sql_str = "WHERE is_starred = TRUE"
+
         sql = text(f"""
             UPDATE feed_items
             SET {set_clauses}
-            WHERE feed_id = :feed_id
+            {feed_id_sql_str}
             RETURNING id
         """)
         values["feed_id"] = feed_id

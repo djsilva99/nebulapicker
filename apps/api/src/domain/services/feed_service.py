@@ -57,7 +57,7 @@ class FeedService:
     def get_all_feeds(self) -> list[Feed]:
         return sorted(self.feeds_port.get_all_feeds(), key=lambda item: item.name)
 
-    def get_detailed_feeds(self) -> list[DetailedFeed]:
+    def get_detailed_feeds(self) -> tuple[list[DetailedFeed], DetailedFeed]:
         feeds = self.feeds_port.get_all_feeds()
         detailed_feeds = []
         for feed in feeds:
@@ -80,7 +80,29 @@ class FeedService:
                     number_of_unread_items=number_of_unread_feed_items
                 )
             )
-        return sorted(detailed_feeds, key=lambda item: item.name)
+        number_of_starred_unread_feed_items = self.feeds_port.count_active_feed_items_by_feed_id(
+            0,
+            "",
+            False,
+            False,
+            True
+        )
+        starred_feed = DetailedFeed(
+            id=0,
+            external_id=UUID('00000000-0000-0000-0000-000000000000'),
+            name='starred',
+            created_at=datetime.datetime.now(),
+            latest_item_datetime=datetime.datetime.now(),
+            number_of_feed_items=self.feeds_port.count_active_feed_items_by_feed_id(
+                0,
+                "",
+                None,
+                False,
+                True
+            ),
+            number_of_unread_items=number_of_starred_unread_feed_items
+        )
+        return sorted(detailed_feeds, key=lambda item: item.name), starred_feed
 
     def get_feed_by_external_id(self, external_id: UUID) -> Feed | None:
         return self.feeds_port.get_feed_by_external_id(external_id)
@@ -96,6 +118,7 @@ class FeedService:
         query_title: str = "",
         last_day: bool = False,
         only_unread_items: bool = False,
+        only_starred_items: bool = False,
         rss_items: bool = False,
         feed_items_limit: int = 20,
         feed_items_offset: int = 0
@@ -137,6 +160,7 @@ class FeedService:
                 title_search=query_title,
                 last_day=last_day,
                 only_unread_items=only_unread_items,
+                only_starred_items=only_starred_items,
                 rss_items=rss_items
             )
             if only_unread_items:
@@ -144,20 +168,23 @@ class FeedService:
                     feed_id,
                     query_title,
                     False,
-                    last_day
+                    last_day,
+                    only_starred_items
                 )
             else:
                 total_count = self.feeds_port.count_active_feed_items_by_feed_id(
                     feed_id,
                     query_title,
                     None,
-                    last_day
+                    last_day,
+                    only_starred_items
                 )
             total_unread = self.feeds_port.count_active_feed_items_by_feed_id(
                 feed_id,
                 query_title,
                 False,
-                last_day
+                last_day,
+                only_starred_items
             )
             if rss_items and total_count > MAX_NUMBER_OF_ITEMS_IN_RSS:
                 total_count = MAX_NUMBER_OF_ITEMS_IN_RSS
@@ -190,6 +217,8 @@ class FeedService:
         feed_external_id: UUID,
         update_feed_items_request: UpdateFeedItemsRequest
     ) -> bool:
+        if feed_external_id == UUID('00000000-0000-0000-0000-000000000000'):
+            return self.feeds_port.update_feed_items(0, update_feed_items_request)
         feed = self.get_feed_by_external_id(feed_external_id)
         if feed is None:
             raise ValueError(f"Feed with external id {feed_external_id} not found")

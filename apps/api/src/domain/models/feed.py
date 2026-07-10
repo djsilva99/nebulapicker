@@ -43,10 +43,12 @@ class FeedItem(BaseModel):
     reading_time: int | None = None
     image_url: str | None = None
     read: bool = False
+    is_starred: bool = False
 
 
 class UpdateFeedItemRequest(BaseModel):
     read: bool | None = None
+    is_starred: bool | None = None
 
 
 class UpdateFeedItemsRequest(BaseModel):
