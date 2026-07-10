@@ -22,7 +22,6 @@ import {
 } from "react-icons/fi";
 import Link from "next/link";
 import { AddFeedModal } from "@/app/feeds/_components/add-feeds-modal";
-import { readFile } from "node:fs";
 
 function timeDeltaFromNow(dateString: string): string {
   const now = new Date();
@@ -48,6 +47,7 @@ export default function Feeds() {
   const useWallabagExtractor =
     process.env.NEXT_PUBLIC_USE_WALLABAG_EXTRACTOR === "true";
   const [data, setData] = useState<Feed[]>([]);
+  const [starred, setStarred] = useState<Feed>();
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const { open: isAddModalOpen, onOpen: onAddModalOpen, onClose: onAddModalClose } = useDisclosure();
@@ -65,6 +65,7 @@ export default function Feeds() {
         },
       });
       setData(res.data.feeds);
+      setStarred(res.data.stared)
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
@@ -134,6 +135,7 @@ export default function Feeds() {
   const sortedFeedItems = data
   ?.slice()
   .sort((a, b) => a.name.localeCompare(b.name)) ?? [];
+  const staredItem = starred;
   const totalItems = sortedFeedItems.length;
   const paginatedItems = sortedFeedItems.slice(
     (page - 1) * PAGE_SIZE,
@@ -191,6 +193,45 @@ export default function Feeds() {
         </Table.Header>
 
         <Table.Body>
+          {useWallabagExtractor && (
+            <Table.Row key='0'  cursor="pointer" _hover={{ bg: 'gray.800'}} color={'#AC7DBA'}>
+              <Table.Cell width={{ base: "50%", md: "60%" }}>
+                <Link href={`/feeds/00000000-0000-0000-0000-000000000000`} passHref legacyBehavior>
+                  <Box>
+                    <Box fontWeight="bold">STARRED</Box>
+                  </Box>
+                </Link>
+              </Table.Cell>
+
+              <Table.Cell 
+                width={{ base: "30%", md: "15%" }}
+                color={'#AC7DBA'}
+              >
+                <Link href={`/feeds/00000000-0000-0000-0000-000000000000`} passHref legacyBehavior>
+                  <Box>
+                    <Box
+                      fontWeight="bold"
+                      display={{ base: 'block', md: 'block' }}
+                    >
+                      {staredItem?.number_of_feed_items} {(useWallabagExtractor && Number(staredItem?.number_of_unread_items) > 0) ? '(' + staredItem?.number_of_unread_items + ')' : ''}
+                    </Box>
+                  </Box>
+                </Link>
+              </Table.Cell> 
+
+              <Table.Cell display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "15%" }}>
+              </Table.Cell>
+
+              <Table.Cell textAlign="center" width={{ base: "20%", md: "10%" }}>
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                </Box>
+              </Table.Cell>
+            </Table.Row>
+          )}
           {paginatedItems.map((item: Feed) => (
             <Table.Row key={item.external_id} cursor="pointer" _hover={{ bg: 'gray.800'}} color={useWallabagExtractor && Number(item.number_of_unread_items) > 0 ? "#7DCDE8" : 'white'}>
               <Table.Cell width={{ base: "50%", md: "60%" }}>
