@@ -199,7 +199,7 @@ class FeedService:
                     )
                 )
                 feed_item_request.reading_time = feed_item_data.reading_time
-                if feed_item_request.title == "":
+                if feed_item_request.title == "" or "&quot;" in feed_item_request.title:
                     feed_item_request.title = feed_item_data.title
                 if feed_item_request.content == "":
                     feed_item_request.content = feed_item_data.content
