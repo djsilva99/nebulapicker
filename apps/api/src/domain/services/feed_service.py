@@ -311,6 +311,7 @@ class FeedService:
                 for j, img_tag in enumerate(soup.find_all("img")):
                     img_url = img_tag.get("src")
                     if not img_url:
+                        img_tag.decompose()
                         continue
 
                     try:
@@ -321,15 +322,20 @@ class FeedService:
                             )
                         }
                         resp = requests.get(img_url, headers=headers, timeout=10)
+                        if resp.status_code != 200:
+                            img_tag.decompose()
+                            continue
                         data = resp.content
                     except Exception:
-                        continue  # skip download errors
+                        img_tag.decompose()
+                        continue
 
                     # Detect actual image type (jpeg, png, gif, webp, etc.)
                     img_type = imghdr.what(None, data)
 
                     if img_type is None:
-                        # Not an image (likely HTML)
+                        # Not an image (likely HTML or Cloudflare challenge text)
+                        img_tag.decompose()
                         continue
 
                     # Map imghdr types to EPUB media types
@@ -344,7 +350,8 @@ class FeedService:
 
                     media_type = media_types.get(img_type)
                     if not media_type:
-                        continue  # unsupported format
+                        img_tag.decompose()
+                        continue
 
                     # Use correct extension
                     img_name = f"images/{i}_{j}.{img_type}"
