@@ -12,7 +12,6 @@ import {
 import { useToast } from "@chakra-ui/toast";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import Cookies from "js-cookie";
 import { Source } from "@/types/Source";
 import { FiPlus, FiTrash } from "react-icons/fi";
 import { AddSourceModal } from "@/app/sources/_components/add-source-modal"
@@ -23,14 +22,14 @@ export default function Sources() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const { open, onOpen, onClose } = useDisclosure();
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 20;
   const [page, setPage] = useState(1);
   const toast = useToast();
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       const res = await axios.get("/api/v1/sources", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -40,7 +39,7 @@ export default function Sources() {
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          Cookies.remove("token");
+          localStorage.removeItem("token");
           window.location.href = "/login";
         } else {
           console.error("Axios error:", error.message);
@@ -57,6 +56,10 @@ export default function Sources() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [page]);
+
   const handleDelete = async (externalId: string, name: string) => {
     if (!window.confirm(`Are you sure you want to delete source: ${name}?`)) {
       return;
@@ -64,7 +67,7 @@ export default function Sources() {
 
     setIsDeleting(externalId);
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       await axios.delete(`/api/v1/sources/${externalId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -91,7 +94,7 @@ export default function Sources() {
       });
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          Cookies.remove("token");
+          localStorage.removeItem("token");
           window.location.href = "/login";
         } else {
           console.error("Axios error:", error.message);
@@ -157,6 +160,37 @@ export default function Sources() {
       >
         Showing {(page - 1) * PAGE_SIZE + 1}–
         {Math.min(page * PAGE_SIZE, totalItems)} of {totalItems}
+      </Flex>
+
+      <Flex justify="center" align="center" mt={4} mb={4}>
+        <Pagination.Root
+          count={totalItems}
+          pageSize={PAGE_SIZE}
+          page={page}
+          onPageChange={(details) => setPage(details.page)}
+        >
+          <Pagination.Items
+            render={(item) => (
+              <Pagination.Item
+                key={item.value}
+                value={item.value}
+                type={item.type}
+                asChild
+              >
+                <Button
+                  size="xs"
+                  color={item.type === "page" && item.value === page ? "white" : "white"}
+                  bg={item.type === "page" && item.value === page ? "#6b4078" : "transparent"}
+                  variant="outline"
+                  m={1}
+                  _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
+                >
+                  {item.type === "page" ? item.value : "…"}
+                </Button>
+              </Pagination.Item>
+            )}
+          />
+        </Pagination.Root>
       </Flex>
 
       {/* TABLE */}

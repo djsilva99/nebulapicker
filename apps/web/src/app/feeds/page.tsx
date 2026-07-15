@@ -12,7 +12,6 @@ import {
 import { useToast } from "@chakra-ui/toast";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import Cookies from "js-cookie";
 import { Feed } from "@/types/Feed";
 import {
   FiPlus,
@@ -51,14 +50,14 @@ export default function Feeds() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const { open: isAddModalOpen, onOpen: onAddModalOpen, onClose: onAddModalClose } = useDisclosure();
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 20;
   const [page, setPage] = useState(1);
   const toast = useToast();
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       const res = await axios.get("/api/v1/feeds", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -69,7 +68,7 @@ export default function Feeds() {
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          Cookies.remove("token");
+          localStorage.removeItem("token");
           window.location.href = "/login";
         } else {
           console.error("Axios error:", error.message);
@@ -86,6 +85,10 @@ export default function Feeds() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [page]);
+
   const handleDelete = async (externalId: string, name: string) => {
     if (!window.confirm(`Are you sure you want to delete feed: ${name}?`)) {
       return;
@@ -93,7 +96,7 @@ export default function Feeds() {
 
     setIsDeleting(externalId);
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       await axios.delete(`/api/v1/feeds/${externalId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -179,6 +182,37 @@ export default function Feeds() {
       >
         Showing {(page - 1) * PAGE_SIZE + 1}–
         {Math.min(page * PAGE_SIZE, totalItems)} of {totalItems}
+      </Flex>
+
+      <Flex justify="center" align="center" mt={4} mb={4}>
+        <Pagination.Root
+          count={totalItems}
+          pageSize={PAGE_SIZE}
+          page={page}
+          onPageChange={(details) => setPage(details.page)}
+        >
+          <Pagination.Items
+            render={(item) => (
+              <Pagination.Item
+                key={item.value}
+                value={item.value}
+                type={item.type}
+                asChild
+              >
+                <Button
+                  size="xs"
+                  color={item.type === "page" && item.value === page ? "white" : "white"}
+                  bg={item.type === "page" && item.value === page ? "#6b4078" : "transparent"}
+                  variant="outline"
+                  m={1}
+                  _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
+                >
+                  {item.type === "page" ? item.value : "…"}
+                </Button>
+              </Pagination.Item>
+            )}
+          />
+        </Pagination.Root>
       </Flex>
 
       {/* TABLE */}

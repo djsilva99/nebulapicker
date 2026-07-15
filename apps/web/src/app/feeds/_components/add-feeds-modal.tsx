@@ -19,7 +19,6 @@ import {
 } from "@chakra-ui/modal";
 import { useState } from "react";
 import axios from "axios";
-import Cookies from "js-cookie";
 
 interface NewFeed {
   name: string;
@@ -59,7 +58,7 @@ export const AddFeedModal: React.FC<AddFeedModalProps> = (
     }
 
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       await axios.post("/api/v1/feeds", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -78,7 +77,7 @@ export const AddFeedModal: React.FC<AddFeedModalProps> = (
     } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
           if (error.response?.status === 401) {
-            Cookies.remove("token");
+            localStorage.removeItem("token");
             window.location.href = "/login";
           } else {
             console.error("Axios error:", error.message);

@@ -29,7 +29,6 @@ import { Source } from '@/types/Source';
 import { PickerFilter } from '@/types/Feed';
 
 import axios from 'axios';
-import Cookies from "js-cookie";
 import { useEffect, useState } from 'react';
 
 
@@ -67,7 +66,7 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
         setLoadingUrls(true);
         setUrlError(null);
         try {
-          const token = Cookies.get("token");
+          const token = localStorage.getItem("token");
           const response = await axios.get("/api/v1/sources", {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -84,7 +83,7 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
           setUrlError("Failed to load URL options");
           if (axios.isAxiosError(error)) {
             if (error.response?.status === 401) {
-              Cookies.remove("token");
+              localStorage.removeItem("token");
               window.location.href = "/login";
             } else {
               console.error("Axios error:", error.message);
@@ -142,7 +141,7 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
         filters,
         feed_external_id: feedId,
       };
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       await axios.post("/api/v1/pickers", pickerPayload, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -171,7 +170,7 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
       );
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          Cookies.remove("token");
+          localStorage.removeItem("token");
           window.location.href = "/login";
         } else {
           console.error("Axios error:", error.message);
@@ -322,6 +321,9 @@ export const AddPickerModal: React.FC<AddPickerModalProps> = (
                       </option>
                       <option value="link_does_not_contain">
                         link_does_not_contain
+                      </option>
+                      <option value="author_does_not_contain">
+                        author_does_not_contain
                       </option>
                     </Select>
                   </FormControl>
