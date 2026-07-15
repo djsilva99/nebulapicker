@@ -18,9 +18,8 @@ import {
   FormControl,
   FormLabel
 } from "@chakra-ui/form-control";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import Cookies from "js-cookie";
 import { Feed, FeedItem } from "@/types/Feed";
 import { useParams } from "next/navigation";
 import {
@@ -85,7 +84,7 @@ export default function FeedPage() {
   const fetchData = async () => {
 
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       const feedRes = await axios.get(`/api/v1/feeds/${feedId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -106,7 +105,7 @@ export default function FeedPage() {
     } catch (error: unknown) {
       console.error("Error fetching data:", error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        Cookies.remove("token");
+        localStorage.removeItem("token");
         window.location.href = "/login";
       }
     }
@@ -144,7 +143,7 @@ export default function FeedPage() {
 
     setIsDeleting(feedExternalId);
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       await axios.delete(
         `/api/v1/feeds/${externalId}/feed_items/${feedExternalId}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -175,7 +174,7 @@ export default function FeedPage() {
 
   const handleCatchup = async (externalId: string) => {
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       await axios.patch(
         `/api/v1/feeds/${externalId}/feed_items/`,
         { "read": true },
@@ -197,7 +196,7 @@ export default function FeedPage() {
 
   const handleReadItem = async (externalId: string, externalItemId: string, read: boolean) => {
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       await axios.patch(
         `/api/v1/feeds/${externalId}/feed_items/${externalItemId}`,
         { "read": read },
@@ -219,7 +218,7 @@ export default function FeedPage() {
 
     const handleStarItem = async (externalId: string, externalItemId: string, star: boolean) => {
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       await axios.patch(
         `/api/v1/feeds/${externalId}/feed_items/${externalItemId}`,
         { "is_starred": star },

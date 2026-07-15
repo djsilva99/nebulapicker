@@ -24,14 +24,14 @@ export default function FeedItemPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       const feedRes = await axios.get("/api/v1/feeds/" + feedId + "/feed_items/" + feedItemId, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
       });
       setData(feedRes.data);
-            await axios.patch(
+      await axios.patch(
         `/api/v1/feeds/${feedId}/feed_items/${feedItemId}`, 
         { read: true },
         {
@@ -44,7 +44,7 @@ export default function FeedItemPage() {
       console.error("Error fetching data:", error);
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          Cookies.remove("token");
+          localStorage.removeItem("token");
           window.location.href = "/login";
         } else {
           console.error("Axios error:", error.message);

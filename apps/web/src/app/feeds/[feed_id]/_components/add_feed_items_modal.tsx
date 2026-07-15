@@ -19,7 +19,6 @@ import {
 } from "@chakra-ui/modal";
 import { useState } from "react";
 import axios from "axios";
-import Cookies from "js-cookie";
 
 import React from 'react';
 
@@ -83,7 +82,7 @@ export const AddFeedItemModal: React.FC<AddFeedModalProps> = (
     }
 
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       await axios.post(`/api/v1/feeds/${externalFeedId}/feed_items`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,

@@ -17,7 +17,6 @@ import {
 } from "@chakra-ui/modal";
 import { useState } from "react";
 import axios from "axios";
-import Cookies from "js-cookie";
 
 interface NewSource {
   name: string;
@@ -58,7 +57,7 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = (
     }
 
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       await axios.post("/api/v1/sources", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -79,7 +78,7 @@ export const AddSourceModal: React.FC<AddSourceModalProps> = (
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          Cookies.remove("token");
+          localStorage.removeItem("token");
           window.location.href = "/login";
         } else {
           console.error("Axios error:", error.message);

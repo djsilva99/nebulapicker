@@ -19,7 +19,6 @@ import {
 } from "@chakra-ui/form-control";
 import { FiPlus, FiTrash, FiRss, FiList } from "react-icons/fi";
 import axios from 'axios';
-import Cookies from "js-cookie";
 import { useEffect, useState } from 'react';
 import { Feed, Picker } from '@/types/Feed';
 import { AddPickerModal } from '@/app/feeds/[feed_id]/edit/_components/add-picker-modal';
@@ -40,7 +39,7 @@ export default function FeedPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       const feedRes = await axios.get("/api/v1/feeds/" + feedId, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -53,7 +52,7 @@ export default function FeedPage() {
       console.error("Error fetching data:", error);
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          Cookies.remove("token");
+          localStorage.removeItem("token");
           window.location.href = "/login";
         } else {
           console.error("Axios error:", error.message);
@@ -80,7 +79,7 @@ export default function FeedPage() {
     }
 
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       await axios.patch(`/api/v1/feeds/${feedId}`, { name: newName }, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -107,7 +106,7 @@ export default function FeedPage() {
       );
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          Cookies.remove("token");
+          localStorage.removeItem("token");
           window.location.href = "/login";
         } else {
           console.error("Axios error:", error.message);
@@ -134,7 +133,7 @@ export default function FeedPage() {
     }
 
     try {
-      const token = Cookies.get("token");
+      const token = localStorage.getItem("token");
       await axios.delete(`/api/v1/pickers/${externalId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -162,7 +161,7 @@ export default function FeedPage() {
       });
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          Cookies.remove("token");
+          localStorage.removeItem("token");
           window.location.href = "/login";
         } else {
           console.error("Axios error:", error.message);

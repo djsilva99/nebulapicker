@@ -26,15 +26,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      document.cookie
-        .split(";")
-        .forEach((c) => {
-          if (c.trim().startsWith("REMEMBERME=")) {
-            document.cookie = c
-              .replace(/^ +/, "")
-              .replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/");
-          }
-        });
       const res = await fetch("/api/v1/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,7 +45,7 @@ export default function LoginPage() {
 
       const data = await res.json();
 
-      Cookies.set("token", data.token);
+      localStorage.setItem("token", data.token);
 
       toast({
         title: "Login successful",
