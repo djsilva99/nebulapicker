@@ -747,3 +747,41 @@ def test_get_feed_item_by_id_returns_none_if_not_found(repo, db_session):
 
     # THEN
     assert item is None
+
+
+def test_set_feed_item_as_inactive_successfully(repo, db_session):
+    # GIVEN
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (id, external_id, name)
+            VALUES (1, gen_random_uuid(), 'Test Feed')
+        """)
+    )
+    db_session.execute(
+        text("""
+            INSERT INTO feed_items (id, feed_id, title, is_active)
+            VALUES (42, 1, 'Active Item', TRUE)
+        """)
+    )
+    db_session.commit()
+
+    # WHEN
+    result = repo.set_feed_item_as_inactive(42)
+
+    # THEN
+    assert result is True
+
+    # Verify database state
+    updated_item = db_session.execute(
+        text("SELECT is_active FROM feed_items WHERE id = 42")
+    ).first()
+    assert updated_item is not None
+    assert updated_item.is_active is False
+
+
+def test_set_feed_item_as_inactive_returns_false_if_not_found(repo, db_session):
+    # WHEN
+    result = repo.set_feed_item_as_inactive(999)
+
+    # THEN
+    assert result is False
