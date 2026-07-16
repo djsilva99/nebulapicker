@@ -280,7 +280,7 @@ class FeedsRepository(FeedsPort):
         sql = text(
             "SELECT id, feed_id, external_id, link, title, description, author, created_at, "
             "content, reading_time, read "
-            "FROM feeds WHERE id = :id;"
+            "FROM feed_items WHERE id = :id;"
         )
         with self.session_factory() as session:
             result = session.execute(sql, {"id": id}).mappings().first()

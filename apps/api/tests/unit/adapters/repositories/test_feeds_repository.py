@@ -436,6 +436,100 @@ def test_get_active_feed_items(repo, db_session):
     assert 2 not in [item.id for item in items]
 
 
+def test_get_active_feed_items_starred_feeds(repo, db_session):
+    # GIVEN
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (id, external_id, name, created_at)
+            VALUES (:feed_id, :external_id, :name, :created_at)
+        """),
+        {
+            "feed_id": 1,
+            "external_id": uuid4(),
+            "name": "Example",
+            "created_at": datetime(2025, 1, 1, 12, 0, 0),
+        }
+    )
+    db_session.commit()
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (id, external_id, name, created_at)
+            VALUES (:feed_id, :external_id, :name, :created_at)
+        """),
+        {
+            "feed_id": 2,
+            "external_id": uuid4(),
+            "name": "Example 2",
+            "created_at": datetime(2025, 1, 1, 12, 0, 0),
+        }
+    )
+    db_session.commit()
+    db_session.execute(
+        text("""
+            INSERT INTO feed_items (
+                id,
+                feed_id,
+                external_id,
+                link,
+                title,
+                description,
+                author,
+                created_at,
+                is_active,
+                is_starred
+            )
+            VALUES
+                (
+                    1,
+                    1,
+                    '52c523d6-946b-42e7-9e1f-57e615da9c8b',
+                    'https://example.com/1',
+                    'Title 1',
+                    'Desc 1',
+                    'author 1',
+                    '2025-09-16T10:00:00',
+                    TRUE,
+                    FALSE
+                ),
+                (
+                    2,
+                    2,
+                    '4add5cc7-e3da-4d1a-a26a-b3dcd76ec0d5',
+                    'https://example.com/3',
+                    'Title 3',
+                    'Desc 3',
+                    'author 1',
+                    '2025-09-16T11:00:00',
+                    TRUE,
+                    FALSE
+                ),
+                (
+                    3,
+                    1,
+                    'a37d6bc8-f558-411c-9d47-f5f1e92daadb',
+                    'https://example.com/2',
+                    'Title 2',
+                    'Desc 2',
+                    'author 1',
+                    '2025-09-16T12:00:00',
+                    TRUE,
+                    TRUE
+                )
+        """)
+    )
+    db_session.commit()
+
+    # WHEN
+    items = repo.get_active_feed_items_by_feed_id(
+        feed_id=0, only_starred_items=True
+    )
+
+    # THEN
+    assert len(items) == 1
+    assert isinstance(items[0], FeedItem)
+    assert 2 not in [item.id for item in items]
+
+
 def test_create_feed_item_successfully(repo, db_session):
     # GIVEN
     db_session.execute(
@@ -589,3 +683,105 @@ def test_get_number_of_feed_items_by_feed_id(repo, db_session):
     assert count_feed_1 == 3
     assert count_feed_2 == 1
     assert count_feed_missing == 0
+
+
+def test_get_feed_item_by_id_returns_item(repo, db_session):
+    # GIVEN
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (id, external_id, name)
+            VALUES (1, gen_random_uuid(), 'Test Feed')
+        """)
+    )
+    db_session.execute(
+        text("""
+            INSERT INTO feed_items (
+                id,
+                feed_id,
+                external_id,
+                link,
+                title,
+                description,
+                author,
+                content,
+                reading_time,
+                read
+            )
+            VALUES (
+                42,
+                1,
+                '52c523d6-946b-42e7-9e1f-57e615da9c8b',
+                'https://example.com/42',
+                'Title 42',
+                'Desc 42',
+                'Author Name',
+                'Some content',
+                5,
+                TRUE
+            )
+        """)
+    )
+    db_session.commit()
+
+    # WHEN
+    item = repo.get_feed_item_by_id(42)
+
+    # THEN
+    assert item is not None
+    assert isinstance(item, FeedItem)
+    assert item.id == 42
+    assert item.feed_id == 1
+    assert str(item.external_id) == '52c523d6-946b-42e7-9e1f-57e615da9c8b'
+    assert item.link == 'https://example.com/42'
+    assert item.title == 'Title 42'
+    assert item.description == 'Desc 42'
+    assert item.author == 'Author Name'
+    assert item.content == 'Some content'
+    assert item.reading_time == 5
+    assert item.read is True
+
+
+def test_get_feed_item_by_id_returns_none_if_not_found(repo, db_session):
+    # WHEN
+    item = repo.get_feed_item_by_id(999)
+
+    # THEN
+    assert item is None
+
+
+def test_set_feed_item_as_inactive_successfully(repo, db_session):
+    # GIVEN
+    db_session.execute(
+        text("""
+            INSERT INTO feeds (id, external_id, name)
+            VALUES (1, gen_random_uuid(), 'Test Feed')
+        """)
+    )
+    db_session.execute(
+        text("""
+            INSERT INTO feed_items (id, feed_id, title, is_active)
+            VALUES (42, 1, 'Active Item', TRUE)
+        """)
+    )
+    db_session.commit()
+
+    # WHEN
+    result = repo.set_feed_item_as_inactive(42)
+
+    # THEN
+    assert result is True
+
+    # Verify database state
+    updated_item = db_session.execute(
+        text("SELECT is_active FROM feed_items WHERE id = 42")
+    ).first()
+    assert updated_item is not None
+    assert updated_item.is_active is False
+
+
+def test_set_feed_item_as_inactive_returns_false_if_not_found(repo, db_session):
+    # WHEN
+    result = repo.set_feed_item_as_inactive(999)
+
+    # THEN
+    assert result is False
