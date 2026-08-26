@@ -58,6 +58,7 @@ def db_session(setup_test_db):
                 image_url TEXT DEFAULT NULL,
                 is_active BOOLEAN DEFAULT TRUE,
                 read BOOLEAN DEFAULT FALSE,
+                starred_read BOOLEAN DEFAULT FALSE,
                 is_starred BOOLEAN DEFAULT FALSE
             );
         """))
