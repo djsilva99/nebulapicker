@@ -227,12 +227,15 @@ class FeedService:
 
     def update_feed_item(
         self,
+        feed_external_id: UUID,
         feed_item_external_id: UUID,
         update_feed_item_request: UpdateFeedItemRequest
     ) -> FeedItem | None:
         feed_item = self.get_feed_item_by_external_id(feed_item_external_id)
         if feed_item is None:
             return None
+        if feed_external_id == UUID('00000000-0000-0000-0000-000000000000'):
+            update_feed_item_request.starred_read = update_feed_item_request.read
         return self.feeds_port.update_feed_item(feed_item.id, update_feed_item_request)
 
     def delete_feed_item(self, feed_item_id: int) -> bool:

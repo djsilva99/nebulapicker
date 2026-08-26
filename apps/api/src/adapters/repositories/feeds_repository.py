@@ -150,9 +150,11 @@ class FeedsRepository(FeedsPort):
             )
             params['feed_id'] = feed_id
 
+        read_column = "starred_read" if feed_id == 0 else "read"
+
         if only_unread_items is True:
             where_clauses.append(
-                "read = FALSE"
+                f"{read_column} = FALSE"
             )
 
         if only_starred_items is True:
@@ -175,9 +177,11 @@ class FeedsRepository(FeedsPort):
                 AND created_at <= NOW()
             """)
 
+        select_read_field = f"{read_column} AS read" if feed_id == 0 else "read"
+
         sql = f"""
             SELECT id, feed_id, external_id, link, title, description, author, created_at,
-                   reading_time, image_url, content, read, is_starred
+                   reading_time, image_url, content, {select_read_field}, is_starred
             FROM feed_items
             WHERE {' AND '.join(where_clauses)}
             ORDER BY created_at DESC
@@ -185,7 +189,7 @@ class FeedsRepository(FeedsPort):
 
         # pagination (optional)
         if limit is not None:
-            if rss_items :
+            if rss_items:
                 max_offset = int(MAX_NUMBER_OF_ITEMS_IN_RSS / limit) * limit
 
                 if offset == max_offset:
@@ -214,12 +218,10 @@ class FeedsRepository(FeedsPort):
         title_search = title_search if title_search else None
 
         where_clauses = [
-            #"feed_id = :feed_id",
             "is_active = TRUE",
         ]
 
         params = {
-            #"feed_id": feed_id,
             "title_search": title_search,
             "title_pattern": f"%{title_search}%" if title_search else None,
         }
@@ -229,7 +231,8 @@ class FeedsRepository(FeedsPort):
             params['feed_id'] = feed_id
 
         if read is not None:
-            where_clauses.append("read = :read")
+            read_column = "starred_read" if feed_id == 0 else "read"
+            where_clauses.append(f"{read_column} = :read")
             params["read"] = read
 
         if title_search:
@@ -335,7 +338,7 @@ class FeedsRepository(FeedsPort):
             update_feed_item_request: UpdateFeedItemRequest
     ) -> FeedItem:
         values = update_feed_item_request.model_dump(exclude_unset=True)
-        #breakpoint()
+
         values = {k: v for k, v in values.items() if v is not None}
         if not values:
             return self.get_feed_item_by_id(id=feed_item_id)

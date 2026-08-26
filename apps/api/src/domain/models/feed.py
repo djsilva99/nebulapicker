@@ -48,6 +48,7 @@ class FeedItem(BaseModel):
 
 class UpdateFeedItemRequest(BaseModel):
     read: bool | None = None
+    starred_read: bool | None = None
     is_starred: bool | None = None
 
 
