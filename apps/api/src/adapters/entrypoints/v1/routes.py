@@ -738,6 +738,7 @@ def update_feed_item(
         is_starred=update_feed_item_request.is_starred
     )
     updated_feed_item = feed_service.update_feed_item(
+        feed_external_id,
         feed_item_external_id,
         update_feed_item_request
     )
