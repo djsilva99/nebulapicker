@@ -269,7 +269,7 @@ class FeedService:
 
         return feed_object.writeString("utf-8")
 
-    def export_file(
+    def export_file(  # noqa: C901
         self,
         feed_external_id: UUID,
         file_type: ExportFileType,
@@ -282,8 +282,20 @@ class FeedService:
         # Get feed items
         start_time = start_time.astimezone(datetime.UTC)
         end_time = end_time.astimezone(datetime.UTC)
-        feed = self.feeds_port.get_feed_by_external_id(feed_external_id)
-        feed_items = self.feeds_port.get_active_feed_items_by_feed_id(feed.id, limit=None)
+        if feed_external_id == UUID("00000000-0000-0000-0000-000000000000"):
+            feed = Feed(
+                id=0,
+                external_id=UUID("00000000-0000-0000-0000-000000000000"),
+                name="starred",
+                created_at=datetime.datetime.now(),
+                updated_at=datetime.datetime.now(),
+            )
+            feed_items = self.feeds_port.get_active_feed_items_by_feed_id(
+                feed.id, only_starred_items=True, limit=None
+            )
+        else:
+            feed = self.feeds_port.get_feed_by_external_id(feed_external_id)
+            feed_items = self.feeds_port.get_active_feed_items_by_feed_id(feed.id, limit=None)
         feed_items_to_export = [
             item for item in feed_items if
             item.created_at.replace(
@@ -291,6 +303,7 @@ class FeedService:
             ) > start_time and
             item.created_at.replace(tzinfo=datetime.UTC) < end_time
         ]
+        feed_items_to_export.reverse()
         total_reading_time = sum(
             [item.reading_time for item in feed_items_to_export]
         )
@@ -310,6 +323,19 @@ class FeedService:
             toc = []
             for feed_item in feed_items_to_export:
                 soup = BeautifulSoup(feed_item.content, "html.parser")
+
+                # remove bold text
+                for bold_tag in soup.find_all(["b", "strong"]):
+                    bold_tag.unwrap()
+
+                for styled_tag in soup.find_all(style=True):
+                    if "font-weight" in styled_tag["style"]:
+                        styles = [
+                            s.strip()
+                            for s in styled_tag["style"].split(";")
+                            if "font-weight" not in s and s.strip()
+                        ]
+                        styled_tag["style"] = "; ".join(styles)
 
                 for j, img_tag in enumerate(soup.find_all("img")):
                     img_url = img_tag.get("src")
