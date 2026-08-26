@@ -84,3 +84,4 @@ class GetFeedItemContentRequest(BaseModel):
 
 class GetFeedItemImageUrlRequest(BaseModel):
     url: str
+    content: str

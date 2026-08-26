@@ -9,7 +9,9 @@ from src.domain.models.feed import (
     GetFeedItemContentRequest,
     GetFeedItemImageUrlRequest,
 )
+import re
 from src.domain.ports.extractor_port import ExtractorPort
+from bs4 import BeautifulSoup
 
 settings: Settings = Settings()
 MINIMUM_CONTENT_LEN = 200
@@ -49,6 +51,19 @@ class WallabagExtractor(ExtractorPort):
                     content = entry_data["content"]
                 reading_time = entry_data.get("reading_time")
 
+            # Take first content image is image_url does not exist
+            if image_url is None:
+                soup = BeautifulSoup(content, "html.parser")
+                first_img = soup.find("img")
+                image_url = first_img["src"] if first_img and first_img.has_attr("src") else None
+                image_url = image_url.replace('denied:', '')
+
+
+            # Remove special strings
+            pattern = r"'\);\s*}\s*else\s*\{\s*document\.write\(''\);\s*}\s*//-->\s*//\]\]>"
+            content = re.sub(pattern, "", content)
+            content = content.replace("denied:", "")
+
             # Remove wallabag entry
             headers = {
                 "Authorization": f"Bearer {self.access_token}",
@@ -76,10 +91,14 @@ class WallabagExtractor(ExtractorPort):
     ) -> FeedItemImageUrl | None:
         try:
             entry_data = self._get_entry_data(get_feed_item_image_url_request.url)
-            return entry_data["preview_picture"]
+            if entry_data["preview_picture"]:
+                return entry_data["preview_picture"]
+            raise Exception('No image')
 
         except Exception:
-            return None
+            soup = BeautifulSoup(get_feed_item_image_url_request.content, "html.parser")
+            first_img = soup.find("img")
+            return first_img["src"] if first_img and first_img.has_attr("src") else None
 
     def _get_entry_data(self, url):
         token_url = f"{self.base_url}/oauth/v2/token"

@@ -24,5 +24,5 @@ class ExtractorService:
         feed_item_image_request: GetFeedItemImageUrlRequest
     ) -> FeedItemImageUrl | None:
         return self.extractor_port.get_feed_item_image(
-            feed_item_image_request
+            feed_item_image_request,
         )

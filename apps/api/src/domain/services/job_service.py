@@ -187,7 +187,8 @@ class JobService:
                         )
                         image_url = self.extractor_service.extract_feed_item_image(
                             GetFeedItemImageUrlRequest(
-                                url=entry.link
+                                url=entry.link,
+                                content=content.content
                             )
                         )
                     if content:
