@@ -1,6 +1,8 @@
 import html
+import re
 
 import requests
+from bs4 import BeautifulSoup
 from ftfy import fix_text
 from src.configs.settings import Settings
 from src.domain.models.feed import (
@@ -9,9 +11,7 @@ from src.domain.models.feed import (
     GetFeedItemContentRequest,
     GetFeedItemImageUrlRequest,
 )
-import re
 from src.domain.ports.extractor_port import ExtractorPort
-from bs4 import BeautifulSoup
 
 settings: Settings = Settings()
 MINIMUM_CONTENT_LEN = 200
