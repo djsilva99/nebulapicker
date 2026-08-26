@@ -5,7 +5,7 @@ from src.adapters.wallabag_extractor import (
     MINIMUM_CONTENT_LEN,
     WallabagExtractor,
 )
-from src.domain.models.feed import FeedItemContent, GetFeedItemContentRequest
+from src.domain.models.feed import FeedItemContent, GetFeedItemContentRequest, GetFeedItemImageUrlRequest
 
 
 @unittest.skip("Temporarily disabled")
@@ -81,3 +81,72 @@ def test_get_feed_item_content_exception_returns_none(mock_post):
 
     # THEN
     assert result is None
+
+
+@patch("src.adapters.wallabag_extractor.requests.post")
+@patch("src.adapters.wallabag_extractor.requests.delete")
+def test_get_feed_item_content_uses_first_content_image_when_preview_missing(
+    mock_delete,
+    mock_post,
+):
+    # GIVEN
+    extractor = WallabagExtractor()
+
+    token_response = MagicMock()
+    token_response.json.return_value = {"access_token": "abc123"}
+    token_response.raise_for_status.return_value = None
+
+    image_url = "https://example.com/image.jpg"
+    long_content = (
+        "<p>" + ("x" * (MINIMUM_CONTENT_LEN + 10)) + "</p>"
+        f'<img src="{image_url}">'
+    )
+
+    entry_response = MagicMock()
+    entry_response.json.return_value = {
+        "id": 42,
+        "title": "Article without preview",
+        "content": long_content,
+        "reading_time": 5,
+        "preview_picture": None,
+    }
+
+    mock_post.side_effect = [token_response, entry_response]
+    request = GetFeedItemContentRequest(
+        url="http://example.com/article"
+    )
+
+    # WHEN
+    result = extractor.get_feed_item_content(request)
+
+    # THEN
+    assert isinstance(result, FeedItemContent)
+    assert result.image_url == image_url
+    mock_delete.assert_called_once()
+
+
+@patch("src.adapters.wallabag_extractor.requests.post")
+def test_get_feed_item_image_falls_back_to_first_content_image(mock_post):
+    # GIVEN
+    extractor = WallabagExtractor()
+    content = """
+        <html>
+            <body>
+                <p>Article content</p>
+                <img src="https://example.com/fallback.jpg">
+            </body>
+        </html>
+    """
+
+    request = GetFeedItemImageUrlRequest(
+        url="http://example.com/article",
+        content=content,
+    )
+
+    mock_post.side_effect = Exception("Wallabag unavailable")
+
+    # WHEN
+    result = extractor.get_feed_item_image(request)
+
+    # THEN
+    assert result == "https://example.com/fallback.jpg"
