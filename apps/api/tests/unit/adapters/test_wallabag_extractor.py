@@ -5,7 +5,11 @@ from src.adapters.wallabag_extractor import (
     MINIMUM_CONTENT_LEN,
     WallabagExtractor,
 )
-from src.domain.models.feed import FeedItemContent, GetFeedItemContentRequest, GetFeedItemImageUrlRequest
+from src.domain.models.feed import (
+    FeedItemContent,
+    GetFeedItemContentRequest,
+    GetFeedItemImageUrlRequest,
+)
 
 
 @unittest.skip("Temporarily disabled")
