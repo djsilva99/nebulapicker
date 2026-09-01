@@ -40,7 +40,7 @@ export default function FeedPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const feedRes = await axios.get("/api/v1/feeds/" + feedId, {
+      const feedRes = await axios.get("/api/v1/feeds/" + feedId + "?feed_items_limit=1&feed_items_offset=0", {
         headers: {
           Authorization: `Bearer ${token}`,
         }
