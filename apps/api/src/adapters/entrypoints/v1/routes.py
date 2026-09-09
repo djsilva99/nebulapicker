@@ -4,7 +4,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import FileResponse
-
 from fastapi.security import OAuth2PasswordBearer
 from src.adapters.entrypoints.v1.models.authentication import LoginRequest
 from src.adapters.entrypoints.v1.models.feeds import (
