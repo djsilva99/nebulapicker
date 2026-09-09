@@ -57,7 +57,9 @@ class FeedsPort(ABC):
         last_day: bool = False,
         only_unread_items: bool = False,
         only_starred_items: bool = False,
-        rss_items: bool = False
+        rss_items: bool = False,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None
     ) -> list[FeedItem]:
         pass
 

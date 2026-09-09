@@ -231,7 +231,6 @@ def test_export_file_epub_success(
     start_time = datetime(2025, 1, 1, 10, 0, 0, tzinfo=UTC) - timedelta(hours=1)
     end_time = datetime(2025, 1, 1, 10, 0, 0, tzinfo=UTC) + timedelta(hours=1)
     item_created_at_in_range = datetime(2025, 1, 1, 10, 0, 0)
-    item_created_at_out_of_range = datetime(2025, 1, 5, 10, 0, 0)
     feed = Feed(
         id=feed_id,
         external_id=feed_external_id,
@@ -251,40 +250,32 @@ def test_export_file_epub_success(
         reading_time=5,
         created_at=item_created_at_in_range,
     )
-    feed_item_out_of_range = FeedItem(
-        id=11,
-        feed_id=feed_id,
-        external_id=uuid4(),
-        link="https://example.com/2",
-        title="Second item",
-        description="Desc 2",
-        author="Author B",
-        content="Content B",
-        reading_time=10,
-        created_at=item_created_at_out_of_range,
-    )
-    all_feed_items = [feed_item_in_range, feed_item_out_of_range]
     feeds_port_mock.get_feed_by_external_id.return_value = feed
-    feeds_port_mock.get_active_feed_items_by_feed_id.return_value = all_feed_items
+    feeds_port_mock.get_active_feed_items_by_feed_id.return_value = [
+        feed_item_in_range
+    ]
     mock_soup_instance = MagicMock(spec=BeautifulSoup)
     mock_img_tag = MagicMock()
     mock_img_tag.get.return_value = "http://img.com/a.jpg"
     mock_soup_instance.find_all.return_value = [mock_img_tag]
-    mock_soup_instance.__str__.return_value = 'Mocked HTML Content'
+    mock_soup_instance.__str__.return_value = "Mocked HTML Content"
     mock_beautifulsoup.return_value = mock_soup_instance
     mock_response = MagicMock()
+    mock_response.status_code = 200
     mock_response.content = b"fake_image_content"
     mock_requests.get.return_value = mock_response
     mock_epub_book = MagicMock()
     mock_epub.EpubBook.return_value = mock_epub_book
     mock_epub.EpubHtml.return_value = MagicMock()
     mock_epub.EpubItem.return_value = MagicMock()
-    mock_epub.write_epub = MagicMock(
-        side_effect=lambda buffer, book, opts: buffer.write(b"fake_epub_data")
-    )
+    # write_epub receives a file path, not a file object.
+    def fake_write_epub(path, book, opts):
+        with open(path, "wb") as f:
+            f.write(b"fake_epub_data")
+    mock_epub.write_epub.side_effect = fake_write_epub
 
     # WHEN
-    result_buffer = feed_service.export_file(
+    result_path = feed_service.export_file(
         feed_external_id=feed_external_id,
         file_type=ExportFileType.epub.value,
         start_time=start_time.replace(tzinfo=None),
@@ -295,18 +286,22 @@ def test_export_file_epub_success(
     feeds_port_mock.get_feed_by_external_id.assert_called_once_with(
         feed_external_id
     )
-    feeds_port_mock.get_active_feed_items_by_feed_id.assert_called_once_with(feed.id, limit=None)
+    feeds_port_mock.get_active_feed_items_by_feed_id.assert_called_once_with(
+        feed.id,
+        limit=None,
+        start_date=start_time,
+        end_date=end_time,
+    )
     assert len(mock_beautifulsoup.call_args_list) == 1
     assert feed_item_in_range.content in mock_beautifulsoup.call_args[0]
     assert mock_epub_book.set_title.call_args[0][0].endswith("(5m)")
     assert mock_epub_book.add_item.call_count > 0
     assert mock_epub.write_epub.called
-    assert result_buffer.getvalue() == b"fake_epub_data"
-    assert result_buffer.tell() == 0
+    assert result_path.read_bytes() == b"fake_epub_data"
     expected_chapter_title = (
         f"{feed_item_in_range.created_at.strftime('%Y-%m-%d')} - First item (5m)"
     )
-    assert mock_epub.EpubHtml.call_args[1]['title'] == expected_chapter_title
+    assert mock_epub.EpubHtml.call_args[1]["title"] == expected_chapter_title
 
 
 def test_export_file_wrong_file_type(feed_service, feeds_port_mock):

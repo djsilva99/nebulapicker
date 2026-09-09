@@ -3,7 +3,9 @@ import secrets
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse
+
+#from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
 from src.adapters.entrypoints.v1.models.authentication import LoginRequest
 from src.adapters.entrypoints.v1.models.feeds import (
@@ -794,22 +796,18 @@ def export_feed_items(
 ):
     feed_service = request.app.state.job_service.feed_service
 
-    buffer = feed_service.export_file(
+    path = feed_service.export_file(
         feed_external_id,
         export_feed_items_request.file_type,
         export_feed_items_request.start_time,
         export_feed_items_request.end_time
     )
-    buffer.seek(0)
 
-    return StreamingResponse(
-        buffer,
+    return FileResponse(
+        path,
         media_type="application/epub+zip",
-        headers={
-            "Content-Disposition": "attachment; filename=export.epub"
-        }
+        filename="export.epub",
     )
-
 
 @router.post(
     "/pickers",
