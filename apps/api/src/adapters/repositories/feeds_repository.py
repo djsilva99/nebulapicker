@@ -120,7 +120,7 @@ class FeedsRepository(FeedsPort):
             result = session.execute(sql, {"feed_id": feed_id}).mappings()
             return [FeedItem(**feed_item) for feed_item in result]
 
-    def get_active_feed_items_by_feed_id(
+    def get_active_feed_items_by_feed_id(  # noqa: C901
             self,
             feed_id: int,
             title_search: str = "",
@@ -130,6 +130,8 @@ class FeedsRepository(FeedsPort):
             only_unread_items: bool = False,
             only_starred_items: bool = False,
             rss_items: bool = False,
+            start_date: datetime.datetime | None = None,
+            end_date: datetime.datetime | None = None
     ) -> list[FeedItem]:
 
         title_search = title_search if title_search else None
@@ -165,6 +167,16 @@ class FeedsRepository(FeedsPort):
         # optional filters (no OR in SQL anymore)
         if title_search:
             where_clauses.append("title ILIKE :title_pattern")
+
+        # Filter dates in the database instead of loading everything
+        # and filtering it in Python.
+        if start_date is not None:
+            where_clauses.append("created_at > :start_date")
+            params["start_date"] = start_date
+
+        if end_date is not None:
+            where_clauses.append("created_at < :end_date")
+            params["end_date"] = end_date
 
         if last_day:
             where_clauses.append("""

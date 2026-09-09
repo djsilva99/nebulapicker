@@ -1,6 +1,7 @@
 import datetime
 import imghdr
-import io
+import tempfile
+from pathlib import Path
 from uuid import UUID
 
 import requests
@@ -275,9 +276,7 @@ class FeedService:
         file_type: ExportFileType,
         start_time: datetime,
         end_time: datetime
-    ) -> io.BytesIO:
-        # initialize buffer
-        buffer = io.BytesIO()
+    ) -> Path:
 
         # Get feed items
         start_time = start_time.astimezone(datetime.UTC)
@@ -291,18 +290,21 @@ class FeedService:
                 updated_at=datetime.datetime.now(),
             )
             feed_items = self.feeds_port.get_active_feed_items_by_feed_id(
-                feed.id, only_starred_items=True, limit=None
+                feed.id,
+                only_starred_items=True,
+                limit=None,
+                start_date=start_time,
+                end_date=end_time
             )
         else:
             feed = self.feeds_port.get_feed_by_external_id(feed_external_id)
-            feed_items = self.feeds_port.get_active_feed_items_by_feed_id(feed.id, limit=None)
-        feed_items_to_export = [
-            item for item in feed_items if
-            item.created_at.replace(
-                tzinfo=datetime.UTC
-            ) > start_time and
-            item.created_at.replace(tzinfo=datetime.UTC) < end_time
-        ]
+            feed_items = self.feeds_port.get_active_feed_items_by_feed_id(
+                feed.id,
+                limit=None,
+                start_date=start_time,
+                end_date=end_time
+            )
+        feed_items_to_export = feed_items
         feed_items_to_export.reverse()
         total_reading_time = sum(
             [item.reading_time for item in feed_items_to_export]
@@ -459,9 +461,15 @@ class FeedService:
             book.toc = toc
             book.add_item(epub.EpubNav())
             book.add_item(epub.EpubNcx())
-            epub.write_epub(buffer, book, {})
-            buffer.seek(0)
 
-            return buffer
+            tmp = tempfile.NamedTemporaryFile(
+                suffix=".epub",
+                delete=False,
+            )
+            tmp.close()
+
+            epub.write_epub(tmp.name, book, {})
+
+            return Path(tmp.name)
 
         raise Exception("wrong file type")
