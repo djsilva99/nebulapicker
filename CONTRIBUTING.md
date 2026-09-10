@@ -106,7 +106,7 @@ same version tag. A workflow will be triggered automatically when a new tag is
 pushed to the `main` branch. Before merging code into `main` and creating the
 version tag, don’t forget to update the version number in the following files:
 - `README.md`
-- `apps/api/main.py`
+- `apps/api/pyproject.toml`
 - `apps/web/package-lock.json`
 - `apps/web/package.json`
 - `apps/web/src/app/page.tsx`
