@@ -102,9 +102,8 @@ variable `NEXT_PUBLIC_USE_WALLABAG_EXTRACTOR` set to `true`). Releases can only
 be created from the `main` branch, so make sure that `main` is rebased with
 develop before proceeding. Next, create a new tag following [Semantic
 Versioning](http://semver.org/), e.g., v0.1.1. The three images must have the
-same version tag. A workflow will be triggered automatically when a new tag is
-pushed to the `main` branch. Before merging code into `main` and creating the
-version tag, don’t forget to update the version number in the following files:
+same version tag. Before merging code into `main` and creating the version tag,
+don’t forget to update the version number in the following files:
 - `README.md`
 - `apps/api/pyproject.toml`
 - `apps/web/package-lock.json`
@@ -120,3 +119,4 @@ mentioned above, and merge it into the develop branch.
 4. Test lunching both applications from docker compose and dev mode. Test the
    whole applications. Make some adjustment if required.
 5. Create a new tag with the updated version in the `main` branch.
+6. Create a new release in github.
