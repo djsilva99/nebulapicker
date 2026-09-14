@@ -1,3 +1,4 @@
+import datetime
 from abc import ABC, abstractmethod
 from uuid import UUID
 
@@ -32,4 +33,12 @@ class PickersPort(ABC):
 
     @abstractmethod
     def get_picker_by_source_id(self, source_id: int) -> list[Picker]:
+        pass
+
+    @abstractmethod
+    def get_due_pickers(self, timestamp: datetime.datetime) -> list[Picker]:
+        pass
+
+    @abstractmethod
+    def update_next_fetch(self, picker_id: int, next_fetch: datetime.datetime) -> Picker:
         pass

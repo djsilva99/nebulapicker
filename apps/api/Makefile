@@ -25,8 +25,12 @@ apply-lint: ## Apply lint
 
 .PHONY: local-deployment
 local-deployment: ## Deploy app locally
-	@echo "Local deployment"
-	@poetry run uvicorn src.main:app --env-file .env.dev --port=8081 --reload
+	@echo "Starting FastAPI and Celery..."
+	@trap 'kill 0' INT TERM EXIT; \
+	poetry run uvicorn src.main:app --env-file .env.dev --port=8080 --reload & \
+	poetry run celery -A src.celery_app:celery_app worker --loglevel=info --concurrency=1 --prefetch-multiplier=1 --hostname=worker1 & \
+	poetry run celery -A src.celery_app:celery_app flower & \
+	wait
 
 .PHONY: apply-migrations
 apply-migrations: ## Apply migrations

@@ -1,49 +1,78 @@
-from apscheduler.jobstores.base import JobLookupError
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
-from src.domain.handlers import HANDLERS
-from src.domain.models.job import Job
-from src.domain.ports.scheduler_port import SchedulerPort
+import threading
+import time
+from datetime import datetime
+
+from croniter import croniter
+from src.adapters.repositories.pickers_repository import PickersRepository
+from src.configs.database import SessionLocal
+from src.configs.settings import Settings
+from src.tasks import process_picker
+
+settings: Settings = Settings()
 
 
-class Scheduler(SchedulerPort):
+class Scheduler:
+
     def __init__(self):
-        self.scheduler = BackgroundScheduler()
+        self.pickers_repository = PickersRepository(SessionLocal)
+
+        self._running = False
+        self._thread: threading.Thread | None = None
 
     def start(self):
-        self.scheduler.start()
-
-    def shutdown(self):
-        self.scheduler.shutdown()
-
-    def _build_job_id(self, job: Job) -> str:
-        args_str = "_".join(map(str, job.args)) if job.args else "noargs"
-        return f"{job.func_name}_{args_str}".replace(" ", "_")
-
-    def add_job(self, job: Job) -> None:
-        func = HANDLERS.get(job.func_name)
-        if not func:
-            print(f"Function {job.func_name} not found")
+        if self._running:
             return
 
-        job_id = self._build_job_id(job)
+        self._running = True
 
-        self.scheduler.add_job(
-            func=func,
-            trigger=CronTrigger.from_crontab(job.schedule),
-            args=job.args,
-            id=job_id,
-            replace_existing=True,
+        self._thread = threading.Thread(
+            target=self._run,
+            daemon=True,
         )
 
-    def load_jobs(self, jobs: list[Job]) -> None:
-        for job in jobs:
-            self.add_job(job)
+        self._thread.start()
 
-    def delete_job(self, job: Job) -> None:
-        job_id = self._build_job_id(job)
-        try:
-            self.scheduler.remove_job(job_id)
-            print(f"Removed job: {job_id}")
-        except JobLookupError:
-            print(f"Job {job_id} not found in scheduler.")
+    def shutdown(self):
+        self._running = False
+
+        if self._thread:
+            self._thread.join(timeout=5)
+
+    def _run(self):
+        while self._running:
+            try:
+                self._schedule_due_pickers()
+            except Exception:
+                pass
+
+            time.sleep(settings.SCHEDULER_INTERVAL_SECONDS)
+            #time.sleep(self.CHECK_INTERVAL_SECONDS)
+
+    def _schedule_due_pickers(self):
+        now = datetime.now()
+
+        pickers = self.pickers_repository.get_due_pickers(now)
+        for picker in pickers:
+            process_picker.delay(picker.id)
+
+            next_fetch = croniter(picker.cronjob, datetime.now()).get_next(datetime)
+
+            # Prevent the picker from being scheduled again
+            # until its next_fetch time.
+            self.pickers_repository.update_next_fetch(
+                picker.id,
+                next_fetch,
+            )
+
+
+if __name__ == "__main__":
+    scheduler = Scheduler()
+
+    try:
+        scheduler.start()
+
+        while True:
+            time.sleep(1)
+
+    except KeyboardInterrupt:
+        scheduler.shutdown()

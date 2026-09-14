@@ -1,9 +1,29 @@
 version: '3.3'
 
 services:
+  db:
+    image: postgres:15
+    container_name: nebulapicker-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nebulapicker
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: nebulapicker-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
   extractor:
     image: wallabag/wallabag:2.6.14
-    container_name: wallabag
+    container_name: wallabag_c
     environment:
       - SYMFONY__ENV__DATABASE_DRIVER=pdo_sqlite
       - SYMFONY__ENV__DOMAIN_NAME=http://localhost:8081
@@ -15,31 +35,83 @@ services:
       - ./data:/var/www/wallabag/data
     restart: always
 
-  db:
-    image: postgres:15
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: nebulapicker
-    ports:
-      - "5433:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
   api:
-    image: djsilva99/nebulapicker-api:latest
+    image: nebulapicker-test-api:latest
+    #image: djsilva99/nebulapicker-api:latest
     container_name: nebulapicker-api
     depends_on:
       - db
+      - redis
+      - extractor
     env_file:
       - .env.with_extractor
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/nebulapicker
+      CELERY_BROKER_URL: redis://redis:6379/0
+      WALLABAG_URL: http://extractor
     ports:
       - "8000:8000"
     restart: always
     command: >
       sh -c "alembic upgrade head &&
              uvicorn src.main:app --host 0.0.0.0 --port 8000"
+
+  worker:
+    image: nebulapicker-test-api:latest
+    #image: djsilva99/nebulapicker-api:latest
+    container_name: nebulapicker-worker
+    depends_on:
+      - db
+      - redis
+      - extractor
+    env_file:
+      - .env.with_extractor
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/nebulapicker
+      CELERY_BROKER_URL: redis://redis:6379/0
+      WALLABAG_URL: http://extractor
+    restart: always
+    command: >
+      celery
+      -A src.celery_app:celery_app
+      worker
+      --loglevel=info
+      --concurrency=1
+      --prefetch-multiplier=1
+      --hostname=worker@%h
+
+  scheduler:
+    image: nebulapicker-test-api:latest
+    #image: djsilva99/nebulapicker-api:latest
+    container_name: nebulapicker-scheduler
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env.with_extractor
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/nebulapicker
+      CELERY_BROKER_URL: redis://redis:6379/0
+    restart: always
+    command: >
+      python -m src.adapters.scheduler
+
+  flower:
+    image: nebulapicker-test-api:latest
+    #image: djsilva99/nebulapicker-api:latest
+    container_name: nebulapicker-flower
+    depends_on:
+      - redis
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+    ports:
+      - "5555:5555"
+    restart: always
+    command: >
+      celery
+      -A src.celery_app:celery_app
+      flower
+      --port=5555
 
   web:
     image: djsilva99/nebulapicker-web-with-extractor:latest
