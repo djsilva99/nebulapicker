@@ -1,3 +1,4 @@
+import datetime
 from uuid import UUID
 
 from sqlalchemy import text
@@ -99,3 +100,49 @@ class PickersRepository(PickersPort):
         with self.session_factory() as session:
             result = session.execute(sql, {"source_id": source_id}).mappings()
             return [Picker(**picker) for picker in result]
+
+    def get_due_pickers(self, timestamp: datetime.datetime) -> list[Picker]:
+        sql = text(
+            "SELECT "
+            "id, external_id, source_id, feed_id, cronjob, created_at, next_fetch "
+            "FROM pickers "
+            "WHERE next_fetch IS NULL "
+            "OR next_fetch <= :timestamp;"
+        )
+
+        with self.session_factory() as session:
+            result = session.execute(
+                sql,
+                {"timestamp": timestamp},
+            ).mappings()
+
+            return [Picker(**picker) for picker in result]
+
+    def update_next_fetch(
+            self,
+            picker_id: int,
+            next_fetch: datetime.datetime,
+    ) -> Picker:
+        sql = text(
+            "UPDATE pickers "
+            "SET next_fetch = :next_fetch "
+            "WHERE id = :picker_id "
+            "RETURNING id, external_id, source_id, feed_id, cronjob, "
+            "created_at, next_fetch;"
+        )
+
+        with self.session_factory() as session:
+            result = session.execute(
+                sql,
+                {
+                    "picker_id": picker_id,
+                    "next_fetch": next_fetch,
+                },
+            ).mappings().first()
+
+            session.commit()
+
+            if result is None:
+                raise ValueError(f"Picker {picker_id} not found")
+
+            return Picker(**result)

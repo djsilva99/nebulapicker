@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     WALLABAG_CLIENT_SECRET: str
     WALLABAG_USERNAME: str
     WALLABAG_PASSWORD: str
+    SCHEDULER_INTERVAL_SECONDS: int
+    CELERY_BROKER_URL: str
 
     class Config:
         env_file = ".env.dev"

@@ -18,8 +18,6 @@ from src.domain.models.feed import (
     GetFeedItemImageUrlRequest,
 )
 from src.domain.models.filter import Operation
-from src.domain.models.job import Job
-from src.domain.models.picker import Picker
 from src.domain.ports.feeds_port import FeedsPort
 from src.domain.ports.scheduler_port import SchedulerPort
 from src.domain.services.extractor_service import ExtractorService
@@ -49,34 +47,6 @@ class JobService:
         self.feed_service = feed_service
         self.extractor_service = extractor_service
         self.feeds_port = feeds_port
-
-    def add_cronjob(self, picker: Picker):
-        job = Job(
-            func_name='process_filters',
-            args=[str(picker.id)],
-            schedule=picker.cronjob
-        )
-        self.scheduler.add_job(job)
-
-    def delete_cronjob(self, picker: Picker):
-        job_to_delete = Job(
-            func_name='process_filters',
-            args=[str(picker.id)],
-            schedule=picker.cronjob
-        )
-        self.scheduler.delete_job(job_to_delete)
-
-    def load_all(self):
-        pickers = self.picker_service.get_all_pickers()
-        jobs = []
-        for picker in pickers:
-            job = Job(
-                func_name='process_filters',
-                args=[str(picker.id)],
-                schedule=picker.cronjob
-            )
-            jobs.append(job)
-        self.scheduler.load_jobs(jobs)
 
     def process(self, picker_id: int):  # noqa: C901
         picker = self.picker_service.get_picker_by_id(picker_id)
@@ -188,7 +158,7 @@ class JobService:
                         image_url = self.extractor_service.extract_feed_item_image(
                             GetFeedItemImageUrlRequest(
                                 url=entry.link,
-                                content=content.content
+                                content=content.content if content else ""
                             )
                         )
                     if content:
@@ -209,3 +179,14 @@ class JobService:
                     )
                     self.feed_service.create_feed_item(feed_item_request)
                     self.feeds_port.set_updated_at(picker.feed_id)
+
+        return {
+            'source': source.name,
+            'feed_name': self.feed_service.get_feed_by_id(picker.feed_id).name,
+            'entries': [
+                {
+                    'title': entry.title,
+                    'source': entry.get("author", "")
+                } for entry in new_entries
+            ]
+        }

@@ -6,7 +6,6 @@ from uuid import uuid4
 import pytest
 from src.domain.models.feed import FeedItemRequest
 from src.domain.models.filter import Operation
-from src.domain.models.job import Job
 from src.domain.models.picker import Picker
 from src.domain.services.job_service import JobService, settings
 
@@ -42,49 +41,6 @@ def job_service(mock_services):
         extractor_service=mock_services["extractor_service"],
         feeds_port=mock_services["feeds_port"]
     )
-
-
-def test_add_cronjob(job_service, mock_services):
-    # GIVEN
-    picker = Picker(
-        id=1,
-        cronjob="*/5 * * * *",
-        source_id=1,
-        feed_id=1,
-        external_id=uuid4(),
-        created_at=datetime(2025, 1, 1, 13, 0, 0)
-    )
-
-    # WHEN
-    job_service.add_cronjob(picker)
-
-    # THEN
-    assert mock_services["scheduler"].add_job.call_count == 1
-    job_arg = mock_services["scheduler"].add_job.call_args[0][0]
-    assert isinstance(job_arg, Job)
-    assert job_arg.func_name == "process_filters"
-    assert str(picker.id) in job_arg.args
-
-
-def test_load_all(job_service, mock_services):
-    # GIVEN
-    picker1 = Picker(
-        id=1, cronjob="*/5 * * * *", source_id=1, feed_id=1, external_id=uuid4(),
-        created_at=datetime(2025, 1, 1, 12, 0, 0)
-    )
-    picker2 = Picker(
-        id=2, cronjob="*/10 * * * *", source_id=2, feed_id=2, external_id=uuid4(),
-        created_at=datetime(2025, 1, 1, 13, 0, 0)
-    )
-    mock_services["picker_service"].get_all_pickers.return_value = [picker1, picker2]
-
-    # WHEN
-    job_service.load_all()
-
-    # THEN
-    jobs_arg = mock_services["scheduler"].load_jobs.call_args[0][0]
-    assert len(jobs_arg) == 2
-    assert all(isinstance(job, Job) for job in jobs_arg)
 
 
 @patch("src.domain.services.job_service.feedparser.parse")

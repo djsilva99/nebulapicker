@@ -64,12 +64,6 @@ async def lifespan(app: FastAPI):
     app.state.job_service = job_service
     scheduler_adapter.start()
 
-    try:
-        job_service.load_all()
-        logger.info("Scheduler started and jobs loaded successfully.")
-    except Exception as e:
-        logger.error(f"Failed to load jobs on startup: {e}")
-
     yield
 
     # SHUTDOWN

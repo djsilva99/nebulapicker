@@ -264,7 +264,6 @@ def delete_source(
     source_service = request.app.state.job_service.source_service
     filter_service = request.app.state.job_service.filter_service
     picker_service = request.app.state.job_service.picker_service
-    job_service = request.app.state.job_service
 
     source = source_service.get_source_by_external_id(
         external_id=source_external_id
@@ -279,7 +278,6 @@ def delete_source(
         for filter in filters:
             filter_service.delete_filter(filter.id)
         picker_service.delete_picker(picker.id)
-        job_service.delete_cronjob(picker)
     source_service.delete_source(source.id)
     return None
 
@@ -405,7 +403,6 @@ def delete_feed(
     feed_service = request.app.state.job_service.feed_service
     filter_service = request.app.state.job_service.filter_service
     picker_service = request.app.state.job_service.picker_service
-    job_service = request.app.state.job_service
 
     feed = feed_service.get_feed_by_external_id(external_id=feed_external_id)
     if not feed:
@@ -418,7 +415,6 @@ def delete_feed(
         ):
             filter_service.delete_filter(filter.id)
         picker_service.delete_picker(picker_id=picker.id)
-        job_service.delete_cronjob(picker)
 
     feed_items, _, _ = feed_service.get_feed_items(feed.id, feed_items_limit=None)
     for feed_item in feed_items:
@@ -837,7 +833,6 @@ def add_picker(
     filter_service = request.app.state.job_service.filter_service
     picker_service = request.app.state.job_service.picker_service
     source_service = request.app.state.job_service.source_service
-    job_service = request.app.state.job_service
 
     feed_name = None
     if create_full_picker_request.feed_name:
@@ -897,9 +892,6 @@ def add_picker(
                 )
             )
         )
-
-    # create cronjob
-    job_service.add_cronjob(created_picker)
 
     return FullPickerResponse(
         external_id=created_picker.external_id,
@@ -978,7 +970,6 @@ def delete_picker(
 ):
     filter_service = request.app.state.job_service.filter_service
     picker_service = request.app.state.job_service.picker_service
-    job_service = request.app.state.job_service
 
     picker = picker_service.get_picker_by_external_id(external_id=picker_external_id)
     if not picker:
@@ -987,6 +978,5 @@ def delete_picker(
     for filter in filter_service.get_filters_by_picker_id(picker_id=picker.id):
         filter_service.delete_filter(filter.id)
 
-    job_service.delete_cronjob(picker)
     picker_service.delete_picker(picker_id=picker.id)
     return None
