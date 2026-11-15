@@ -4,6 +4,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 from uuid import uuid4
 
+os.environ.setdefault("APP_TOKEN", "test-token")
+
 import psycopg
 import pytest
 from alembic import command
@@ -18,7 +20,6 @@ from src.configs.database import get_db
 from src.domain.services.job_service import JobService
 from src.main import app
 
-os.environ.setdefault("APP_TOKEN", "test-token")
 
 TEST_DB_URL = "postgresql://postgres:postgres@localhost:5433/"
 TEST_DB_NAME = "test_nebula"
