@@ -30,13 +30,18 @@ export default function FeedItemPage() {
         }
       });
       setData(feedRes.data);
-      await axios.patch(
+      setIsLoading(false);
+      axios.patch(
         `/api/v1/feeds/${feedId}/feed_items/${feedItemId}`, 
         { read: true },
         {
           headers: {
             Authorization: `Bearer ${token}`,
           }
+        }
+      ).catch(
+        (error) => {
+      console.error("Error marking item as read:", error);
         }
       );
     } catch (error: unknown) {
