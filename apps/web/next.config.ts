@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 // Force the default to be the Docker service name 'api'
-const API_DESTINATION = process.env.API_URL || "http://api:8000";
+const API_DESTINATION = "http://localhost:8080";
 
 const nextConfig: NextConfig = {
   async rewrites() {

@@ -112,7 +112,7 @@ export const ChakraRootLayout = ({ children }: { children: React.ReactNode }) =>
                   boxSize={{ base: '24px', md: '32px' }}
                   objectFit="contain"
                 />
-                  <Text fontSize={12} display={{ base: 'block', md: 'block' }}>
+                  <Text fontSize={12} fontFamily="var(--font-ubuntu)" display={{ base: 'block', md: 'block' }}>
                     nebulapicker
                   </Text>
               </Heading>

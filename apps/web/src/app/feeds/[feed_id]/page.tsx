@@ -67,6 +67,11 @@ export default function FeedPage() {
   const feedId = params.feed_id as string;
   const [data, setData] = useState<Feed>();
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [starLoading, setStarLoading] = useState<Record<string, boolean>>({});
+  const [readLoading, setReadLoading] = useState<Record<string, boolean>>({});
+  const [deleteLoading, setDeleteLoading] = useState<Record<string, boolean>>({});
+  const [allReadLoading, setAllReadLoading] = useState<boolean>(false);
+  const [paginationLoading, setPaginationLoading] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const { open, onOpen, onClose } = useDisclosure();
   const [page, setPage] = useState(1);
@@ -101,6 +106,7 @@ export default function FeedPage() {
       setData(feedRes.data);
       setTotalItems(feedRes.data.feed_items_total_count ?? 0);
       setTotalUnreadItems(feedRes.data.unread_feed_items_total_count ?? 0);
+      setPaginationLoading(false)
 
     } catch (error: unknown) {
       console.error("Error fetching data:", error);
@@ -126,22 +132,35 @@ export default function FeedPage() {
     fetchData();
   }, [feedId, page, search, starred, unreadItems, rssItems]);
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [page]);
+  //useEffect(() => {
+  //  window.scrollTo({ top: 0, behavior: "smooth" });
+  //}, [page]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
+      setPaginationLoading(true)
       setPage(1);
     }
   };
 
-  const handleDelete = async (externalId: string, feedExternalId: string) => {
-    if (!window.confirm(`Are you sure you want to delete feed item: ${feedExternalId}?`)) {
+  const handlePagination = async () => {
+    setPaginationLoading(true)
+  };
+
+  const handleDelete = async (externalId: string, feedExternalId: string, title: string) => {
+    if (!window.confirm(`Are you sure you want to delete feed item with title: ${title}?`)) {
       return;
     }
 
     setIsDeleting(feedExternalId);
+    setDeleteLoading(
+      (prev) => (
+        {
+          ...prev,
+          [feedExternalId]: true,
+        }
+      )
+    );
     try {
       const token = localStorage.getItem("token");
       await axios.delete(
@@ -157,7 +176,7 @@ export default function FeedPage() {
         isClosable: true,
       });
 
-      fetchData();
+      await fetchData();
     } catch (error: unknown) {
       console.error("Error deleting feed item:", error);
       toast({
@@ -168,11 +187,20 @@ export default function FeedPage() {
         isClosable: true,
       });
     } finally {
+      setDeleteLoading(
+        (prev) => (
+          {
+            ...prev,
+            [feedExternalId]: false,
+          }
+        )
+      );
       setIsDeleting(null);
     }
   };
 
   const handleCatchup = async (externalId: string) => {
+    setAllReadLoading(true);
     try {
       const token = localStorage.getItem("token");
       await axios.patch(
@@ -180,7 +208,7 @@ export default function FeedPage() {
         { "read": true },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      fetchData();
+      await fetchData();
     } catch (error: unknown) {
       console.error("Error marking all as read", error);
       toast({
@@ -191,10 +219,19 @@ export default function FeedPage() {
         isClosable: true,
       });
     } finally {
+      setAllReadLoading(false);
     }
   };
 
   const handleReadItem = async (externalId: string, externalItemId: string, read: boolean) => {
+    setReadLoading(
+      (prev) => (
+        {
+          ...prev,
+          [externalItemId]: true,
+        }
+      )
+    );
     try {
       const token = localStorage.getItem("token");
       await axios.patch(
@@ -202,7 +239,7 @@ export default function FeedPage() {
         { "read": read },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      fetchData();
+      await fetchData();
     } catch (error: unknown) {
       console.error("Error marking item as read", error);
       toast({
@@ -213,10 +250,27 @@ export default function FeedPage() {
         isClosable: true,
       });
     } finally {
+      setReadLoading(
+        (prev) => (
+          {
+            ...prev,
+            [externalItemId]: false,
+          }
+        )
+      );
     }
   };
 
-    const handleStarItem = async (externalId: string, externalItemId: string, star: boolean) => {
+  const handleStarItem = async (externalId: string, externalItemId: string, star: boolean) => {
+    setStarLoading(
+      (prev) => (
+        {
+          ...prev,
+          [externalItemId]: true,
+        }
+      )
+    );
+    
     try {
       const token = localStorage.getItem("token");
       await axios.patch(
@@ -224,7 +278,7 @@ export default function FeedPage() {
         { "is_starred": star },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      fetchData();
+      await fetchData();
     } catch (error: unknown) {
       console.error("Error marking item as read", error);
       toast({
@@ -235,6 +289,14 @@ export default function FeedPage() {
         isClosable: true,
       });
     } finally {
+      setStarLoading(
+        (prev) => (
+          {
+            ...prev,
+            [externalItemId]: false,
+          }
+        )
+      );
     }
   };
 
@@ -439,6 +501,7 @@ export default function FeedPage() {
                 id="unread-items"
                 checked={unreadItems}
                 onCheckedChange={(details) => {
+                  setPaginationLoading(true)
                   setUnreadItems(details.checked);
                   setPage(1);
                 }}
@@ -466,6 +529,7 @@ export default function FeedPage() {
                 id="last-day"
                 checked={starred}
                 onCheckedChange={(details) => {
+                  setPaginationLoading(true)
                   setStarred(details.checked);
                   setPage(1);
                 }}
@@ -493,6 +557,7 @@ export default function FeedPage() {
                 id="rss-items"
                 checked={rssItems}
                 onCheckedChange={(details) => {
+                  setPaginationLoading(true)
                   setRssItems(details.checked);
                   setPage(1);
                 }}
@@ -541,6 +606,11 @@ export default function FeedPage() {
                   variant="outline"
                   m={1}
                   _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handlePagination();
+                  }}
                 >
                   {item.type === "page" ? item.value : "…"}
                 </Button>
@@ -549,6 +619,8 @@ export default function FeedPage() {
           />
         </Pagination.Root>
       </Flex>
+
+      { allReadLoading || paginationLoading ? <span>loading...</span> : ( <>
 
       {/* TABLE */}
       {useWallabagExtractor && (
@@ -616,81 +688,96 @@ export default function FeedPage() {
                   mt={-0.5}
                   display={{ base: 'block', md: 'none' }}
                 >
-                  <Flex align="center" gap={1}>
-                    <Box
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleReadItem(data?.external_id || "", item.external_id, !item.read);
+                  {
+                    readLoading[item.external_id] || starLoading[item.external_id] || deleteLoading[item.external_id] ? (
+                      <span   
+                        style={{
+                        color: "white",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "40px",
+                        height: "32px",
+                        marginLeft: "10px"
                       }}
-                    >
-                      {item.author.length > 15 ? `${item.author.slice(0, 15)}…` : item.author} &nbsp;&nbsp;
-                      {timeDeltaFromNow(item.created_at)} ago &nbsp;&nbsp;
-                      <Flex
-                        as="span"
-                        display="inline-flex"
-                        alignItems="center"
-                        gap="4px"
-                        verticalAlign="middle"
-                      >
-                        <FiClock size={16}/> 
-                        <ChakraText as="span" lineHeight="1">
-                          {item.reading_time}m
-                        </ChakraText>
-                      </Flex>
-                    </Box>
-                    <Spacer/>
-                    <Box minW="80px">
-                      <Button
-                        aria-label={`Go to ${item.link}`}
-                        size="xs"
-                        colorScheme="red"
-                        color={item.is_starred ? '#AC7DBA' : "gray.500"}
-                        _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
-                        variant="ghost"
+                      >loading...</span>
+                    ) : (
+                    <Flex align="center" gap={1}>
+                      <Box
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          handleStarItem(data?.external_id || "", item.external_id, !item.is_starred);
+                          handleReadItem(data?.external_id || "", item.external_id, !item.read);
                         }}
-                        loading={isDeleting === item.external_id}
                       >
-                        {item.is_starred ? <FaStar /> : <FiStar />}
-                      </Button>
-                      <Button
-                        aria-label={`Go to ${item.link}`}
-                        size="xs"
-                        colorScheme="red"
-                        color="white"
-                        _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          window.open(item.link, '_blank');
-                        }}
-                        loading={isDeleting === item.external_id}
-                      >
-                        <FiGlobe/>
-                      </Button>
-                      <Button
-                        aria-label={`Delete ${item.title}`}
-                        size="xs"
-                        colorScheme="red"
-                        color="white"
-                        _hover={{ bg: 'gray.700', color: 'red' }}
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleDelete(data?.external_id || "", item.external_id);
-                        }}
-                        loading={isDeleting === item.external_id}
-                      >
-                        <FiTrash/>
-                      </Button>
-                    </Box>
-                  </Flex>
+                        {item.author.length > 15 ? `${item.author.slice(0, 15)}…` : item.author} &nbsp;&nbsp;
+                        {timeDeltaFromNow(item.created_at)} ago &nbsp;&nbsp;
+                        <Flex
+                          as="span"
+                          display="inline-flex"
+                          alignItems="center"
+                          gap="4px"
+                          verticalAlign="middle"
+                        >
+                          <FiClock size={16}/> 
+                          <ChakraText as="span" lineHeight="1">
+                            {item.reading_time}m
+                          </ChakraText>
+                        </Flex>
+                      </Box>
+                      <Spacer/>
+                      <Box minW="80px">
+                        <Button
+                          aria-label={`Go to ${item.link}`}
+                          size="xs"
+                          colorScheme="red"
+                          color={item.is_starred ? '#AC7DBA' : "gray.500"}
+                          _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleStarItem(data?.external_id || "", item.external_id, !item.is_starred);
+                          }}
+                          loading={isDeleting === item.external_id}
+                        >
+                          {item.is_starred ? <FaStar /> : <FiStar />}
+                        </Button>
+                        <Button
+                          aria-label={`Go to ${item.link}`}
+                          size="xs"
+                          colorScheme="red"
+                          color="white"
+                          _hover={{ bg: 'gray.700', color: '#AC7DBA' }}
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.open(item.link, '_blank');
+                          }}
+                          loading={isDeleting === item.external_id}
+                        >
+                          <FiGlobe/>
+                        </Button>
+                        <Button
+                          aria-label={`Delete ${item.title}`}
+                          size="xs"
+                          colorScheme="red"
+                          color="white"
+                          _hover={{ bg: 'gray.700', color: 'red' }}
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDelete(data?.external_id || "", item.external_id, item.title);
+                          }}
+                          loading={isDeleting === item.external_id}
+                        >
+                          <FiTrash/>
+                        </Button>
+                      </Box>
+                    </Flex>
+                  )}
                 </Box>
               </Table.Cell>
               <Table.Cell borderLeft="none" borderRight="none" display={{ base: 'none', md: 'table-cell' }} width={{ base: "0%", md: "15%" }}>
@@ -778,7 +865,7 @@ export default function FeedPage() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleDelete(data?.external_id || "", item.external_id);
+                        handleDelete(data?.external_id || "", item.external_id, item.title);
                       }}
                       loading={isDeleting === item.external_id}
                     >
@@ -796,7 +883,7 @@ export default function FeedPage() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleDelete(data?.external_id || "", item.external_id);
+                        handleDelete(data?.external_id || "", item.external_id, item.title);
                       }}
                       loading={isDeleting === item.external_id}
                     >
@@ -887,7 +974,7 @@ export default function FeedPage() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleDelete(data?.external_id || "", item.external_id);
+                        handleDelete(data?.external_id || "", item.external_id, item.title);
                       }}
                       loading={isDeleting === item.external_id}
                     >
@@ -904,7 +991,7 @@ export default function FeedPage() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleDelete(data?.external_id || "", item.external_id);
+                        handleDelete(data?.external_id || "", item.external_id, item.title);
                       }}
                       loading={isDeleting === item.external_id}
                     >
@@ -937,7 +1024,10 @@ export default function FeedPage() {
           count={totalItems}
           pageSize={PAGE_SIZE}
           page={page}
-          onPageChange={(details) => setPage(details.page)}
+          onPageChange={(details) => {
+            setPaginationLoading(true);
+            setPage(details.page);
+          }}
         >
           <Pagination.Items
             render={(item) => (
@@ -954,6 +1044,11 @@ export default function FeedPage() {
                   variant="outline"
                   m={1}
                   _hover={{ bg: 'gray.700', color: '#AC7DBA', borderColor: 'gray.700' }}
+                  //onClick={(e) => {
+                  //  e.preventDefault();
+                  //  e.stopPropagation();
+                  //  handlePagination();
+                  //}}
                 >
                   {item.type === "page" ? item.value : "…"}
                 </Button>
@@ -971,6 +1066,10 @@ export default function FeedPage() {
         onFeedAdded={fetchData}
         isCentered
       />
+      </>
+      )}
     </Box>
+          
   );
+
 }
