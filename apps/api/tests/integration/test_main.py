@@ -4,6 +4,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 from uuid import uuid4
 
+os.environ.setdefault("APP_TOKEN", "test-token")
+
 import psycopg
 import pytest
 from alembic import command
@@ -39,11 +41,13 @@ def mock_services():
     }
 
 
-@pytest.fixture(autouse=True)
-def setup_job_service(test_db_manager):
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
+@pytest.fixture
+def redis_service():
+    return MagicMock()
 
+
+@pytest.fixture(autouse=True)
+def setup_job_service(test_db_manager, redis_service):
     engine = create_engine(test_db_manager)
     test_session_local = sessionmaker(bind=engine)
 
@@ -68,7 +72,12 @@ def setup_job_service(test_db_manager):
     picker_service = PickerService(pickers_repo)
     filter_service = FilterService(filters_repo)
     extractor_mock = MagicMock()
-    feed_service = FeedService(feeds_repo, extractor_mock)
+
+    feed_service = FeedService(
+        feeds_repo,
+        extractor_mock,
+        redis_service,
+    )
 
     # Attach to app.state just like in main.py
     app.state.job_service = JobService(
@@ -78,7 +87,8 @@ def setup_job_service(test_db_manager):
         source_service=source_service,
         feed_service=feed_service,
         extractor_service=extractor_mock,
-        feeds_port=feeds_repo
+        feeds_port=feeds_repo,
+        redis=redis_service
     )
 
 
@@ -341,8 +351,12 @@ def test_delete_source_not_found(
 def test_list_feeds_empty(
     client: TestClient,
     db_session: Session,
-    monkeypatch: pytest.MonkeyPatch
+    monkeypatch: pytest.MonkeyPatch,
+    redis_service: MagicMock,
 ):
+    # GIVEN
+    redis_service.get.return_value = None
+
     # WHEN
     fake_token = "test-token"
     monkeypatch.setattr("src.adapters.entrypoints.v1.routes.generated_token", fake_token)
@@ -359,15 +373,20 @@ def test_list_feeds_empty(
 def test_list_feeds_with_data(
     client: TestClient,
     db_session: Session,
-    monkeypatch: pytest.MonkeyPatch
+    monkeypatch: pytest.MonkeyPatch,
+    redis_service: MagicMock,
 ):
     # GIVEN
     new_uuid = str(uuid4())
     feed_id = 1
     feed_external_id = str(uuid4())
-    db_session.execute(text(
-        "INSERT INTO feeds (id, external_id, name) VALUES (1, :external_id, :name);"
-    ), {"external_id": new_uuid, "name": "fake_name"})
+    db_session.execute(
+        text(
+            "INSERT INTO feeds (id, external_id, name) "
+            "VALUES (1, :external_id, :name);"
+        ),
+        {"external_id": new_uuid, "name": "fake_name"},
+    )
     db_session.commit()
     db_session.execute(
         text(
@@ -385,8 +404,12 @@ def test_list_feeds_with_data(
         }
     )
     db_session.commit()
+    redis_service.get.return_value = None
     fake_token = "test-token"
-    monkeypatch.setattr("src.adapters.entrypoints.v1.routes.generated_token", fake_token)
+    monkeypatch.setattr(
+        "src.adapters.entrypoints.v1.routes.generated_token",
+        fake_token,
+    )
 
     # WHEN
     response = client.get(

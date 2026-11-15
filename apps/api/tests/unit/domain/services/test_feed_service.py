@@ -26,8 +26,17 @@ def extractor_service_mock():
 
 
 @pytest.fixture
-def feed_service(feeds_port_mock):
-    return FeedService(feeds_port=feeds_port_mock, extractor_service=extractor_service_mock)
+def redis_mock():
+    return MagicMock()
+
+
+@pytest.fixture
+def feed_service(feeds_port_mock, extractor_service_mock, redis_mock):
+    return FeedService(
+        feeds_port=feeds_port_mock,
+        extractor_service=extractor_service_mock,
+        redis=redis_mock,
+    )
 
 
 def test_create_feed(feed_service, feeds_port_mock):
@@ -223,7 +232,7 @@ def test_create_feed_item_delegates_to_port(feed_service, feeds_port_mock):
 @patch("src.domain.services.feed_service.epub")
 @patch("src.domain.services.feed_service.BeautifulSoup")
 def test_export_file_epub_success(
-        mock_beautifulsoup, mock_epub, mock_requests, feed_service, feeds_port_mock
+    mock_beautifulsoup, mock_epub, mock_requests, feed_service, feeds_port_mock
 ):
     # GIVEN
     feed_external_id = uuid4()
@@ -320,7 +329,7 @@ def test_export_file_wrong_file_type(feed_service, feeds_port_mock):
         )
 
 
-def test_get_detailed_feeds(feed_service, feeds_port_mock):
+def test_get_detailed_feeds(feed_service, feeds_port_mock, redis_mock):
     # GIVEN
     feed_a = Feed(
         id=1,
@@ -339,26 +348,12 @@ def test_get_detailed_feeds(feed_service, feeds_port_mock):
 
     feeds_port_mock.get_all_feeds.return_value = [feed_b, feed_a]
 
-    feed_a_items = [
-        FeedItem(
-            id=1,
-            feed_id=feed_a.id,
-            external_id=uuid4(),
-            link="a",
-            title="A",
-            description="A",
-            created_at=datetime(2025, 1, 3, 10, 0, 0),
-        )
-    ]
-    feed_b_items = []
-
-    feeds_port_mock.get_active_feed_items_by_feed_id.side_effect = (
-        lambda feed_id: feed_a_items if feed_id == feed_a.id else feed_b_items
-    )
+    redis_mock.get.return_value = None
 
     feeds_port_mock.get_number_of_feed_items_by_feed_id.side_effect = (
         lambda feed_id: 1 if feed_id == feed_a.id else 0
     )
+    feeds_port_mock.count_active_feed_items_by_feed_id.return_value = 0
 
     # WHEN
     result = feed_service.get_detailed_feeds()

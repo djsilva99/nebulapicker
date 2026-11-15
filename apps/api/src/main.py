@@ -2,6 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from redis import Redis
 from src.adapters.entrypoints.v1.models.welcome import WelcomeResponse
 from src.adapters.entrypoints.v1.routes import router as v1_router
 from src.adapters.repositories.feeds_repository import FeedsRepository
@@ -45,10 +46,15 @@ async def lifespan(app: FastAPI):
     picker_service = PickerService(pickers_port=picker_repository)
     filter_service = FilterService(filters_port=filter_repository)
     extractor_service = ExtractorService(extractor_port=wallabag_service)
+    redis_service = Redis(
+        host="localhost",
+        port=6379,
+    )
 
     feed_service = FeedService(
         feeds_port=feed_repository,
-        extractor_service=extractor_service
+        extractor_service=extractor_service,
+        redis=redis_service
     )
 
     job_service = JobService(
@@ -58,7 +64,8 @@ async def lifespan(app: FastAPI):
         filter_service=filter_service,
         scheduler=scheduler_adapter,
         extractor_service=extractor_service,
-        feeds_port=feed_repository
+        feeds_port=feed_repository,
+        redis=redis_service
     )
 
     app.state.job_service = job_service

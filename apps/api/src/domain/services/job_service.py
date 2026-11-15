@@ -1,6 +1,8 @@
 import ast
+import json
 
 import feedparser
+from redis import Redis
 from src.configs.settings import Settings
 from src.domain.handlers.operations import (
     author_does_not_contain,
@@ -38,7 +40,8 @@ class JobService:
         source_service: SourceService,
         feed_service: FeedService,
         extractor_service: ExtractorService,
-        feeds_port: FeedsPort
+        feeds_port: FeedsPort,
+        redis: Redis
     ):
         self.scheduler = scheduler
         self.picker_service = picker_service
@@ -47,9 +50,18 @@ class JobService:
         self.feed_service = feed_service
         self.extractor_service = extractor_service
         self.feeds_port = feeds_port
+        self.redis = redis
 
     def process(self, picker_id: int):  # noqa: C901
         picker = self.picker_service.get_picker_by_id(picker_id)
+
+        # cache
+        cache_key = f"picker:{picker.id}"
+        cached = self.redis.get(cache_key)
+        cached_list_last_entry_links = []
+        if cached:
+            cached_list_last_entry_links = json.loads(cached)
+
         filters = self.filter_service.get_filters_by_picker_id(picker_id)
         feed_items, _, _ = self.feed_service.get_feed_items(picker.feed_id, all_items=True)
         source = self.source_service.get_source_by_id(picker.source_id)
@@ -58,8 +70,17 @@ class JobService:
         entries = source_set.entries
         new_entries = [
             entry for entry in entries
-            if entry.link not in {item.link for item in feed_items}
+            if entry.link not in {item.link for item in feed_items} and
+               entry.link not in cached_list_last_entry_links
         ]
+
+        # set cache
+        cached_list_last_entry_links = [entry.link for entry in entries]
+        self.redis.set(
+            cache_key,
+            json.dumps(cached_list_last_entry_links),
+            ex=86400,
+        )
 
         for entry in new_entries:
             description = entry.description

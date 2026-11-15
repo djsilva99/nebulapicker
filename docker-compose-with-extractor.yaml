@@ -56,7 +56,16 @@ services:
              uvicorn src.main:app --host 0.0.0.0 --port 8000"
 
   worker:
+<<<<<<< HEAD
+<<<<<<< HEAD
     image: djsilva99/nebulapicker-api:latest
+=======
+    image: nebulapicker-test-api:latest
+    #image: djsilva99/nebulapicker-api:latest
+>>>>>>> b88a8fd (chore(API): migrate scheduler to celery tasks)
+=======
+    image: djsilva99/nebulapicker-api:latest
+>>>>>>> 9ca64e8 (chore: adjust docker compose with extractor)
     container_name: nebulapicker-worker
     depends_on:
       - db
@@ -79,7 +88,16 @@ services:
       --hostname=worker@%h
 
   scheduler:
+<<<<<<< HEAD
+<<<<<<< HEAD
     image: djsilva99/nebulapicker-api:latest
+=======
+    image: nebulapicker-test-api:latest
+    #image: djsilva99/nebulapicker-api:latest
+>>>>>>> b88a8fd (chore(API): migrate scheduler to celery tasks)
+=======
+    image: djsilva99/nebulapicker-api:latest
+>>>>>>> 9ca64e8 (chore: adjust docker compose with extractor)
     container_name: nebulapicker-scheduler
     depends_on:
       - db
@@ -94,7 +112,16 @@ services:
       python -m src.adapters.scheduler
 
   flower:
+<<<<<<< HEAD
+<<<<<<< HEAD
     image: djsilva99/nebulapicker-api:latest
+=======
+    image: nebulapicker-test-api:latest
+    #image: djsilva99/nebulapicker-api:latest
+>>>>>>> b88a8fd (chore(API): migrate scheduler to celery tasks)
+=======
+    image: djsilva99/nebulapicker-api:latest
+>>>>>>> 9ca64e8 (chore: adjust docker compose with extractor)
     container_name: nebulapicker-flower
     depends_on:
       - redis

@@ -1,3 +1,4 @@
+from redis import Redis
 from src.adapters.repositories.feeds_repository import FeedsRepository
 from src.adapters.repositories.filters_repository import FiltersRepository
 from src.adapters.repositories.pickers_repository import PickersRepository
@@ -5,6 +6,7 @@ from src.adapters.repositories.sources_repository import SourcesRepository
 from src.adapters.wallabag_extractor import WallabagExtractor
 from src.celery_app import celery_app
 from src.configs.database import SessionLocal
+from src.configs.settings import Settings
 from src.domain.services.extractor_service import ExtractorService
 from src.domain.services.feed_service import FeedService
 from src.domain.services.filter_service import FilterService
@@ -12,6 +14,7 @@ from src.domain.services.job_service import JobService
 from src.domain.services.picker_service import PickerService
 from src.domain.services.source_service import SourceService
 
+settings: Settings = Settings()
 
 @celery_app.task
 def process_picker(picker_id: int):
@@ -21,6 +24,11 @@ def process_picker(picker_id: int):
     filter_repository = FiltersRepository(SessionLocal)
 
     wallabag_service = WallabagExtractor()
+
+    redis_service = Redis(
+        host="localhost",
+        port=6379,
+    )
 
     source_service = SourceService(
         source_port=source_repository,
@@ -41,6 +49,7 @@ def process_picker(picker_id: int):
     feed_service = FeedService(
         feeds_port=feed_repository,
         extractor_service=extractor_service,
+        redis=redis_service
     )
 
     job_service = JobService(
@@ -51,6 +60,7 @@ def process_picker(picker_id: int):
         feed_service=feed_service,
         extractor_service=extractor_service,
         feeds_port=feed_repository,
+        redis=redis_service
     )
 
     return job_service.process(picker_id)

@@ -53,16 +53,18 @@ class Scheduler:
 
         pickers = self.pickers_repository.get_due_pickers(now)
         for picker in pickers:
-            process_picker.delay(picker.id)
+            try:
+                next_fetch = croniter(picker.cronjob, datetime.now()).get_next(datetime)
+                process_picker.delay(picker.id)
 
-            next_fetch = croniter(picker.cronjob, datetime.now()).get_next(datetime)
-
-            # Prevent the picker from being scheduled again
-            # until its next_fetch time.
-            self.pickers_repository.update_next_fetch(
-                picker.id,
-                next_fetch,
-            )
+                # Prevent the picker from being scheduled again
+                # until its next_fetch time.
+                self.pickers_repository.update_next_fetch(
+                    picker.id,
+                    next_fetch,
+                )
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":

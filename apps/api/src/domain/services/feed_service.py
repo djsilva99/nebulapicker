@@ -1,5 +1,6 @@
 import datetime
 import imghdr
+import json
 import tempfile
 from pathlib import Path
 from uuid import UUID
@@ -8,6 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 from ebooklib import epub
 from feedgenerator import Rss201rev2Feed
+from redis import Redis
 from src.adapters.entrypoints.v1.models.feeds import ExportFileType
 from src.configs.settings import Settings
 from src.domain.models.feed import (
@@ -32,9 +34,65 @@ HOURS_TO_COMPARE = 24
 
 
 class FeedService:
-    def __init__(self, feeds_port: FeedsPort, extractor_service: ExtractorService):
+    def __init__(self, feeds_port: FeedsPort, extractor_service: ExtractorService, redis: Redis):
         self.feeds_port = feeds_port
         self.extractor_service = extractor_service
+        self.redis = redis
+
+    def _update_cache(self, feed_id) -> dict:
+        cache_key = f"detailed_feed:{feed_id}"
+        number_of_feed_items = (
+            self.feeds_port.get_number_of_feed_items_by_feed_id(feed_id)
+        )
+        number_of_unread_items = (
+            self.feeds_port.count_active_feed_items_by_feed_id(
+                feed_id,
+                "",
+                False,
+                False,
+            )
+        )
+        data = {
+            "number_of_feed_items": number_of_feed_items,
+            "number_of_unread_items": number_of_unread_items,
+        }
+        self.redis.set(
+            cache_key,
+            json.dumps(data),
+            ex=86400,
+        )
+        return data
+
+    def _update_starred_cache(self) -> dict:
+        cache_key = "detailed_feed:0"
+        number_of_feed_items = (
+            self.feeds_port.count_active_feed_items_by_feed_id(
+                0,
+                "",
+                None,
+                False,
+                True
+            )
+        )
+        number_of_unread_items = (
+            self.feeds_port.count_active_feed_items_by_feed_id(
+                0,
+                "",
+                False,
+                False,
+                True
+            )
+        )
+        data = {
+            "number_of_feed_items": number_of_feed_items,
+            "number_of_unread_items": number_of_unread_items,
+        }
+        self.redis.set(
+            cache_key,
+            json.dumps(data),
+            ex=86400,
+        )
+        return data
 
     def create_feed(self, feed_request: FeedRequest) -> Feed:
         return self.feeds_port.create_feed(feed_request)
@@ -62,46 +120,37 @@ class FeedService:
         feeds = self.feeds_port.get_all_feeds()
         detailed_feeds = []
         for feed in feeds:
-            number_of_feed_items = self.feeds_port.get_number_of_feed_items_by_feed_id(feed.id)
-            number_of_unread_feed_items = self.feeds_port.count_active_feed_items_by_feed_id(
-                feed.id,
-                "",
-                False,
-                False
-            )
-            latest_item_datetime = feed.updated_at
+            cache_key = f"detailed_feed:{feed.id}"
+            cached = self.redis.get(cache_key)
+            if cached:
+                cached_data = json.loads(cached)
+            else:
+                cached_data = self._update_cache(feed.id)
             detailed_feeds.append(
                 DetailedFeed(
                     id=feed.id,
                     external_id=feed.external_id,
                     name=feed.name,
                     created_at=feed.created_at,
-                    latest_item_datetime=latest_item_datetime,
-                    number_of_feed_items=number_of_feed_items,
-                    number_of_unread_items=number_of_unread_feed_items
+                    latest_item_datetime=feed.updated_at,
+                    number_of_feed_items=cached_data.get('number_of_feed_items'),
+                    number_of_unread_items=cached_data.get('number_of_unread_items'),
                 )
             )
-        number_of_starred_unread_feed_items = self.feeds_port.count_active_feed_items_by_feed_id(
-            0,
-            "",
-            False,
-            False,
-            True
-        )
+        cache_key = "detailed_feed:0"
+        cached = self.redis.get(cache_key)
+        if cached:
+            cached_data = json.loads(cached)
+        else:
+            cached_data = self._update_starred_cache()
         starred_feed = DetailedFeed(
             id=0,
             external_id=UUID('00000000-0000-0000-0000-000000000000'),
             name='starred',
             created_at=datetime.datetime.now(),
             latest_item_datetime=datetime.datetime.now(),
-            number_of_feed_items=self.feeds_port.count_active_feed_items_by_feed_id(
-                0,
-                "",
-                None,
-                False,
-                True
-            ),
-            number_of_unread_items=number_of_starred_unread_feed_items
+            number_of_feed_items=cached_data.get('number_of_feed_items'),
+            number_of_unread_items=cached_data.get('number_of_unread_items')
         )
         return sorted(detailed_feeds, key=lambda item: item.name), starred_feed
 
@@ -207,11 +256,15 @@ class FeedService:
                 if feed_item_request.image_url == "":
                     feed_item_request.image_url = feed_item_data.image_url
                 feed_item = self.feeds_port.create_feed_item(feed_item_request)
-                self.feeds_port.set_updated_at(feed_item_request.feed_id)
+                if feed_item:
+                    self._update_cache(feed_item_request.feed_id)
                 return feed_item
             except Exception:
                 return None
-        return self.feeds_port.create_feed_item(feed_item_request)
+        feed_item = self.feeds_port.create_feed_item(feed_item_request)
+        if feed_item:
+            self._update_cache(feed_item_request.feed_id)
+        return feed_item
 
     def update_feed_items(
         self,
@@ -223,8 +276,9 @@ class FeedService:
         feed = self.get_feed_by_external_id(feed_external_id)
         if feed is None:
             raise ValueError(f"Feed with external id {feed_external_id} not found")
-        return self.feeds_port.update_feed_items(feed.id, update_feed_items_request)
-
+        updated = self.feeds_port.update_feed_items(feed.id, update_feed_items_request)
+        self._update_cache(feed.id)
+        return updated
 
     def update_feed_item(
         self,
@@ -237,13 +291,31 @@ class FeedService:
             return None
         if feed_external_id == UUID('00000000-0000-0000-0000-000000000000'):
             update_feed_item_request.starred_read = update_feed_item_request.read
-        return self.feeds_port.update_feed_item(feed_item.id, update_feed_item_request)
+            updated = self.feeds_port.update_feed_item(feed_item.id, update_feed_item_request)
+            self._update_starred_cache()
+            return updated
+        updated_feed_item = self.feeds_port.update_feed_item(
+            feed_item.id, update_feed_item_request
+        )
+        self._update_cache(updated_feed_item.feed_id)
+        self._update_starred_cache()
+        return updated_feed_item
 
     def delete_feed_item(self, feed_item_id: int) -> bool:
-        return self.feeds_port.delete_feed_item(feed_item_id)
+        feed_id = self.feeds_port.get_feed_item_by_id(feed_item_id).feed_id
+        deleted = self.feeds_port.delete_feed_item(feed_item_id)
+        if deleted:
+            self._update_cache(feed_id)
+            self._update_starred_cache()
+        return deleted
 
     def deactivate_feed_item(self, feed_item_id: int) -> bool:
-        return self.feeds_port.set_feed_item_as_inactive(feed_item_id)
+        feed_id = self.feeds_port.get_feed_item_by_id(feed_item_id).feed_id
+        deactivated = self.feeds_port.set_feed_item_as_inactive(feed_item_id)
+        if deactivated:
+            self._update_cache(feed_id)
+            self._update_starred_cache()
+        return deactivated
 
     def get_rss(self, feed_external_id: UUID) -> str | None:
         feed = self.feeds_port.get_feed_by_external_id(feed_external_id)
@@ -348,8 +420,9 @@ class FeedService:
                     try:
                         headers = {
                             "User-Agent": (
-                                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                                "(KHTML, like Gecko) Chrome/131 Safari/537.36"
+                                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                "Chrome/131 Safari/537.36"
                             )
                         }
                         resp = requests.get(img_url, headers=headers, timeout=10)
@@ -395,8 +468,21 @@ class FeedService:
                     )
                     book.add_item(epub_img)
 
-                    # Update HTML <img src="...">
-                    img_tag["src"] = img_name
+                    # Replace the whole <picture> with a clean <img>
+                    new_img = soup.new_tag("img")
+                    new_img["src"] = img_name
+                    new_img["alt"] = img_tag.get("alt", "")
+
+                    if img_tag.get("width"):
+                        new_img["width"] = img_tag["width"]
+                    if img_tag.get("height"):
+                        new_img["height"] = img_tag["height"]
+
+                    picture = img_tag.find_parent("picture")
+                    if picture:
+                        picture.replace_with(new_img)
+                    else:
+                        img_tag.replace_with(new_img)
 
                 # Build chapter HTML
                 chapter_html = f"""

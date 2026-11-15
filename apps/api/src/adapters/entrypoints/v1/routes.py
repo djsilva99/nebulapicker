@@ -1,5 +1,5 @@
 import datetime
-import secrets
+import os
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -59,13 +59,14 @@ settings: Settings = Settings()
 ADDED = "ADDED"
 APP_USERNAME = settings.APP_USERNAME
 APP_PASSWORD = settings.APP_PASSWORD
+APP_TOKEN = os.environ["APP_TOKEN"]
 
 # Token storage (in-memory)
 generated_token = None
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 def authenticate(token: str = Depends(oauth2_scheme)):
-    if token != generated_token:
+    if token != APP_TOKEN:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token"
@@ -92,19 +93,13 @@ def welcome() -> WelcomeResponse:
 
 @router.post("/login")
 def login(data: LoginRequest):
-    global generated_token
-
-    # Validate credentials
     if data.username != APP_USERNAME or data.password != APP_PASSWORD:
         raise HTTPException(
-            status_code=401, detail="Invalid username or password"
+            status_code=401,
+            detail="Invalid username or password",
         )
 
-    # If a token was already generated, return the same
-    if generated_token is None:
-        generated_token = secrets.token_hex(32)
-
-    return {"token": generated_token}
+    return {"token": APP_TOKEN}
 
 
 @router.get(
