@@ -20,7 +20,6 @@ from src.configs.database import get_db
 from src.domain.services.job_service import JobService
 from src.main import app
 
-
 TEST_DB_URL = "postgresql://postgres:postgres@localhost:5433/"
 TEST_DB_NAME = "test_nebula"
 TEST_DB_MIGRATIONS_DIR = str(
